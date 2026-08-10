@@ -60,35 +60,40 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
+    <div className="min-h-screen flex font-sans bg-[var(--color-bg)]">
       
       {/* MOBILE OVERLAY */}
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-gray-900/50 z-40 md:hidden"
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 md:hidden animate-in fade-in duration-200"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
       {/* SIDEBAR */}
       <aside className={`
-        fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 
-        transform transition-transform duration-200 ease-in-out flex flex-col
+        fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 
+        transform transition-transform duration-300 ease-in-out flex flex-col shadow-[var(--shadow-soft)] md:shadow-none
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
-        <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
-          <Link href="/student/dashboard" className="text-xl font-bold text-blue-600">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-100 shrink-0">
+          <Link href="/student/dashboard" className="text-xl font-bold text-[var(--color-brand-600)] tracking-tight flex items-center gap-2">
+            <span className="bg-[var(--color-brand-100)] text-[var(--color-brand-600)] p-1.5 rounded-lg">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </span>
             CareerLaunch
           </Link>
           <button 
-            className="md:hidden text-gray-500 hover:text-gray-700"
+            className="md:hidden text-slate-400 hover:text-slate-600 transition-colors"
             onClick={() => setIsMobileMenuOpen(false)}
           >
             <X className="w-6 h-6" />
           </button>
         </div>
         
-        <nav className="p-4 flex flex-col gap-1 flex-1 overflow-y-auto">
+        <nav className="p-4 flex flex-col gap-1.5 flex-1 overflow-y-auto custom-scrollbar">
           {navLinks.map((link) => {
             const isActive = pathname === link.href || (pathname.startsWith(link.href) && link.href !== '/student/dashboard');
             return (
@@ -96,14 +101,14 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
                 key={link.name} 
                 href={link.href} 
                 className={`
-                  flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors
+                  flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-[var(--radius-md)] transition-all
                   ${isActive 
-                    ? 'bg-blue-50 text-blue-700' 
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)]' 
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }
                 `}
               >
-                <span className={isActive ? 'text-blue-600' : 'text-gray-400'}>
+                <span className={isActive ? 'text-[var(--color-brand-600)]' : 'text-slate-400'}>
                   {link.icon}
                 </span>
                 {link.name}
@@ -112,19 +117,19 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         
-        <div className="flex items-center justify-between p-4 border-t border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
+        <div className="flex items-center justify-between p-4 border-t border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors shrink-0"
           onClick={handleLogout}
         >
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold uppercase shrink-0">
+            <div className="h-10 w-10 rounded-full bg-[var(--color-brand-100)] flex items-center justify-center text-[var(--color-brand-700)] font-bold border border-[var(--color-brand-200)] uppercase shrink-0">
               {studentName.charAt(0)}
             </div>
             <div className="overflow-hidden">
-              <p className="text-sm font-medium text-gray-900 truncate">{studentName}</p>
-              <p className="text-xs text-gray-500 truncate">{studentEmail}</p>
+              <p className="text-sm font-semibold text-slate-900 truncate">{studentName}</p>
+              <p className="text-xs text-slate-500 truncate">{studentEmail}</p>
             </div>
           </div>
-          <LogOut className="h-5 w-5 text-gray-400 shrink-0" />
+          <LogOut className="h-5 w-5 text-slate-400 shrink-0" />
         </div>
       </aside>
 
@@ -132,16 +137,16 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         
         {/* TOP HEADER */}
-        <header className="h-16 shrink-0 border-b border-gray-200 bg-white flex items-center justify-between px-4 sm:px-6 z-10">
+        <header className="h-16 shrink-0 border-b border-slate-200 bg-white flex items-center justify-between px-4 sm:px-8 z-10 sticky top-0">
           <div className="flex items-center gap-4">
             <button 
-              className="md:hidden text-gray-500 hover:text-gray-700"
+              className="md:hidden text-slate-600 hover:bg-slate-100 p-2 rounded-[var(--radius-sm)] transition-colors -ml-2"
               onClick={() => setIsMobileMenuOpen(true)}
             >
               <Menu className="w-6 h-6" />
             </button>
             <div className="hidden sm:block">
-              <h1 className="text-lg font-semibold text-gray-900">Welcome back, {studentName.split(' ')[0]}! 👋</h1>
+              <h1 className="text-xl font-bold text-slate-900 tracking-tight">Welcome back, {studentName.split(' ')[0]}! 👋</h1>
             </div>
           </div>
 
@@ -149,36 +154,38 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
             
             {/* Search Box */}
             <div className="hidden md:flex relative items-center">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3" />
               <input 
                 type="text" 
-                placeholder="Search..." 
-                className="pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all w-64"
+                placeholder="Search resources..." 
+                className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-[var(--radius-lg)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-100)] focus:border-[var(--color-brand-400)] focus:bg-white transition-all w-64"
               />
             </div>
 
             {/* Notification */}
-            <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100">
+            <button className="relative p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-100 focus-ring">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
             </button>
             
-            <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
+            <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
 
-            {/* Profile Avatar */}
-            <div className="h-9 w-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0 border border-blue-200">
+            {/* Profile Avatar Mobile Only */}
+            <div className="sm:hidden h-9 w-9 rounded-full bg-[var(--color-brand-100)] text-[var(--color-brand-700)] flex items-center justify-center font-bold text-sm shrink-0 border border-[var(--color-brand-200)]">
               {studentName.charAt(0).toUpperCase()}
             </div>
           </div>
         </header>
         
         {/* PAGE CONTENT */}
-        <div className="flex-1 overflow-auto bg-gray-50 p-4 sm:p-6 lg:p-8">
-          {/* Mobile Welcome Message (hidden on sm+) */}
-          <div className="sm:hidden mb-6">
-            <h1 className="text-xl font-bold text-gray-900">Welcome back, {studentName.split(' ')[0]}! 👋</h1>
+        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto max-w-7xl animate-in fade-in duration-300">
+            {/* Mobile Welcome Message (hidden on sm+) */}
+            <div className="sm:hidden mb-6">
+              <h1 className="text-xl font-bold text-slate-900 tracking-tight">Welcome back, {studentName.split(' ')[0]}! 👋</h1>
+            </div>
+            {children}
           </div>
-          {children}
         </div>
       </main>
     </div>

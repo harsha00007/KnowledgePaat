@@ -151,34 +151,34 @@ export default function ProfilePage() {
         
         {/* HEADER */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage your personal and educational information.</p>
+          <h1 className="text-2xl font-bold text-slate-900">My Profile</h1>
+          <p className="text-sm text-slate-500 mt-1">Manage your personal and educational information.</p>
         </div>
 
         {/* PROFILE CARD */}
-        <Card className="p-6 border-gray-200">
+        <Card className="p-6 border-slate-200 shadow-sm">
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className="relative">
-              <div className="h-24 w-24 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-3xl border-4 border-white shadow-sm shrink-0">
+              <div className="h-24 w-24 rounded-full bg-blue-100 flex items-center justify-center text-[var(--color-brand-600)] font-bold text-3xl border-4 border-white shadow-sm shrink-0">
                 {data.fullName ? data.fullName.charAt(0).toUpperCase() : 'S'}
               </div>
-              <button className="absolute bottom-0 right-0 h-8 w-8 bg-white rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:text-blue-600 hover:border-blue-200 shadow-sm transition-colors">
+              <button className="absolute bottom-0 right-0 h-8 w-8 bg-white rounded-full border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:text-[var(--color-brand-600)] hover:border-[var(--color-brand-200)] shadow-sm transition-colors">
                 <Camera className="w-4 h-4" />
               </button>
             </div>
             
             <div className="flex-1 text-center sm:text-left">
-              <h2 className="text-xl font-bold text-gray-900">{data.fullName || 'Student Name'}</h2>
-              <p className="text-sm text-gray-500 mb-4">{data.email || 'student@example.com'}</p>
+              <h2 className="text-xl font-bold text-slate-900">{data.fullName || 'Student Name'}</h2>
+              <p className="text-sm text-slate-500 mb-4">{data.email || 'student@example.com'}</p>
               
               <div className="max-w-md">
                 <div className="flex justify-between text-sm mb-1">
                   <span className="font-medium text-gray-700">Profile Completion</span>
-                  <span className="font-bold text-blue-600">{completion}%</span>
+                  <span className="font-bold text-[var(--color-brand-600)]">{completion}%</span>
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-2">
                   <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-500" 
+                    className="bg-[var(--color-brand-600)] h-2 rounded-full transition-all duration-500" 
                     style={{ width: `${completion}%` }}
                   ></div>
                 </div>
@@ -197,8 +197,8 @@ export default function ProfilePage() {
         )}
 
         {/* PERSONAL INFORMATION */}
-        <Card className="p-6 border-gray-200">
-          <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Personal Information</h3>
+        <Card className="p-6 border-slate-200 shadow-sm">
+          <h3 className="text-lg font-bold text-slate-900 mb-6 border-b border-gray-100 pb-4">Personal Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <InputField 
               label="Full Name *" name="fullName" value={data.fullName} onChange={handleChange} error={errors.fullName}
@@ -219,7 +219,7 @@ export default function ProfilePage() {
                 name="gender" 
                 value={data.gender} 
                 onChange={handleChange}
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:border-transparent"
               >
                 <option value="">Select Gender</option>
                 <option value="male">Male</option>
@@ -235,8 +235,8 @@ export default function ProfilePage() {
         </Card>
 
         {/* EDUCATION */}
-        <Card className="p-6 border-gray-200">
-          <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Education</h3>
+        <Card className="p-6 border-slate-200 shadow-sm">
+          <h3 className="text-lg font-bold text-slate-900 mb-6 border-b border-gray-100 pb-4">Education</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
               <InputField 
@@ -259,8 +259,8 @@ export default function ProfilePage() {
         </Card>
 
         {/* SKILLS */}
-        <Card className="p-6 border-gray-200">
-          <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Skills</h3>
+        <Card className="p-6 border-slate-200 shadow-sm">
+          <h3 className="text-lg font-bold text-slate-900 mb-6 border-b border-gray-100 pb-4">Skills</h3>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Add Skills</label>
             <div className="flex gap-2 mb-4">
@@ -270,14 +270,14 @@ export default function ProfilePage() {
                 onChange={(e) => setSkillInput(e.target.value)}
                 onKeyDown={handleAddSkill}
                 placeholder="e.g. React, Java, Python"
-                className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:border-transparent"
               />
               <Button type="button" onClick={handleAddSkill} className="shrink-0">
                 <Plus className="w-4 h-4 mr-1" /> Add
               </Button>
             </div>
             
-            <div className="flex flex-wrap gap-2 min-h-[40px] p-4 bg-gray-50 rounded-lg border border-gray-200 border-dashed">
+            <div className="flex flex-wrap gap-2 min-h-[40px] p-4 bg-gray-50 rounded-lg border border-slate-200 shadow-sm border-dashed">
               {data.skills.length === 0 ? (
                 <span className="text-sm text-gray-400 italic">No skills added yet.</span>
               ) : (
@@ -299,8 +299,8 @@ export default function ProfilePage() {
         </Card>
 
         {/* CAREER PREFERENCES */}
-        <Card className="p-6 border-gray-200">
-          <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Career Preferences</h3>
+        <Card className="p-6 border-slate-200 shadow-sm">
+          <h3 className="text-lg font-bold text-slate-900 mb-6 border-b border-gray-100 pb-4">Career Preferences</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <InputField 
               label="Preferred Job Role *" name="preferredRole" value={data.preferredRole} onChange={handleChange} error={errors.preferredRole} placeholder="e.g. Frontend Developer"
@@ -318,7 +318,7 @@ export default function ProfilePage() {
                 name="workMode" 
                 value={data.workMode} 
                 onChange={handleChange}
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:border-transparent"
               >
                 <option value="">Select Mode</option>
                 <option value="Remote">Remote</option>
@@ -360,9 +360,9 @@ function InputField({
         disabled={disabled}
         step={step}
         className={`
-          w-full rounded-md border bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors
+          w-full rounded-md border bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:border-transparent transition-colors
           ${error ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'}
-          ${disabled ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}
+          ${disabled ? 'bg-gray-100 text-slate-500 cursor-not-allowed' : ''}
         `}
       />
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}

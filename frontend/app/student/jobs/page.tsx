@@ -177,26 +177,26 @@ export default function JobsPage() {
 
   return (
     <StudentLayout>
-      <div className="max-w-7xl mx-auto space-y-6 pb-12">
+      <div className="max-w-7xl mx-auto space-y-6 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
         
         {/* HEADER */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Jobs</h1>
-          <p className="text-sm text-gray-500 mt-1">Explore verified fresher job opportunities.</p>
+          <h1 className="text-2xl font-bold text-slate-900">Jobs</h1>
+          <p className="text-sm text-slate-500 mt-1">Explore verified fresher job opportunities.</p>
         </div>
 
         {/* SEARCH & FILTERS BAR */}
-        <Card className="p-4 border-gray-200 shadow-sm flex flex-col lg:flex-row gap-4 items-center">
+        <Card className="p-4 border-slate-200 shadow-sm shadow-sm flex flex-col lg:flex-row gap-4 items-center">
           
           {/* Search Box */}
           <div className="relative w-full lg:w-1/3">
-            <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
               placeholder="Search by Title, Company, Skills..." 
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] text-sm"
             />
           </div>
 
@@ -206,7 +206,7 @@ export default function JobsPage() {
           <div className="w-full lg:flex-1 grid grid-cols-2 md:grid-cols-4 gap-3">
             <select 
               value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
             >
               <option value="">All Categories</option>
               {uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -214,7 +214,7 @@ export default function JobsPage() {
             
             <select 
               value={workModeFilter} onChange={e => setWorkModeFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
             >
               <option value="">Work Mode</option>
               {uniqueWorkModes.map(c => <option key={c} value={c}>{c}</option>)}
@@ -222,7 +222,7 @@ export default function JobsPage() {
 
             <select 
               value={experienceFilter} onChange={e => setExperienceFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
             >
               <option value="">Experience</option>
               {uniqueExperiences.map(c => <option key={c} value={c}>{c}</option>)}
@@ -251,32 +251,32 @@ export default function JobsPage() {
               const isSaved = savedJobIds.has(job.id);
               
               return (
-                <Card key={job.id} className="p-6 border-gray-200 hover:border-blue-200 transition-all shadow-sm hover:shadow-md flex flex-col h-full bg-white group cursor-pointer" onClick={() => openJobDetails(job)}>
+                <Card key={job.id} className="p-6 border-slate-200 shadow-sm hover:border-[var(--color-brand-200)] transition-all shadow-sm hover:shadow-md flex flex-col h-full bg-white group cursor-pointer" onClick={() => openJobDetails(job)}>
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-4">
                       <div className="h-12 w-12 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center shrink-0">
                         {job.company_logo_url ? (
                           <img src={job.company_logo_url} alt={job.company_name} className="h-8 w-8 object-contain" />
                         ) : (
-                          <Building2 className="h-6 w-6 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                          <Building2 className="h-6 w-6 text-gray-400 group-hover:text-[var(--color-brand-500)] transition-colors" />
                         )}
                       </div>
                       <div>
-                        <h3 className="text-lg font-bold text-gray-900 leading-tight">{job.title}</h3>
-                        <p className="text-sm text-gray-500">{job.company_name}</p>
+                        <h3 className="text-lg font-bold text-slate-900 leading-tight">{job.title}</h3>
+                        <p className="text-sm text-slate-500">{job.company_name}</p>
                       </div>
                     </div>
                     
                     <button 
                       onClick={(e) => handleToggleSave(job.id, e)}
-                      className={`p-2 rounded-full transition-colors ${isSaved ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' : 'text-gray-400 hover:bg-gray-100'}`}
+                      className={`p-2 rounded-full transition-colors ${isSaved ? 'text-[var(--color-brand-600)] bg-blue-50 hover:bg-blue-100' : 'text-gray-400 hover:bg-gray-100'}`}
                       title={isSaved ? "Remove Saved Job" : "Save Job"}
                     >
                       {isSaved ? <BookmarkCheck className="w-5 h-5 fill-current" /> : <Bookmark className="w-5 h-5" />}
                     </button>
                   </div>
 
-                  <div className="flex flex-wrap gap-3 text-sm text-gray-600 mb-4">
+                  <div className="flex flex-wrap gap-3 text-sm text-slate-600 mb-4">
                     <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded">
                       <MapPin className="w-4 h-4 text-gray-400" /> {job.location} ({job.work_mode})
                     </div>
@@ -293,7 +293,7 @@ export default function JobsPage() {
                     )}
                   </div>
 
-                  <p className="text-sm text-gray-600 mb-6 line-clamp-2 flex-1">
+                  <p className="text-sm text-slate-600 mb-6 line-clamp-2 flex-1">
                     {job.short_description}
                   </p>
                   
@@ -304,7 +304,7 @@ export default function JobsPage() {
                       </span>
                     ))}
                     {job.required_skills.length > 3 && (
-                      <span className="px-2.5 py-1 bg-gray-50 text-gray-500 text-xs font-medium rounded-full">
+                      <span className="px-2.5 py-1 bg-gray-50 text-slate-500 text-xs font-medium rounded-full">
                         +{job.required_skills.length - 3} more
                       </span>
                     )}
@@ -314,7 +314,7 @@ export default function JobsPage() {
                     <Button variant="outline" className="flex-1 text-sm" onClick={(e) => { e.stopPropagation(); openJobDetails(job); }}>
                       View Details
                     </Button>
-                    <Button variant="primary" className="flex-1 text-sm bg-blue-600 hover:bg-blue-700" onClick={(e) => { e.stopPropagation(); handleApply(job.apply_url); }}>
+                    <Button variant="primary" className="flex-1 text-sm bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white" onClick={(e) => { e.stopPropagation(); handleApply(job.apply_url); }}>
                       Apply Now
                     </Button>
                   </div>
@@ -330,7 +330,7 @@ export default function JobsPage() {
         {selectedJob && (
           <div className="space-y-6">
             <div className="flex items-start gap-4 pb-4 border-b border-gray-100">
-              <div className="h-16 w-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center shrink-0">
+              <div className="h-16 w-16 bg-gray-50 rounded-lg border border-slate-200 shadow-sm flex items-center justify-center shrink-0">
                 {selectedJob.company_logo_url ? (
                   <img src={selectedJob.company_logo_url} alt={selectedJob.company_name} className="h-10 w-10 object-contain" />
                 ) : (
@@ -338,9 +338,9 @@ export default function JobsPage() {
                 )}
               </div>
               <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-900">{selectedJob.title}</h2>
-                <p className="text-lg text-gray-600 font-medium">{selectedJob.company_name}</p>
-                <div className="flex flex-wrap gap-4 text-sm text-gray-500 mt-2">
+                <h2 className="text-2xl font-bold text-slate-900">{selectedJob.title}</h2>
+                <p className="text-lg text-slate-600 font-medium">{selectedJob.company_name}</p>
+                <div className="flex flex-wrap gap-4 text-sm text-slate-500 mt-2">
                   <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {selectedJob.location} ({selectedJob.work_mode})</span>
                   <span className="flex items-center gap-1"><Briefcase className="w-4 h-4" /> {selectedJob.experience}</span>
                   {selectedJob.salary && <span className="flex items-center gap-1"><IndianRupee className="w-4 h-4" /> {selectedJob.salary}</span>}
@@ -350,13 +350,13 @@ export default function JobsPage() {
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Job Description</h3>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Job Description</h3>
               <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed">{selectedJob.full_description}</p>
             </div>
 
             {selectedJob.responsibilities.length > 0 && (
               <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Key Responsibilities</h3>
+                <h3 className="text-lg font-bold text-slate-900 mb-2">Key Responsibilities</h3>
                 <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
                   {selectedJob.responsibilities.map((resp, i) => (
                     <li key={i}>{resp}</li>
@@ -366,7 +366,7 @@ export default function JobsPage() {
             )}
 
             <div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Required Skills</h3>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Required Skills</h3>
               <div className="flex flex-wrap gap-2">
                 {selectedJob.required_skills.map(skill => (
                   <span key={skill} className="px-3 py-1 bg-blue-50 text-blue-700 text-sm font-medium rounded-full">

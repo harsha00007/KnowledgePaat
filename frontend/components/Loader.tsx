@@ -15,7 +15,7 @@ export function Loader({ size = 'md', className = '', fullScreen = false }: Load
 
   const loader = (
     <svg 
-      className={`animate-spin text-blue-600 ${sizes[size]} ${className}`} 
+      className={`animate-spin text-[var(--color-brand-600)] ${sizes[size]} ${className}`} 
       xmlns="http://www.w3.org/2000/svg" 
       fill="none" 
       viewBox="0 0 24 24"
@@ -27,7 +27,7 @@ export function Loader({ size = 'md', className = '', fullScreen = false }: Load
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/80 backdrop-blur-sm animate-in fade-in duration-200">
         {loader}
       </div>
     );

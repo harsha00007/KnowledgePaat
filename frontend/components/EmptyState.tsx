@@ -10,15 +10,15 @@ export interface EmptyStateProps {
 
 export function EmptyState({ title, description, icon, action, className = '' }: EmptyStateProps) {
   return (
-    <div className={`flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 p-12 text-center ${className}`}>
+    <div className={`flex flex-col items-center justify-center rounded-[var(--radius-xl)] border border-dashed border-slate-300 bg-slate-50 p-12 text-center animate-in fade-in slide-in-from-bottom-2 ${className}`}>
       {icon && (
-        <div className="mb-4 text-gray-400">
+        <div className="mb-4 text-slate-400 bg-white p-4 rounded-full shadow-sm border border-slate-100">
           {icon}
         </div>
       )}
-      <h3 className="mb-1 text-lg font-semibold text-gray-900">{title}</h3>
+      <h3 className="mb-1.5 text-lg font-semibold text-slate-900">{title}</h3>
       {description && (
-        <p className="mb-4 text-sm text-gray-500 max-w-sm">{description}</p>
+        <p className="mb-5 text-sm text-slate-500 max-w-sm leading-relaxed">{description}</p>
       )}
       {action && (
         <div className="mt-2">

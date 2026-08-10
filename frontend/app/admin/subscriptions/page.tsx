@@ -199,33 +199,33 @@ export default function AdminSubscriptionsPage() {
 
   return (
     <AdminLayout>
-      <div className="max-w-7xl mx-auto space-y-6 pb-12">
+      <div className="max-w-7xl mx-auto space-y-6 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
         
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Subscription Management</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage student subscription plans and access.</p>
+            <h1 className="text-2xl font-bold text-slate-900">Subscription Management</h1>
+            <p className="text-sm text-slate-500 mt-1">Manage student subscription plans and access.</p>
           </div>
         </div>
 
         {/* SEARCH & FILTERS */}
-        <Card className="p-4 border-gray-200 shadow-sm flex flex-col lg:flex-row gap-4">
+        <Card className="p-4 border-slate-200 shadow-sm flex flex-col lg:flex-row gap-4">
           <div className="relative w-full lg:flex-1">
-            <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
               placeholder="Search by Student Name, Email or Plan..." 
               value={searchQuery}
               onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] text-sm"
             />
           </div>
 
           <div className="w-full lg:w-auto grid grid-cols-2 sm:grid-cols-3 gap-3">
             <select 
               value={planFilter} onChange={e => { setPlanFilter(e.target.value); setCurrentPage(1); }}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
             >
               <option value="">All Plans</option>
               <option value="Free">Free</option>
@@ -234,7 +234,7 @@ export default function AdminSubscriptionsPage() {
             
             <select 
               value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
             >
               <option value="">All Statuses</option>
               <option value="Active">Active</option>
@@ -249,7 +249,7 @@ export default function AdminSubscriptionsPage() {
         </Card>
 
         {/* DATA TABLE */}
-        <Card className="border-gray-200 shadow-sm overflow-hidden bg-white">
+        <Card className="border-slate-200 shadow-sm overflow-hidden bg-white">
           {isFetching ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -432,7 +432,7 @@ export default function AdminSubscriptionsPage() {
               <select 
                 value={editData.plan} 
                 onChange={(e) => setEditData({...editData, plan: e.target.value})}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none"
               >
                 <option value="Free">Free</option>
                 <option value="Premium">Premium</option>
@@ -443,7 +443,7 @@ export default function AdminSubscriptionsPage() {
               <select 
                 value={editData.status} 
                 onChange={(e) => setEditData({...editData, status: e.target.value})}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none"
               >
                 <option value="Active">Active</option>
                 <option value="Expired">Expired</option>
@@ -456,7 +456,7 @@ export default function AdminSubscriptionsPage() {
                 type="date"
                 value={editData.end_date}
                 onChange={(e) => setEditData({...editData, end_date: e.target.value})}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none"
               />
               <p className="text-xs text-slate-500 mt-1">Leave blank for lifetime access.</p>
             </div>
@@ -484,7 +484,7 @@ export default function AdminSubscriptionsPage() {
                 type="date"
                 value={extendDate}
                 onChange={(e) => setExtendDate(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none"
               />
             </div>
             

@@ -261,8 +261,8 @@ export default function ResumePage() {
         
         {/* HEADER */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Resume</h1>
-          <p className="text-sm text-gray-500 mt-1">Upload your latest resume to apply for jobs quickly.</p>
+          <h1 className="text-2xl font-bold text-slate-900">My Resume</h1>
+          <p className="text-sm text-slate-500 mt-1">Upload your latest resume to apply for jobs quickly.</p>
         </div>
 
         {error && (
@@ -280,8 +280,8 @@ export default function ResumePage() {
           <div className="md:col-span-2 space-y-6">
             
             {/* UPLOAD SECTION */}
-            <Card className="p-6 border-gray-200">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">
+            <Card className="p-6 border-slate-200 shadow-sm">
+              <h2 className="text-lg font-bold text-slate-900 mb-4">
                 {resume.url ? 'Replace Resume' : 'Upload Resume'}
               </h2>
               
@@ -304,7 +304,7 @@ export default function ResumePage() {
                 />
                 
                 <div className="flex flex-col items-center justify-center space-y-4">
-                  <div className="h-16 w-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                  <div className="h-16 w-16 bg-blue-100 text-[var(--color-brand-600)] rounded-full flex items-center justify-center">
                     {isUploading ? (
                       <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
                     ) : (
@@ -313,10 +313,10 @@ export default function ResumePage() {
                   </div>
                   
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-slate-900">
                       {isUploading ? 'Uploading...' : 'Click to browse or drag and drop'}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       PDF, DOC, DOCX (Max 5 MB)
                     </p>
                   </div>
@@ -330,8 +330,8 @@ export default function ResumePage() {
           <div className="space-y-6">
             
             {/* STATUS CARD */}
-            <Card className="p-6 border-gray-200 h-full flex flex-col">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Status</h2>
+            <Card className="p-6 border-slate-200 shadow-sm h-full flex flex-col">
+              <h2 className="text-lg font-bold text-slate-900 mb-4">Status</h2>
               
               {!isFetching && (
                 <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
@@ -340,11 +340,11 @@ export default function ResumePage() {
                       <div className="h-16 w-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
                         <CheckCircle className="h-8 w-8" />
                       </div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">Resume Uploaded</h3>
-                      <p className="text-sm font-medium text-gray-600 truncate w-full px-2" title={resume.filename || ''}>
+                      <h3 className="text-lg font-bold text-slate-900 mb-1">Resume Uploaded</h3>
+                      <p className="text-sm font-medium text-slate-600 truncate w-full px-2" title={resume.filename || ''}>
                         {resume.filename}
                       </p>
-                      <p className="text-xs text-gray-500 mt-2">
+                      <p className="text-xs text-slate-500 mt-2">
                         Updated: {resume.uploadedAt ? new Date(resume.uploadedAt).toLocaleDateString() : 'Unknown'}
                       </p>
                       
@@ -372,8 +372,8 @@ export default function ResumePage() {
                       <div className="h-16 w-16 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mb-4">
                         <FileText className="h-8 w-8" />
                       </div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">No Resume</h3>
-                      <p className="text-sm text-gray-500">
+                      <h3 className="text-lg font-bold text-slate-900 mb-1">No Resume</h3>
+                      <p className="text-sm text-slate-500">
                         You haven't uploaded a resume yet.
                       </p>
                     </>
