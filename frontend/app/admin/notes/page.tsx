@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { AdminLayout } from '@/layouts/AdminLayout';
-import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
 import { EmptyState } from '@/components/EmptyState';
@@ -20,7 +19,8 @@ import {
   Upload,
   FileText,
   Download,
-  CheckCircle
+  CheckCircle,
+  Calendar
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
@@ -188,8 +188,7 @@ export default function AdminNotesPage() {
       return;
     }
 
-    // Check size (10 MB = 10 * 1024 * 1024 bytes)
-    if (file.size > 10485760) {
+    if (file.size > 10 * 1024 * 1024) {
       setFormErrors(prev => ({ ...prev, file: 'File size must be less than 10MB.' }));
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -214,9 +213,8 @@ export default function AdminNotesPage() {
     if (!formData.category) errors.category = "Category is required.";
     if (!formData.description?.trim()) errors.description = "Description is required.";
     
-    // Require file only if adding a new note
     if (!selectedNote && !selectedFile) {
-      errors.file = "Please upload a PDF file.";
+      errors.file = "Please upload a PDF document.";
     }
     
     setFormErrors(errors);
@@ -231,7 +229,6 @@ export default function AdminNotesPage() {
       let fileUrl = selectedNote ? selectedNote.file_url : '';
       let fileSize = selectedNote ? selectedNote.file_size : '';
 
-      // Upload file if selected
       if (selectedFile) {
         const fileExt = 'pdf';
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
@@ -246,7 +243,6 @@ export default function AdminNotesPage() {
         fileUrl = filePath;
         fileSize = formatBytes(selectedFile.size);
 
-        // Delete old file if updating
         if (selectedNote && selectedNote.file_url) {
           await supabase.storage.from('notes').remove([selectedNote.file_url]);
         }
@@ -264,11 +260,9 @@ export default function AdminNotesPage() {
       };
 
       if (selectedNote) {
-        // Update
         const { error } = await supabase.from('notes').update(payload).eq('id', selectedNote.id);
         if (error) throw error;
       } else {
-        // Insert
         const { error } = await supabase.from('notes').insert(payload);
         if (error) throw error;
       }
@@ -304,11 +298,9 @@ export default function AdminNotesPage() {
     if (!selectedNote) return;
     setIsProcessing(true);
     try {
-      // First try to delete file from storage
       if (selectedNote.file_url) {
         await supabase.storage.from('notes').remove([selectedNote.file_url]);
       }
-      // Delete from db
       const { error } = await supabase.from('notes').delete().eq('id', selectedNote.id);
       if (error) throw error;
       
@@ -327,11 +319,10 @@ export default function AdminNotesPage() {
       const { data, error } = await supabase.storage.from('notes').createSignedUrl(note.file_url, 60);
       if (error) throw error;
       if (data && data.signedUrl) {
-        // Create an invisible link to trigger download
         const a = document.createElement('a');
         a.href = data.signedUrl;
         a.target = '_blank';
-        a.download = note.title + '.pdf'; // attempt to force download attribute
+        a.download = note.title + '.pdf';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -344,36 +335,38 @@ export default function AdminNotesPage() {
 
   return (
     <AdminLayout>
-      <div className="max-w-7xl mx-auto space-y-6 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="max-w-7xl mx-auto space-y-6 pb-12">
         
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Notes Management</h1>
-            <p className="text-sm text-slate-500 mt-1">Upload and manage study materials for students.</p>
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Notes Management</h1>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 font-medium">
+              Upload revision guides, formula sheets, and study materials for students.
+            </p>
           </div>
-          <Button onClick={openAddForm} className="shrink-0 bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white">
-            <Upload className="w-4 h-4 mr-2" /> Upload Note
+          <Button size="sm" onClick={openAddForm} className="shrink-0 text-xs">
+            <Upload className="w-4 h-4 mr-1.5" /> Upload Note
           </Button>
         </div>
 
-        {/* SEARCH & FILTERS */}
-        <Card className="p-4 border-slate-200 shadow-sm flex flex-col lg:flex-row gap-4">
+        {/* SEARCH & FILTERS BAR */}
+        <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-xs)] flex flex-col lg:flex-row gap-3 items-center">
           <div className="relative w-full lg:flex-1">
-            <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[var(--color-text-tertiary)] absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
-              placeholder="Search by Title, Category, Tech or Keyword..." 
+              placeholder="Search by Title, Category, Technology or Keyword..." 
               value={searchQuery}
               onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] text-sm"
+              className="w-full pl-9 pr-3 py-2 border border-[var(--color-border)] bg-white rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] shadow-xs transition-colors"
             />
           </div>
 
-          <div className="w-full lg:w-auto grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="w-full lg:w-auto grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             <select 
               value={categoryFilter} onChange={e => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
             >
               <option value="">All Categories</option>
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -381,31 +374,31 @@ export default function AdminNotesPage() {
             
             <select 
               value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
             >
-              <option value="">Status</option>
+              <option value="">All Statuses</option>
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
             </select>
 
-            <Button variant="outline" onClick={resetFilters} className="text-sm h-full w-full">
-              <Filter className="w-4 h-4 mr-2" /> Reset
+            <Button variant="outline" size="sm" onClick={resetFilters} className="text-xs h-full justify-center">
+              <Filter className="w-3.5 h-3.5 mr-1" /> Reset
             </Button>
           </div>
-        </Card>
+        </div>
 
-        {/* DATA TABLE */}
-        <Card className="border-slate-200 shadow-sm overflow-hidden bg-white">
+        {/* DATA TABLE CONTAINER */}
+        <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white shadow-[var(--shadow-xs)] overflow-hidden">
           {isFetching ? (
             <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-[var(--color-brand-500)] border-t-transparent"></div>
             </div>
           ) : filteredNotes.length === 0 ? (
             <div className="p-8">
               <EmptyState 
-                title="No notes available."
-                description="Upload study materials to help students prepare."
-                action={<Button onClick={openAddForm}>Upload Note</Button>}
+                title="No study notes found."
+                description="Upload revision sheets and study materials to support students."
+                action={<Button size="sm" onClick={openAddForm}>Upload Note</Button>}
               />
             </div>
           ) : (
@@ -414,54 +407,54 @@ export default function AdminNotesPage() {
               <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                      <th className="px-6 py-4 w-1/3">Title & Category</th>
-                      <th className="px-6 py-4">File Details</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4">Updated Date</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
+                    <tr className="bg-[var(--color-bg-subtle)] border-b border-[var(--color-border)] text-[11px] uppercase tracking-wider text-[var(--color-text-tertiary)] font-bold">
+                      <th className="px-5 py-3.5 w-2/5">Title & Category</th>
+                      <th className="px-5 py-3.5">File Details</th>
+                      <th className="px-5 py-3.5">Status</th>
+                      <th className="px-5 py-3.5">Updated</th>
+                      <th className="px-5 py-3.5 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-[var(--color-border)] text-xs">
                     {paginatedNotes.map(n => (
-                      <tr key={n.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="flex items-start gap-3">
-                            <div className="p-2 bg-red-50 text-red-500 rounded mt-0.5 shrink-0">
-                              <FileText className="w-5 h-5" />
+                      <tr key={n.id} className="hover:bg-[var(--color-bg-subtle)]/70 transition-colors">
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-start gap-2.5">
+                            <div className="p-1.5 bg-red-50 text-red-600 border border-red-200 rounded-[var(--radius-md)] mt-0.5 shrink-0">
+                              <FileText className="w-4 h-4" />
                             </div>
-                            <div>
-                              <p className="text-sm font-bold text-slate-900 line-clamp-1">{n.title}</p>
-                              <p className="text-xs text-slate-500 mt-1">{n.category}</p>
+                            <div className="min-w-0">
+                              <p className="font-bold text-[var(--color-text-primary)] line-clamp-1">{n.title}</p>
+                              <p className="text-[11px] text-[var(--color-text-secondary)] mt-0.5">{n.category}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded">
-                            {n.file_size}
+                        <td className="px-5 py-3.5">
+                          <span className="text-[11px] font-semibold text-[var(--color-text-secondary)] bg-[var(--color-bg-subtle)] border border-[var(--color-border)] px-2 py-0.5 rounded">
+                            PDF • {n.file_size}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                            n.status === 'Active' ? 'bg-[var(--color-success-50)] text-[var(--color-success)]' : 'bg-slate-100 text-slate-700'
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                            n.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'
                           }`}>
                             {n.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-500">
+                        <td className="px-5 py-3.5 text-[var(--color-text-tertiary)] font-medium">
                           {new Date(n.updated_at).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 text-right space-x-1">
-                          <button onClick={() => { setSelectedNote(n); setIsViewModalOpen(true); }} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="View">
+                        <td className="px-5 py-3.5 text-right space-x-1 whitespace-nowrap">
+                          <button onClick={() => { setSelectedNote(n); setIsViewModalOpen(true); }} className="p-1.5 text-[var(--color-brand-600)] hover:bg-[var(--color-brand-50)] rounded transition-colors" title="View">
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button onClick={() => openEditForm(n)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded" title="Edit">
+                          <button onClick={() => openEditForm(n)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Edit">
                             <Edit className="w-4 h-4" />
                           </button>
-                          <button onClick={() => { setSelectedNote(n); setIsStatusModalOpen(true); }} className={`p-1.5 rounded ${n.status === 'Active' ? 'text-amber-600 hover:bg-amber-50' : 'text-green-600 hover:bg-green-50'}`} title={n.status === 'Active' ? "Deactivate" : "Activate"}>
+                          <button onClick={() => { setSelectedNote(n); setIsStatusModalOpen(true); }} className={`p-1.5 rounded transition-colors ${n.status === 'Active' ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`} title={n.status === 'Active' ? "Deactivate" : "Activate"}>
                             <Power className="w-4 h-4" />
                           </button>
-                          <button onClick={() => { setSelectedNote(n); setIsDeleteModalOpen(true); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Delete">
+                          <button onClick={() => { setSelectedNote(n); setIsDeleteModalOpen(true); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </td>
@@ -471,160 +464,165 @@ export default function AdminNotesPage() {
                 </table>
               </div>
 
-              {/* Mobile Cards */}
-              <div className="lg:hidden divide-y divide-slate-100">
+              {/* Mobile Card List */}
+              <div className="lg:hidden divide-y divide-[var(--color-border)]">
                 {paginatedNotes.map(n => (
-                  <div key={n.id} className="p-4 flex flex-col gap-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex gap-3">
-                        <div className="p-2 bg-red-50 text-red-500 rounded mt-0.5 shrink-0">
+                  <div key={n.id} className="p-4 space-y-2.5">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex items-start gap-2">
+                        <div className="p-1.5 bg-red-50 text-red-600 border border-red-200 rounded-[var(--radius-md)] shrink-0">
                           <FileText className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-slate-900 leading-snug">{n.title}</p>
-                          <p className="text-xs text-slate-500 mt-1">{n.category}</p>
+                          <p className="text-xs font-bold text-[var(--color-text-primary)] leading-snug">{n.title}</p>
+                          <p className="text-[11px] text-[var(--color-text-secondary)]">{n.category}</p>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-xs text-slate-600 mt-1">
-                      <span className="font-medium">{n.file_size}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${n.status === 'Active' ? 'bg-[var(--color-success-50)] text-[var(--color-success)]' : 'bg-slate-100 text-slate-700'}`}>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 border ${n.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
                         {n.status}
                       </span>
                     </div>
+                    
+                    <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
+                      <span className="font-semibold text-[11px]">Size: {n.file_size}</span>
+                      <span className="text-[11px] text-[var(--color-text-tertiary)]">{new Date(n.updated_at).toLocaleDateString()}</span>
+                    </div>
 
-                    <div className="flex justify-end gap-2 border-t border-slate-100 pt-3 mt-1">
-                      <Button variant="outline" className="text-xs py-1 px-2 h-auto" onClick={() => { setSelectedNote(n); setIsViewModalOpen(true); }}><Eye className="w-3.5 h-3.5" /></Button>
-                      <Button variant="outline" className="text-xs py-1 px-2 h-auto" onClick={() => openEditForm(n)}><Edit className="w-3.5 h-3.5" /></Button>
-                      <Button variant="outline" className="text-xs py-1 px-2 h-auto" onClick={() => { setSelectedNote(n); setIsStatusModalOpen(true); }}><Power className="w-3.5 h-3.5" /></Button>
-                      <Button variant="outline" className="text-xs py-1 px-2 h-auto border-red-200 text-red-600 hover:bg-red-50" onClick={() => { setSelectedNote(n); setIsDeleteModalOpen(true); }}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    <div className="flex justify-end gap-1.5 pt-2 border-t border-[var(--color-border)]">
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => { setSelectedNote(n); setIsViewModalOpen(true); }}>View</Button>
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => openEditForm(n)}>Edit</Button>
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => { setSelectedNote(n); setIsStatusModalOpen(true); }}>{n.status === 'Active' ? 'Deactivate' : 'Activate'}</Button>
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5 text-red-600 hover:bg-red-50" onClick={() => { setSelectedNote(n); setIsDeleteModalOpen(true); }}>Delete</Button>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Pagination */}
-              <div className="p-4 border-t border-slate-200 flex items-center justify-between bg-slate-50/50">
-                <span className="text-sm text-slate-500">
-                  Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredNotes.length)} of {filteredNotes.length}
+              {/* Pagination Bar */}
+              <div className="p-3.5 border-t border-[var(--color-border)] flex items-center justify-between bg-[var(--color-bg-subtle)] text-xs">
+                <span className="font-medium text-[var(--color-text-tertiary)]">
+                  Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredNotes.length)} of {filteredNotes.length} notes
                 </span>
-                <div className="flex gap-2">
-                  <Button variant="outline" className="p-2" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}><ChevronLeft className="w-4 h-4" /></Button>
-                  <Button variant="outline" className="p-2" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(p => p + 1)}><ChevronRight className="w-4 h-4" /></Button>
+                <div className="flex gap-1.5">
+                  <Button variant="outline" size="sm" className="p-1.5 h-8 w-8 justify-center" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}><ChevronLeft className="w-4 h-4" /></Button>
+                  <Button variant="outline" size="sm" className="p-1.5 h-8 w-8 justify-center" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(p => p + 1)}><ChevronRight className="w-4 h-4" /></Button>
                 </div>
               </div>
             </>
           )}
-        </Card>
+        </div>
 
       </div>
 
       {/* FORM MODAL (ADD / EDIT) */}
-      <Modal isOpen={isFormModalOpen} onClose={() => !isProcessing && setIsFormModalOpen(false)} title={selectedNote ? "Edit Note" : "Upload New Note"} className="max-w-2xl">
-        <div className="space-y-6">
+      <Modal isOpen={isFormModalOpen} onClose={() => !isProcessing && setIsFormModalOpen(false)} title={selectedNote ? "Edit Note Details" : "Upload Study Note"} className="max-w-2xl">
+        <div className="space-y-4 text-xs">
           
-          <div className="space-y-4">
-            <Input label="Note Title *" name="title" value={formData.title} onChange={handleFormChange} error={formErrors.title} placeholder="e.g. Master React in 10 Days" />
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Category *</label>
-                <select name="category" value={formData.category} onChange={handleFormChange} className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] ${formErrors.category ? 'border-red-300' : 'border-slate-300'}`}>
-                  <option value="" disabled>Select Category</option>
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-                {formErrors.category && <p className="text-red-500 text-xs mt-1">{formErrors.category}</p>}
-              </div>
-              <Input label="Technology (Optional)" name="technology" value={formData.technology} onChange={handleFormChange} placeholder="e.g. React, Python" />
-            </div>
-
+          <div>
+            <label className="block font-bold text-[var(--color-text-primary)] mb-1">Note Title *</label>
+            <input type="text" name="title" value={formData.title || ''} onChange={handleFormChange} placeholder="e.g. Master React in 10 Days" className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white" />
+            {formErrors.title && <p className="text-red-500 mt-1">{formErrors.title}</p>}
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Description *</label>
-              <textarea 
-                name="description" 
-                value={formData.description} 
-                onChange={handleFormChange} 
-                rows={4}
-                className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] ${formErrors.description ? 'border-red-300' : 'border-slate-300'}`}
-              />
-              {formErrors.description && <p className="text-red-500 text-xs mt-1">{formErrors.description}</p>}
+              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Category *</label>
+              <select name="category" value={formData.category} onChange={handleFormChange} className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white">
+                <option value="" disabled>Select Category</option>
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              {formErrors.category && <p className="text-red-500 mt-1">{formErrors.category}</p>}
             </div>
-
-            {/* File Upload */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">PDF File *</label>
-              <div className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md ${formErrors.file ? 'border-red-300 bg-red-50' : 'border-slate-300 hover:border-blue-400 bg-slate-50'}`}>
-                <div className="space-y-1 text-center">
-                  <Upload className="mx-auto h-10 w-10 text-slate-400" />
-                  <div className="flex text-sm text-slate-600 justify-center">
-                    <label className="relative cursor-pointer bg-transparent rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                      <span>Upload a file</span>
-                      <input type="file" className="sr-only" accept="application/pdf" onChange={handleFileChange} ref={fileInputRef} />
-                    </label>
-                  </div>
-                  <p className="text-xs text-slate-500">PDF up to 10MB</p>
-                </div>
-              </div>
-              
-              {selectedFile && (
-                <div className="mt-2 flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="font-medium truncate max-w-[200px]">{selectedFile.name}</span>
-                  </div>
-                  <span>{formatBytes(selectedFile.size)}</span>
-                </div>
-              )}
-
-              {!selectedFile && selectedNote && (
-                <div className="mt-2 flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
-                    <span className="font-medium truncate">Current File Preserved</span>
-                  </div>
-                  <span>{selectedNote.file_size}</span>
-                </div>
-              )}
-
-              {formErrors.file && <p className="text-red-500 text-xs mt-1">{formErrors.file}</p>}
+              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Technology (Optional)</label>
+              <input type="text" name="technology" value={formData.technology || ''} onChange={handleFormChange} placeholder="e.g. JavaScript, Python" className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white" />
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Tags (Optional)</label>
-              <div className="flex gap-2 mb-2">
-                <input type="text" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={handleArrayAdd} className="flex-1 rounded-md border border-slate-300 px-3 py-1.5 text-sm" placeholder="e.g. Hooks, CheatSheet" />
-                <Button type="button" onClick={handleArrayAdd} className="px-3 py-1.5">Add</Button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {(formData.tags || []).map(t => (
-                  <span key={t} className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs font-medium flex items-center gap-1 border border-slate-200">
-                    {t} <button type="button" onClick={() => handleArrayRemove(t)} className="hover:text-red-500">&times;</button>
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Status */}
-            <div className="pt-2">
-              <label className="block text-sm font-medium text-slate-700 mb-2">Visibility Status</label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
-                  <input type="radio" name="status" value="Active" checked={formData.status === 'Active'} onChange={handleFormChange} className="text-blue-600 focus:ring-[var(--color-brand-500)]" />
-                  Active (Visible to Students)
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
-                  <input type="radio" name="status" value="Inactive" checked={formData.status === 'Inactive'} onChange={handleFormChange} className="text-blue-600 focus:ring-[var(--color-brand-500)]" />
-                  Inactive (Hidden)
-                </label>
-              </div>
-            </div>
-
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
-            <Button variant="outline" onClick={() => setIsFormModalOpen(false)} disabled={isProcessing}>Cancel</Button>
-            <Button variant="primary" onClick={handleSave} disabled={isProcessing}>
+          <div>
+            <label className="block font-bold text-[var(--color-text-primary)] mb-1">Description *</label>
+            <textarea 
+              name="description" 
+              value={formData.description || ''} 
+              onChange={handleFormChange} 
+              rows={3}
+              placeholder="Summary of concepts covered in this study resource..."
+              className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white"
+            />
+            {formErrors.description && <p className="text-red-500 mt-1">{formErrors.description}</p>}
+          </div>
+
+          {/* File Upload Zone */}
+          <div>
+            <label className="block font-bold text-[var(--color-text-primary)] mb-1">PDF File *</label>
+            <div className={`flex justify-center px-4 py-5 border-2 border-dashed rounded-[var(--radius-lg)] transition-colors ${formErrors.file ? 'border-red-300 bg-red-50/50' : 'border-[var(--color-border)] bg-[var(--color-bg-subtle)] hover:bg-[var(--color-brand-50)]/50'}`}>
+              <div className="space-y-1.5 text-center">
+                <Upload className="mx-auto h-7 w-7 text-[var(--color-brand-500)]" />
+                <div className="flex text-xs font-semibold text-[var(--color-text-primary)] justify-center">
+                  <label className="relative cursor-pointer text-[var(--color-brand-600)] hover:underline">
+                    <span>Click to browse and upload</span>
+                    <input type="file" className="sr-only" accept="application/pdf" onChange={handleFileChange} ref={fileInputRef} />
+                  </label>
+                </div>
+                <p className="text-[11px] text-[var(--color-text-tertiary)]">PDF documents up to 10 MB</p>
+              </div>
+            </div>
+            
+            {selectedFile && (
+              <div className="mt-2 flex items-center justify-between p-2.5 bg-emerald-50 border border-emerald-200 rounded-[var(--radius-md)] text-xs text-emerald-800 font-semibold">
+                <div className="flex items-center gap-2 truncate">
+                  <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="truncate">{selectedFile.name}</span>
+                </div>
+                <span className="shrink-0">{formatBytes(selectedFile.size)}</span>
+              </div>
+            )}
+
+            {!selectedFile && selectedNote && (
+              <div className="mt-2 flex items-center justify-between p-2.5 bg-[var(--color-bg-subtle)] border border-[var(--color-border)] rounded-[var(--radius-md)] text-xs text-[var(--color-text-secondary)] font-medium">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-[var(--color-brand-600)]" />
+                  <span>Existing File Preserved</span>
+                </div>
+                <span>{selectedNote.file_size}</span>
+              </div>
+            )}
+
+            {formErrors.file && <p className="text-red-500 mt-1">{formErrors.file}</p>}
+          </div>
+
+          <div>
+            <label className="block font-bold text-[var(--color-text-primary)] mb-1">Tags (Optional)</label>
+            <div className="flex gap-2 mb-1.5">
+              <input type="text" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={handleArrayAdd} placeholder="Type tag and press Enter" className="flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-1.5 text-xs outline-none" />
+              <Button type="button" size="sm" onClick={handleArrayAdd}>Add Tag</Button>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {(formData.tags || []).map(t => (
+                <span key={t} className="bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] border border-[var(--color-border)] px-2 py-0.5 rounded-full text-[11px] font-semibold flex items-center gap-1">
+                  #{t} <button type="button" onClick={() => handleArrayRemove(t)} className="hover:text-red-500">&times;</button>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-bold text-[var(--color-text-primary)] mb-1">Visibility Status</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="status" value="Active" checked={formData.status === 'Active'} onChange={handleFormChange} />
+                <span>Active (Visible to Students)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="status" value="Inactive" checked={formData.status === 'Inactive'} onChange={handleFormChange} />
+                <span>Inactive (Hidden)</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2.5 pt-4 border-t border-[var(--color-border)]">
+            <Button variant="outline" size="sm" onClick={() => setIsFormModalOpen(false)} disabled={isProcessing}>Cancel</Button>
+            <Button variant="primary" size="sm" onClick={handleSave} disabled={isProcessing}>
               {isProcessing ? 'Saving...' : 'Save Note'}
             </Button>
           </div>
@@ -634,53 +632,51 @@ export default function AdminNotesPage() {
       {/* VIEW NOTE MODAL */}
       <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Note Details" className="max-w-xl">
         {selectedNote && (
-          <div className="space-y-6">
-            <div className="flex items-start justify-between gap-4">
+          <div className="space-y-4 text-xs">
+            <div className="flex items-start justify-between pb-3 border-b border-[var(--color-border)]">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 leading-snug">{selectedNote.title}</h2>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <span className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full text-xs font-medium">{selectedNote.category}</span>
-                  {selectedNote.technology && <span className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full text-xs font-medium">{selectedNote.technology}</span>}
+                <h2 className="text-base font-bold text-[var(--color-text-primary)]">{selectedNote.title}</h2>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  <span className="bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-200)] px-2 py-0.2 rounded-full text-[10px] font-bold uppercase">{selectedNote.category}</span>
+                  {selectedNote.technology && <span className="bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] border border-[var(--color-border)] px-2 py-0.2 rounded-full text-[10px] font-semibold">{selectedNote.technology}</span>}
                 </div>
               </div>
-              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shrink-0 ${selectedNote.status === 'Active' ? 'bg-[var(--color-success-50)] text-[var(--color-success)]' : 'bg-slate-100 text-slate-700'}`}>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 border ${selectedNote.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
                 {selectedNote.status}
               </span>
             </div>
 
             <div>
-              <h3 className="text-sm font-bold text-slate-900 mb-2">Description</h3>
-              <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-                {selectedNote.description}
-              </div>
+              <h4 className="font-bold text-[var(--color-text-primary)] mb-1">Description</h4>
+              <p className="text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed">{selectedNote.description}</p>
             </div>
 
             {selectedNote.tags && selectedNote.tags.length > 0 && (
               <div>
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tags</h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedNote.tags.map(t => <span key={t} className="bg-slate-100 px-2 py-0.5 rounded text-xs text-slate-700 border border-slate-200">{t}</span>)}
+                <h4 className="font-bold text-[var(--color-text-primary)] mb-1">Tags</h4>
+                <div className="flex flex-wrap gap-1">
+                  {selectedNote.tags.map(t => <span key={t} className="bg-[var(--color-bg-subtle)] px-2 py-0.5 rounded text-[11px] text-[var(--color-text-secondary)] border border-[var(--color-border)]">#{t}</span>)}
                 </div>
               </div>
             )}
 
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-100 text-red-600 rounded">
-                  <FileText className="w-6 h-6" />
+            <div className="bg-[var(--color-bg-subtle)] border border-[var(--color-border)] rounded-[var(--radius-lg)] p-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-red-50 text-red-600 border border-red-200 rounded-[var(--radius-md)]">
+                  <FileText className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="font-semibold text-sm text-slate-900">PDF Document</p>
-                  <p className="text-xs text-slate-500">{selectedNote.file_size}</p>
+                  <p className="font-bold text-[var(--color-text-primary)]">PDF Document</p>
+                  <p className="text-[11px] text-[var(--color-text-tertiary)]">{selectedNote.file_size}</p>
                 </div>
               </div>
-              <Button onClick={() => downloadFile(selectedNote)} className="bg-white border-slate-200 text-slate-700 hover:bg-slate-50">
-                <Download className="w-4 h-4 mr-2" /> Download
+              <Button size="sm" variant="outline" onClick={() => downloadFile(selectedNote)} className="text-xs">
+                <Download className="w-3.5 h-3.5 mr-1" /> Download
               </Button>
             </div>
             
-            <div className="flex justify-end pt-4 border-t border-slate-100">
-              <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>Close</Button>
+            <div className="flex justify-end pt-4 border-t border-[var(--color-border)]">
+              <Button variant="outline" size="sm" onClick={() => setIsViewModalOpen(false)}>Close</Button>
             </div>
           </div>
         )}
@@ -689,20 +685,21 @@ export default function AdminNotesPage() {
       {/* ACTIVATE / DEACTIVATE MODAL */}
       <Modal isOpen={isStatusModalOpen} onClose={() => !isProcessing && setIsStatusModalOpen(false)} title="Confirm Status Change">
         {selectedNote && (
-          <div className="space-y-4">
-            <p className="text-slate-600">
+          <div className="space-y-4 text-xs">
+            <p className="text-[var(--color-text-secondary)] leading-relaxed">
               Are you sure you want to <strong>{selectedNote.status === 'Active' ? 'deactivate' : 'activate'}</strong> this note?
             </p>
             {selectedNote.status === 'Active' && (
-              <div className="bg-amber-50 border-l-4 border-amber-500 p-3 text-sm text-amber-800">
-                Deactivating this note will instantly remove it from the Student Portal.
+              <div className="bg-amber-50 border border-amber-200 p-3 rounded-[var(--radius-lg)] text-amber-900 font-medium">
+                Deactivating this note will instantly hide it from student study resource searches.
               </div>
             )}
-            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="outline" onClick={() => setIsStatusModalOpen(false)} disabled={isProcessing}>Cancel</Button>
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-[var(--color-border)]">
+              <Button variant="outline" size="sm" onClick={() => setIsStatusModalOpen(false)} disabled={isProcessing}>Cancel</Button>
               <Button 
                 variant="primary" 
-                className={selectedNote.status === 'Active' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-green-600 hover:bg-green-700'}
+                size="sm"
+                className={selectedNote.status === 'Active' ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}
                 onClick={handleToggleStatus} 
                 disabled={isProcessing}
               >
@@ -714,22 +711,23 @@ export default function AdminNotesPage() {
       </Modal>
 
       {/* DELETE MODAL */}
-      <Modal isOpen={isDeleteModalOpen} onClose={() => !isProcessing && setIsDeleteModalOpen(false)} title="Delete Note">
+      <Modal isOpen={isDeleteModalOpen} onClose={() => !isProcessing && setIsDeleteModalOpen(false)} title="Delete Study Note">
         {selectedNote && (
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 bg-red-50 text-red-800 p-4 rounded-lg border border-red-100">
+          <div className="space-y-4 text-xs">
+            <div className="flex items-start gap-3 bg-red-50 text-red-900 p-4 rounded-[var(--radius-lg)] border border-red-200">
               <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold">Warning: This action is permanent.</p>
-                <p className="text-sm mt-1">
-                  Are you sure you want to completely delete the note <strong>"{selectedNote.title}"</strong>? This will permanently erase the database record and delete the associated PDF file from storage.
+                <p className="font-bold text-red-950">Warning: This action cannot be undone.</p>
+                <p className="mt-1 leading-relaxed text-red-900">
+                  Are you sure you want to delete <strong>"{selectedNote.title}"</strong>? The PDF file will also be permanently purged from cloud storage.
                 </p>
               </div>
             </div>
-            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)} disabled={isProcessing}>Cancel</Button>
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-[var(--color-border)]">
+              <Button variant="outline" size="sm" onClick={() => setIsDeleteModalOpen(false)} disabled={isProcessing}>Cancel</Button>
               <Button 
                 variant="primary" 
+                size="sm"
                 className="bg-red-600 hover:bg-red-700 border-transparent text-white"
                 onClick={handleDelete} 
                 disabled={isProcessing}
@@ -742,22 +740,5 @@ export default function AdminNotesPage() {
       </Modal>
 
     </AdminLayout>
-  );
-}
-
-function Input({ label, name, value, onChange, error, placeholder }: any) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
-      <input
-        type="text"
-        name={name}
-        value={value || ''}
-        onChange={onChange}
-        placeholder={placeholder}
-        className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] ${error ? 'border-red-300' : 'border-slate-300'}`}
-      />
-      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-    </div>
   );
 }

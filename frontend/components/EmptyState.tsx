@@ -10,21 +10,27 @@ export interface EmptyStateProps {
 
 export function EmptyState({ title, description, icon, action, className = '' }: EmptyStateProps) {
   return (
-    <div className={`flex flex-col items-center justify-center rounded-[var(--radius-xl)] border border-dashed border-slate-300 bg-slate-50 p-12 text-center animate-in fade-in slide-in-from-bottom-2 ${className}`}>
+    <div
+      className={`
+        flex flex-col items-center justify-center text-center
+        rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border)]
+        bg-[var(--color-bg-subtle)] p-12
+        animate-in fade-in duration-300
+        ${className}
+      `}
+    >
       {icon && (
-        <div className="mb-4 text-slate-400 bg-white p-4 rounded-full shadow-sm border border-slate-100">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-bg-muted)] text-[var(--color-text-tertiary)]">
           {icon}
         </div>
       )}
-      <h3 className="mb-1.5 text-lg font-semibold text-slate-900">{title}</h3>
+      <h3 className="mb-1 text-sm font-semibold text-[var(--color-text-primary)]">{title}</h3>
       {description && (
-        <p className="mb-5 text-sm text-slate-500 max-w-sm leading-relaxed">{description}</p>
+        <p className="mb-5 max-w-xs text-sm text-[var(--color-text-secondary)] leading-relaxed">
+          {description}
+        </p>
       )}
-      {action && (
-        <div className="mt-2">
-          {action}
-        </div>
-      )}
+      {action && <div className="mt-2">{action}</div>}
     </div>
   );
 }

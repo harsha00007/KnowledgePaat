@@ -13,6 +13,7 @@ import {
   MessageSquare, 
   BookOpen, 
   CreditCard,
+  ShieldCheck,
   Search
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
@@ -24,138 +25,137 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const navItems = [
-    { name: 'Dashboard', href: '/admin/dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
-    { name: 'Students', href: '/admin/students', icon: <Users className="w-5 h-5" /> },
-    { name: 'Jobs', href: '/admin/jobs', icon: <Briefcase className="w-5 h-5" /> },
-    { name: 'Interview Questions', href: '/admin/interview-questions', icon: <MessageSquare className="w-5 h-5" /> },
-    { name: 'Notes', href: '/admin/notes', icon: <BookOpen className="w-5 h-5" /> },
-    { name: 'Subscriptions', href: '/admin/subscriptions', icon: <CreditCard className="w-5 h-5" /> },
+    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    { name: 'Students', href: '/admin/students', icon: Users },
+    { name: 'Jobs', href: '/admin/jobs', icon: Briefcase },
+    { name: 'Interview Questions', href: '/admin/interview-questions', icon: MessageSquare },
+    { name: 'Notes', href: '/admin/notes', icon: BookOpen },
+    { name: 'Subscriptions', href: '/admin/subscriptions', icon: CreditCard },
   ];
 
-  const NavLinks = () => (
-    <>
-      {navItems.map(item => {
-        const isActive = pathname === item.href;
-        return (
-          <Link 
-            key={item.name} 
-            href={item.href} 
-            onClick={() => setIsMobileMenuOpen(false)}
-            className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-[var(--radius-md)] transition-all ${
-              isActive 
-                ? 'bg-[var(--color-brand-600)] text-white shadow-sm' 
-                : 'text-slate-400 hover:bg-white/10 hover:text-white'
-            }`}
-          >
-            {item.icon}
-            {item.name}
-          </Link>
-        );
-      })}
-    </>
-  );
-  
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();
   };
 
+  const activeItem = navItems.find(item => item.href === pathname);
+
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-900 font-sans">
+    <div className="min-h-screen flex bg-[var(--color-bg-subtle)] text-[var(--color-text-primary)] font-sans antialiased">
       
-      {/* MOBILE OVERLAY */}
+      {/* MOBILE BACKDROP OVERLAY */}
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-200"
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 lg:hidden animate-in fade-in duration-200"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
       {/* SIDEBAR */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-[var(--color-brand-950)] flex flex-col transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-[var(--color-border)] flex flex-col transform transition-transform duration-200 ease-out lg:relative lg:translate-x-0
+        ${isMobileMenuOpen ? 'translate-x-0 shadow-lg' : '-translate-x-full'}
       `}>
-        <div className="h-16 flex items-center justify-between px-6 border-b border-white/10">
-          <Link href="/admin/dashboard" className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-            <span className="bg-[var(--color-brand-500)] text-white p-1.5 rounded-lg shadow-sm">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </span>
-            CareerLaunch
+        {/* BRAND LOGO */}
+        <div className="h-16 flex items-center justify-between px-6 border-b border-[var(--color-border)]">
+          <Link href="/admin/dashboard" className="flex items-center gap-2.5 font-extrabold text-base tracking-tight text-[var(--color-text-primary)]">
+            <div className="h-8 w-8 rounded-[var(--radius-md)] bg-[var(--color-brand-600)] text-white flex items-center justify-center shadow-xs">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <span>GradZen<span className="text-[var(--color-brand-600)]">X</span></span>
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-200)] px-1.5 py-0.5 rounded">Admin</span>
           </Link>
-          <button className="lg:hidden text-slate-400 hover:text-white transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
-            <X className="w-6 h-6" />
+          <button 
+            className="lg:hidden p-1 rounded-md text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-subtle)]" 
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
           </button>
         </div>
         
-        <nav className="p-4 flex flex-col gap-1.5 flex-1 overflow-y-auto custom-scrollbar">
-          <NavLinks />
+        {/* NAVIGATION LINKS */}
+        <nav className="p-3 flex flex-col gap-1 flex-1 overflow-y-auto">
+          <div className="px-3 py-2 text-[11px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-wider">
+            Management
+          </div>
+          {navItems.map(item => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+            return (
+              <Link 
+                key={item.name} 
+                href={item.href} 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-[var(--radius-md)] transition-colors ${
+                  isActive 
+                    ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)] font-bold' 
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-subtle)]'
+                }`}
+              >
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[var(--color-brand-600)]' : 'text-[var(--color-text-tertiary)]'}`} />
+                <span>{item.name}</span>
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="p-4 border-t border-white/10">
+        {/* LOGOUT */}
+        <div className="p-3 border-t border-[var(--color-border)]">
           <button 
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-white/10 hover:text-white rounded-[var(--radius-md)] transition-all w-full"
+            className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-red-50 hover:text-[var(--color-error)] rounded-[var(--radius-md)] transition-colors w-full"
           >
-            <LogOut className="w-5 h-5" />
-            Logout
+            <LogOut className="w-4 h-4 text-[var(--color-text-tertiary)]" />
+            <span>Sign Out</span>
           </button>
         </div>
       </aside>
 
-      {/* MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[var(--color-bg)]">
+      {/* MAIN CONTENT WRAPPER */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         
-        {/* TOP HEADER */}
-        <header className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-4 sm:px-8 shrink-0 z-10 sticky top-0">
+        {/* TOPBAR HEADER */}
+        <header className="h-16 border-b border-[var(--color-border)] bg-white flex items-center justify-between px-4 sm:px-6 shrink-0 z-10 sticky top-0">
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button 
-              className="lg:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-[var(--radius-sm)] transition-colors"
+              className="lg:hidden p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-subtle)] rounded-[var(--radius-md)]"
               onClick={() => setIsMobileMenuOpen(true)}
+              aria-label="Open menu"
             >
-              <Menu className="w-6 h-6" />
+              <Menu className="w-5 h-5" />
             </button>
-            <h1 className="text-xl font-bold text-slate-900 hidden sm:block tracking-tight">
-              {navItems.find(item => item.href === pathname)?.name || 'Admin'}
-            </h1>
+            <div>
+              <h1 className="text-base font-bold text-[var(--color-text-primary)]">
+                {activeItem?.name || 'Admin Console'}
+              </h1>
+            </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            
-            {/* Search (UI Only) */}
-            <div className="relative hidden md:block w-64">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input 
-                type="text" 
-                placeholder="Search anything..." 
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[var(--color-brand-400)] focus:ring-2 focus:ring-[var(--color-brand-100)] rounded-[var(--radius-lg)] text-sm transition-all outline-none"
-              />
-            </div>
-
-            <div className="flex items-center gap-4 pl-6 border-l border-slate-200">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2.5 pl-3 border-l border-[var(--color-border)]">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-semibold text-slate-900 leading-none">Admin User</p>
-                <p className="text-xs text-slate-500 mt-1">admin@careerlaunch.com</p>
+                <p className="text-xs font-bold text-[var(--color-text-primary)] leading-tight">Admin Console</p>
+                <p className="text-[11px] text-[var(--color-text-tertiary)]">Super Admin</p>
               </div>
-              <div className="h-10 w-10 rounded-full bg-[var(--color-brand-100)] text-[var(--color-brand-700)] flex items-center justify-center font-bold border border-[var(--color-brand-200)] shadow-sm">
-                A
+              <div className="h-8 w-8 rounded-full bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-200)] flex items-center justify-center text-xs font-bold shrink-0">
+                AD
               </div>
             </div>
           </div>
 
         </header>
 
-        {/* PAGE CONTENT */}
-        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
-          <div className="mx-auto max-w-7xl animate-in fade-in duration-300">
+        {/* MAIN BODY */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-[var(--color-bg-subtle)]">
+          <div className="mx-auto max-w-7xl">
             {children}
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
+
     </div>
   );
 }

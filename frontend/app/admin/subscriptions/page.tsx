@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { AdminLayout } from '@/layouts/AdminLayout';
-import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
 import { EmptyState } from '@/components/EmptyState';
@@ -10,14 +9,15 @@ import {
   Search, 
   Filter, 
   Eye, 
-  Edit,
+  Edit, 
   Power, 
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
   Ban,
-  Clock
+  Clock,
+  Calendar
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
@@ -161,7 +161,7 @@ export default function AdminSubscriptionsPage() {
 
   const handleExtendSave = async () => {
     if (!selectedSub) return;
-    if (!extendDate) return alert("Please select an expiry date.");
+    if (!extendDate) return alert("Please choose an expiry date.");
     
     setIsProcessing(true);
     try {
@@ -199,33 +199,33 @@ export default function AdminSubscriptionsPage() {
 
   return (
     <AdminLayout>
-      <div className="max-w-7xl mx-auto space-y-6 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="max-w-7xl mx-auto space-y-6 pb-12">
         
         {/* HEADER */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Subscription Management</h1>
-            <p className="text-sm text-slate-500 mt-1">Manage student subscription plans and access.</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Subscription Management</h1>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 font-medium">
+            Monitor student subscription plans, adjust access tiers, and renew memberships.
+          </p>
         </div>
 
-        {/* SEARCH & FILTERS */}
-        <Card className="p-4 border-slate-200 shadow-sm flex flex-col lg:flex-row gap-4">
+        {/* SEARCH & FILTERS BAR */}
+        <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-xs)] flex flex-col lg:flex-row gap-3 items-center">
           <div className="relative w-full lg:flex-1">
-            <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[var(--color-text-tertiary)] absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
-              placeholder="Search by Student Name, Email or Plan..." 
+              placeholder="Search by Student Name, Email, or Plan..." 
               value={searchQuery}
               onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] text-sm"
+              className="w-full pl-9 pr-3 py-2 border border-[var(--color-border)] bg-white rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] shadow-xs transition-colors"
             />
           </div>
 
-          <div className="w-full lg:w-auto grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="w-full lg:w-auto grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             <select 
               value={planFilter} onChange={e => { setPlanFilter(e.target.value); setCurrentPage(1); }}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
             >
               <option value="">All Plans</option>
               <option value="Free">Free</option>
@@ -234,7 +234,7 @@ export default function AdminSubscriptionsPage() {
             
             <select 
               value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
             >
               <option value="">All Statuses</option>
               <option value="Active">Active</option>
@@ -242,23 +242,24 @@ export default function AdminSubscriptionsPage() {
               <option value="Cancelled">Cancelled</option>
             </select>
 
-            <Button variant="outline" onClick={resetFilters} className="text-sm h-full w-full">
-              <Filter className="w-4 h-4 mr-2" /> Reset
+            <Button variant="outline" size="sm" onClick={resetFilters} className="text-xs h-full justify-center">
+              <Filter className="w-3.5 h-3.5 mr-1" /> Reset
             </Button>
           </div>
-        </Card>
+        </div>
 
-        {/* DATA TABLE */}
-        <Card className="border-slate-200 shadow-sm overflow-hidden bg-white">
+        {/* DATA TABLE CONTAINER */}
+        <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white shadow-[var(--shadow-xs)] overflow-hidden">
           {isFetching ? (
             <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-[var(--color-brand-500)] border-t-transparent"></div>
             </div>
           ) : filteredSubs.length === 0 ? (
             <div className="p-8">
               <EmptyState 
                 title="No subscriptions found."
-                description="Adjust your search filters."
+                description="Try clearing your search query or adjusting your filters."
+                action={<Button variant="outline" size="sm" onClick={resetFilters}>Clear Filters</Button>}
               />
             </div>
           ) : (
@@ -267,56 +268,58 @@ export default function AdminSubscriptionsPage() {
               <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                      <th className="px-6 py-4">Student</th>
-                      <th className="px-6 py-4">Plan</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4">End Date</th>
-                      <th className="px-6 py-4">Updated Date</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
+                    <tr className="bg-[var(--color-bg-subtle)] border-b border-[var(--color-border)] text-[11px] uppercase tracking-wider text-[var(--color-text-tertiary)] font-bold">
+                      <th className="px-5 py-3.5">Student</th>
+                      <th className="px-5 py-3.5">Plan Tier</th>
+                      <th className="px-5 py-3.5">Status</th>
+                      <th className="px-5 py-3.5">Valid Until</th>
+                      <th className="px-5 py-3.5">Updated</th>
+                      <th className="px-5 py-3.5 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-[var(--color-border)] text-xs">
                     {paginatedSubs.map(sub => (
-                      <tr key={sub.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-4">
-                          <p className="text-sm font-bold text-slate-900">{sub.profiles?.full_name}</p>
-                          <p className="text-xs text-slate-500">{sub.profiles?.email}</p>
+                      <tr key={sub.id} className="hover:bg-[var(--color-bg-subtle)]/70 transition-colors">
+                        <td className="px-5 py-3.5">
+                          <p className="font-bold text-[var(--color-text-primary)]">{sub.profiles?.full_name || 'Anonymous Student'}</p>
+                          <p className="text-[11px] text-[var(--color-text-tertiary)]">{sub.profiles?.email}</p>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                            sub.plan === 'Premium' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-700'
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                            sub.plan === 'Premium' 
+                              ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border-[var(--color-brand-200)]' 
+                              : 'bg-gray-100 text-gray-700 border-gray-200'
                           }`}>
                             {sub.plan}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className={`flex items-center gap-1.5 text-xs font-medium ${
-                            sub.status === 'Active' ? 'text-green-600' : 
-                            sub.status === 'Expired' ? 'text-orange-600' : 'text-red-600'
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-flex items-center gap-1 text-xs font-bold ${
+                            sub.status === 'Active' ? 'text-emerald-700' : 
+                            sub.status === 'Expired' ? 'text-amber-700' : 'text-red-700'
                           }`}>
-                            {sub.status === 'Active' ? <ShieldCheck className="w-4 h-4"/> : 
-                             sub.status === 'Expired' ? <Clock className="w-4 h-4"/> : <Ban className="w-4 h-4"/>}
+                            {sub.status === 'Active' ? <ShieldCheck className="w-3.5 h-3.5 text-emerald-600"/> : 
+                             sub.status === 'Expired' ? <Clock className="w-3.5 h-3.5 text-amber-600"/> : <Ban className="w-3.5 h-3.5 text-red-600"/>}
                             {sub.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-700">
-                          {sub.end_date ? new Date(sub.end_date).toLocaleDateString() : 'Lifetime'}
+                        <td className="px-5 py-3.5 font-medium text-[var(--color-text-secondary)]">
+                          {sub.end_date ? new Date(sub.end_date).toLocaleDateString() : 'Lifetime Access'}
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-500">
+                        <td className="px-5 py-3.5 text-[var(--color-text-tertiary)] font-medium">
                           {new Date(sub.updated_at || sub.created_at).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 text-right space-x-1 whitespace-nowrap">
-                          <button onClick={() => { setSelectedSub(sub); setIsViewModalOpen(true); }} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="View">
+                        <td className="px-5 py-3.5 text-right space-x-1 whitespace-nowrap">
+                          <button onClick={() => { setSelectedSub(sub); setIsViewModalOpen(true); }} className="p-1.5 text-[var(--color-brand-600)] hover:bg-[var(--color-brand-50)] rounded transition-colors" title="View">
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button onClick={() => openEditModal(sub)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded" title="Edit">
+                          <button onClick={() => openEditModal(sub)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Edit Plan">
                             <Edit className="w-4 h-4" />
                           </button>
-                          <button onClick={() => openExtendModal(sub)} className="p-1.5 text-purple-600 hover:bg-purple-50 rounded" title="Extend Plan">
+                          <button onClick={() => openExtendModal(sub)} className="p-1.5 text-slate-700 hover:bg-slate-100 rounded transition-colors" title="Extend Duration">
                             <CalendarDays className="w-4 h-4" />
                           </button>
-                          <button onClick={() => { setSelectedSub(sub); setIsStatusModalOpen(true); }} className={`p-1.5 rounded ${sub.status === 'Active' ? 'text-amber-600 hover:bg-amber-50' : 'text-green-600 hover:bg-green-50'}`} title={sub.status === 'Active' ? "Deactivate" : "Activate"}>
+                          <button onClick={() => { setSelectedSub(sub); setIsStatusModalOpen(true); }} className={`p-1.5 rounded transition-colors ${sub.status === 'Active' ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`} title={sub.status === 'Active' ? "Deactivate" : "Activate"}>
                             <Power className="w-4 h-4" />
                           </button>
                         </td>
@@ -326,124 +329,117 @@ export default function AdminSubscriptionsPage() {
                 </table>
               </div>
 
-              {/* Mobile Cards */}
-              <div className="lg:hidden divide-y divide-slate-100">
+              {/* Mobile Card List */}
+              <div className="lg:hidden divide-y divide-[var(--color-border)]">
                 {paginatedSubs.map(sub => (
-                  <div key={sub.id} className="p-4 flex flex-col gap-3">
+                  <div key={sub.id} className="p-4 space-y-2.5">
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className="text-sm font-bold text-slate-900">{sub.profiles?.full_name}</p>
-                        <p className="text-xs text-slate-500">{sub.profiles?.email}</p>
+                        <p className="text-xs font-bold text-[var(--color-text-primary)]">{sub.profiles?.full_name || 'Anonymous Student'}</p>
+                        <p className="text-[11px] text-[var(--color-text-tertiary)]">{sub.profiles?.email}</p>
                       </div>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase shrink-0 ${
-                        sub.plan === 'Premium' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-700'
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                        sub.plan === 'Premium' ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border-[var(--color-brand-200)]' : 'bg-gray-100 text-gray-700 border-gray-200'
                       }`}>
                         {sub.plan}
                       </span>
                     </div>
                     
-                    <div className="flex items-center justify-between text-xs text-slate-600 mt-1">
-                      <span className={`font-medium flex items-center gap-1 ${
-                        sub.status === 'Active' ? 'text-green-600' : 
-                        sub.status === 'Expired' ? 'text-orange-600' : 'text-red-600'
-                      }`}>
-                        {sub.status === 'Active' ? <ShieldCheck className="w-3.5 h-3.5"/> : 
-                         sub.status === 'Expired' ? <Clock className="w-3.5 h-3.5"/> : <Ban className="w-3.5 h-3.5"/>}
-                        {sub.status}
-                      </span>
-                      <span>Ends: {sub.end_date ? new Date(sub.end_date).toLocaleDateString() : 'Lifetime'}</span>
+                    <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
+                      <span className="font-semibold">Status: {sub.status}</span>
+                      <span className="text-[11px] text-[var(--color-text-tertiary)]">Ends: {sub.end_date ? new Date(sub.end_date).toLocaleDateString() : 'Lifetime'}</span>
                     </div>
 
-                    <div className="flex justify-end gap-2 border-t border-slate-100 pt-3 mt-1">
-                      <Button variant="outline" className="text-xs py-1 px-2 h-auto" onClick={() => { setSelectedSub(sub); setIsViewModalOpen(true); }}><Eye className="w-3.5 h-3.5" /></Button>
-                      <Button variant="outline" className="text-xs py-1 px-2 h-auto" onClick={() => openEditModal(sub)}><Edit className="w-3.5 h-3.5" /></Button>
-                      <Button variant="outline" className="text-xs py-1 px-2 h-auto text-purple-600" onClick={() => openExtendModal(sub)}><CalendarDays className="w-3.5 h-3.5" /></Button>
-                      <Button variant="outline" className="text-xs py-1 px-2 h-auto" onClick={() => { setSelectedSub(sub); setIsStatusModalOpen(true); }}><Power className="w-3.5 h-3.5" /></Button>
+                    <div className="flex justify-end gap-1.5 pt-2 border-t border-[var(--color-border)]">
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => { setSelectedSub(sub); setIsViewModalOpen(true); }}>View</Button>
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => openEditModal(sub)}>Edit</Button>
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => openExtendModal(sub)}>Extend</Button>
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => { setSelectedSub(sub); setIsStatusModalOpen(true); }}>{sub.status === 'Active' ? 'Deactivate' : 'Activate'}</Button>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Pagination */}
-              <div className="p-4 border-t border-slate-200 flex items-center justify-between bg-slate-50/50">
-                <span className="text-sm text-slate-500">
-                  Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredSubs.length)} of {filteredSubs.length}
+              {/* Pagination Bar */}
+              <div className="p-3.5 border-t border-[var(--color-border)] flex items-center justify-between bg-[var(--color-bg-subtle)] text-xs">
+                <span className="font-medium text-[var(--color-text-tertiary)]">
+                  Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredSubs.length)} of {filteredSubs.length} subscriptions
                 </span>
-                <div className="flex gap-2">
-                  <Button variant="outline" className="p-2" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}><ChevronLeft className="w-4 h-4" /></Button>
-                  <Button variant="outline" className="p-2" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(p => p + 1)}><ChevronRight className="w-4 h-4" /></Button>
+                <div className="flex gap-1.5">
+                  <Button variant="outline" size="sm" className="p-1.5 h-8 w-8 justify-center" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}><ChevronLeft className="w-4 h-4" /></Button>
+                  <Button variant="outline" size="sm" className="p-1.5 h-8 w-8 justify-center" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(p => p + 1)}><ChevronRight className="w-4 h-4" /></Button>
                 </div>
               </div>
             </>
           )}
-        </Card>
+        </div>
 
       </div>
 
       {/* VIEW MODAL */}
-      <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Subscription Details" className="max-w-md">
+      <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Subscription Overview" className="max-w-md">
         {selectedSub && (
-          <div className="space-y-4">
-            <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg">
-                {selectedSub.profiles?.full_name?.split(' ')?.[0]?.[0] || 'U'}{selectedSub.profiles?.full_name?.split(' ')?.[1]?.[0] || ''}
+          <div className="space-y-4 text-xs">
+            <div className="bg-[var(--color-bg-subtle)] p-3.5 rounded-[var(--radius-lg)] border border-[var(--color-border)] flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-200)] flex items-center justify-center font-bold text-sm">
+                {selectedSub.profiles?.full_name?.charAt(0) || 'S'}
               </div>
-              <div>
-                <h3 className="font-bold text-slate-900">{selectedSub.profiles?.full_name}</h3>
-                <p className="text-sm text-slate-500">{selectedSub.profiles?.email}</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 bg-white border border-slate-200 rounded-lg">
-                <p className="text-xs text-slate-500 uppercase font-semibold mb-1">Plan</p>
-                <p className={`font-bold text-sm ${selectedSub.plan === 'Premium' ? 'text-indigo-600' : 'text-slate-700'}`}>{selectedSub.plan}</p>
-              </div>
-              <div className="p-3 bg-white border border-slate-200 rounded-lg">
-                <p className="text-xs text-slate-500 uppercase font-semibold mb-1">Status</p>
-                <p className={`font-bold text-sm ${selectedSub.status === 'Active' ? 'text-green-600' : selectedSub.status === 'Expired' ? 'text-orange-600' : 'text-red-600'}`}>{selectedSub.status}</p>
+              <div className="min-w-0">
+                <h3 className="font-bold text-[var(--color-text-primary)] truncate">{selectedSub.profiles?.full_name || 'Anonymous Student'}</h3>
+                <p className="text-[11px] text-[var(--color-text-secondary)] truncate">{selectedSub.profiles?.email}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 bg-white border border-slate-200 rounded-lg">
-                <p className="text-xs text-slate-500 uppercase font-semibold mb-1">Start Date</p>
-                <p className="font-medium text-sm text-slate-900">{new Date(selectedSub.start_date).toLocaleDateString()}</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-white border border-[var(--color-border)] rounded-[var(--radius-lg)]">
+                <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase font-bold tracking-wider mb-0.5">Plan Tier</p>
+                <p className={`font-bold ${selectedSub.plan === 'Premium' ? 'text-[var(--color-brand-600)]' : 'text-[var(--color-text-primary)]'}`}>{selectedSub.plan}</p>
               </div>
-              <div className="p-3 bg-white border border-slate-200 rounded-lg">
-                <p className="text-xs text-slate-500 uppercase font-semibold mb-1">End Date</p>
-                <p className="font-medium text-sm text-slate-900">{selectedSub.end_date ? new Date(selectedSub.end_date).toLocaleDateString() : 'Lifetime'}</p>
+              <div className="p-3 bg-white border border-[var(--color-border)] rounded-[var(--radius-lg)]">
+                <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase font-bold tracking-wider mb-0.5">Status</p>
+                <p className={`font-bold ${selectedSub.status === 'Active' ? 'text-emerald-700' : selectedSub.status === 'Expired' ? 'text-amber-700' : 'text-red-700'}`}>{selectedSub.status}</p>
               </div>
             </div>
 
-            <div className="pt-4 flex justify-end border-t border-slate-100">
-              <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>Close</Button>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-white border border-[var(--color-border)] rounded-[var(--radius-lg)]">
+                <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase font-bold tracking-wider mb-0.5">Start Date</p>
+                <p className="font-semibold text-[var(--color-text-primary)]">{new Date(selectedSub.start_date).toLocaleDateString()}</p>
+              </div>
+              <div className="p-3 bg-white border border-[var(--color-border)] rounded-[var(--radius-lg)]">
+                <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase font-bold tracking-wider mb-0.5">End Date</p>
+                <p className="font-semibold text-[var(--color-text-primary)]">{selectedSub.end_date ? new Date(selectedSub.end_date).toLocaleDateString() : 'Lifetime'}</p>
+              </div>
+            </div>
+
+            <div className="pt-3 flex justify-end border-t border-[var(--color-border)]">
+              <Button variant="outline" size="sm" onClick={() => setIsViewModalOpen(false)}>Close</Button>
             </div>
           </div>
         )}
       </Modal>
 
       {/* EDIT MODAL */}
-      <Modal isOpen={isEditModalOpen} onClose={() => !isProcessing && setIsEditModalOpen(false)} title="Edit Subscription">
+      <Modal isOpen={isEditModalOpen} onClose={() => !isProcessing && setIsEditModalOpen(false)} title="Edit Subscription Tier">
         {selectedSub && (
-          <div className="space-y-4">
+          <div className="space-y-4 text-xs">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Subscription Plan</label>
+              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Subscription Plan</label>
               <select 
                 value={editData.plan} 
                 onChange={(e) => setEditData({...editData, plan: e.target.value})}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none"
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none"
               >
                 <option value="Free">Free</option>
                 <option value="Premium">Premium</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Status</label>
               <select 
                 value={editData.status} 
                 onChange={(e) => setEditData({...editData, status: e.target.value})}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none"
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none"
               >
                 <option value="Active">Active</option>
                 <option value="Expired">Expired</option>
@@ -451,19 +447,19 @@ export default function AdminSubscriptionsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Expiry Date (Optional)</label>
+              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Expiry Date (Optional)</label>
               <input 
                 type="date"
                 value={editData.end_date}
                 onChange={(e) => setEditData({...editData, end_date: e.target.value})}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none"
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none"
               />
-              <p className="text-xs text-slate-500 mt-1">Leave blank for lifetime access.</p>
+              <p className="text-[11px] text-[var(--color-text-tertiary)] mt-1">Leave empty for lifetime access.</p>
             </div>
             
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
-              <Button variant="outline" onClick={() => setIsEditModalOpen(false)} disabled={isProcessing}>Cancel</Button>
-              <Button variant="primary" onClick={handleEditSave} disabled={isProcessing}>
+            <div className="flex justify-end gap-2.5 pt-4 border-t border-[var(--color-border)]">
+              <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(false)} disabled={isProcessing}>Cancel</Button>
+              <Button variant="primary" size="sm" onClick={handleEditSave} disabled={isProcessing}>
                 {isProcessing ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
@@ -472,49 +468,50 @@ export default function AdminSubscriptionsPage() {
       </Modal>
 
       {/* EXTEND MODAL */}
-      <Modal isOpen={isExtendModalOpen} onClose={() => !isProcessing && setIsExtendModalOpen(false)} title="Extend Subscription">
+      <Modal isOpen={isExtendModalOpen} onClose={() => !isProcessing && setIsExtendModalOpen(false)} title="Extend Membership Duration">
         {selectedSub && (
-          <div className="space-y-4">
-            <p className="text-sm text-slate-600">
-              Extend the subscription plan for <strong>{selectedSub.profiles?.full_name}</strong>.
+          <div className="space-y-4 text-xs">
+            <p className="text-[var(--color-text-secondary)] leading-relaxed">
+              Extend access for student <strong className="text-[var(--color-text-primary)]">{selectedSub.profiles?.full_name || selectedSub.profiles?.email}</strong>.
             </p>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">New Expiry Date</label>
+              <label className="block font-bold text-[var(--color-text-primary)] mb-1">New Expiry Date *</label>
               <input 
                 type="date"
                 value={extendDate}
                 onChange={(e) => setExtendDate(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none"
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none"
               />
             </div>
             
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
-              <Button variant="outline" onClick={() => setIsExtendModalOpen(false)} disabled={isProcessing}>Cancel</Button>
-              <Button variant="primary" className="bg-purple-600 hover:bg-purple-700" onClick={handleExtendSave} disabled={isProcessing}>
-                {isProcessing ? 'Extending...' : 'Extend Plan'}
+            <div className="flex justify-end gap-2.5 pt-4 border-t border-[var(--color-border)]">
+              <Button variant="outline" size="sm" onClick={() => setIsExtendModalOpen(false)} disabled={isProcessing}>Cancel</Button>
+              <Button variant="primary" size="sm" onClick={handleExtendSave} disabled={isProcessing}>
+                {isProcessing ? 'Extending...' : 'Extend Duration'}
               </Button>
             </div>
           </div>
         )}
       </Modal>
 
-      {/* ACTIVATE/DEACTIVATE MODAL */}
-      <Modal isOpen={isStatusModalOpen} onClose={() => !isProcessing && setIsStatusModalOpen(false)} title="Confirm Action">
+      {/* ACTIVATE / DEACTIVATE MODAL */}
+      <Modal isOpen={isStatusModalOpen} onClose={() => !isProcessing && setIsStatusModalOpen(false)} title="Confirm Subscription Change">
         {selectedSub && (
-          <div className="space-y-4">
-            <p className="text-slate-600">
-              Are you sure you want to <strong>{selectedSub.status === 'Active' ? 'deactivate (cancel)' : 'activate'}</strong> this subscription for {selectedSub.profiles?.full_name}?
+          <div className="space-y-4 text-xs">
+            <p className="text-[var(--color-text-secondary)] leading-relaxed">
+              Are you sure you want to <strong>{selectedSub.status === 'Active' ? 'cancel / deactivate' : 'activate'}</strong> the subscription for <span className="font-bold text-[var(--color-text-primary)]">{selectedSub.profiles?.full_name || selectedSub.profiles?.email}</span>?
             </p>
             {selectedSub.plan === 'Premium' && selectedSub.status === 'Active' && (
-              <div className="bg-amber-50 border-l-4 border-amber-500 p-3 text-sm text-amber-800">
-                Cancelling this subscription will immediately revoke the student's access to Premium content.
+              <div className="bg-amber-50 border border-amber-200 p-3 rounded-[var(--radius-lg)] text-amber-900 font-medium leading-relaxed">
+                Cancelling this subscription will immediately revoke the student's Premium interview prep access.
               </div>
             )}
-            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="outline" onClick={() => setIsStatusModalOpen(false)} disabled={isProcessing}>Close</Button>
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-[var(--color-border)]">
+              <Button variant="outline" size="sm" onClick={() => setIsStatusModalOpen(false)} disabled={isProcessing}>Cancel</Button>
               <Button 
                 variant="primary" 
-                className={selectedSub.status === 'Active' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-green-600 hover:bg-green-700'}
+                size="sm"
+                className={selectedSub.status === 'Active' ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}
                 onClick={handleToggleStatus} 
                 disabled={isProcessing}
               >

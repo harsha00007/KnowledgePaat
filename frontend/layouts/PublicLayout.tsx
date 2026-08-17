@@ -3,22 +3,56 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { createClient } from '@/utils/supabase/client';
 
+const NAV_LINKS = [
+  { href: '/',                      label: 'Home'           },
+  { href: '/jobs',                  label: 'Jobs'           },
+  { href: '/interview-preparation', label: 'Interview Prep' },
+  { href: '/notes',                 label: 'Notes'          },
+  { href: '/pricing',               label: 'Pricing'        },
+];
+
+const FOOTER_PRODUCT = [
+  { href: '/jobs',                  label: 'Find Jobs'           },
+  { href: '/interview-preparation', label: 'Interview Prep'      },
+  { href: '/notes',                 label: 'Study Notes'         },
+  { href: '/pricing',               label: 'Pricing'             },
+];
+
+const FOOTER_COMPANY = [
+  { href: '/about',   label: 'About Us'   },
+  { href: '/contact', label: 'Contact'    },
+];
+
+const FOOTER_ACCOUNT = [
+  { href: '/login',    label: 'Log In'   },
+  { href: '/register', label: 'Register' },
+];
+
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [isScrolled, setIsScrolled]             = useState(false);
+  const [user, setUser]         = useState<any>(null);
   const [userRole, setUserRole] = useState<string>('student');
+
   const pathname = usePathname();
-  const router = useRouter();
+  const router   = useRouter();
   const supabase = createClient();
 
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [pathname]);
+  // Close mobile menu on route change
+  useEffect(() => { setIsMobileMenuOpen(false); }, [pathname]);
 
+  // Shadow nav on scroll
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 4);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Auth state
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -29,13 +63,11 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           .select('role')
           .eq('id', user.id)
           .single();
-        if (profile?.role) {
-          setUserRole(profile.role);
-        }
+        if (profile?.role) setUserRole(profile.role);
       }
     };
     fetchUser();
-    
+
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
         setUser(null);
@@ -46,15 +78,11 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           .select('role')
           .eq('id', session.user.id)
           .single();
-        if (profile?.role) {
-          setUserRole(profile.role);
-        }
+        if (profile?.role) setUserRole(profile.role);
       }
     });
 
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
+    return () => { authListener.subscription.unsubscribe(); };
   }, [supabase]);
 
   const handleLogout = async () => {
@@ -63,157 +91,219 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
     router.refresh();
   };
 
-  const navLinks = [
-    { href: '/', label: 'Home' },
-    { href: '/jobs', label: 'Jobs' },
-    { href: '/interview-preparation', label: 'Interview Prep' },
-    { href: '/notes', label: 'Notes' },
-    { href: '/pricing', label: 'Pricing' },
-    { href: '/about', label: 'About' },
-    { href: '/contact', label: 'Contact' },
-  ];
+  const dashboardHref = userRole === 'admin' ? '/admin/dashboard' : '/student/dashboard';
 
   return (
-    <div className="min-h-screen flex flex-col bg-white font-sans text-slate-900 selection:bg-[var(--color-brand-100)] selection:text-[var(--color-brand-900)]">
-      <header className="sticky top-0 z-50 w-full border-b border-slate-100 bg-white/80 backdrop-blur-lg transition-all">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
-          <Link href="/" className="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--color-brand-600)] flex items-center gap-2.5">
-            <span className="bg-[var(--color-brand-600)] text-white p-1.5 rounded-[var(--radius-md)] shadow-sm">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </span>
-            CareerLaunch
-          </Link>
+    <div className="min-h-screen flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text-primary)] selection:bg-[var(--color-brand-100)] selection:text-[var(--color-brand-800)]">
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-8">
-            <ul className="flex items-center gap-7">
-              {navLinks.map((link) => (
-                <li key={link.href}>
-                  <Link 
-                    href={link.href} 
-                    className={`text-sm font-semibold transition-colors focus-ring rounded-sm ${
-                      pathname === link.href ? 'text-[var(--color-brand-600)]' : 'text-slate-600 hover:text-[var(--color-brand-600)]'
-                    }`}
+      {/* ── NAVBAR ────────────────────────────────────────────────────── */}
+      <header
+        className={`sticky top-0 z-50 w-full bg-white/95 backdrop-blur-sm border-b transition-all duration-200 ${
+          isScrolled
+            ? 'border-[var(--color-border)] shadow-[var(--shadow-sm)]'
+            : 'border-transparent'
+        }`}
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+
+            {/* Logo */}
+            <Link
+              href="/"
+              className="flex items-center gap-2 focus-ring rounded-[var(--radius-sm)]"
+              aria-label="GradZenX — go to home"
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-brand-500)] text-white shadow-sm">
+                <GraduationCap className="h-4 w-4" strokeWidth={2.5} />
+              </span>
+              <span className="text-lg font-bold tracking-tight text-[var(--color-text-primary)]">
+                GradZen<span className="text-[var(--color-brand-500)]">X</span>
+              </span>
+            </Link>
+
+            {/* Desktop nav links */}
+            <nav className="hidden lg:flex items-center gap-0.5" aria-label="Primary navigation">
+              {NAV_LINKS.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`
+                      px-4 py-2 text-sm font-medium rounded-[var(--radius-md)] transition-colors focus-ring
+                      ${isActive
+                        ? 'text-[var(--color-brand-500)] bg-[var(--color-brand-50)]'
+                        : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)]'
+                      }
+                    `}
                   >
                     {link.label}
                   </Link>
-                </li>
-              ))}
-            </ul>
-            <div className="flex items-center gap-3 border-l border-slate-200 pl-8">
+                );
+              })}
+            </nav>
+
+            {/* Desktop auth buttons */}
+            <div className="hidden lg:flex items-center gap-2">
               {user ? (
                 <>
-                  <Link href={userRole === 'admin' ? '/admin/dashboard' : '/student/dashboard'}>
-                    <Button variant="outline" size="sm" className="font-semibold">Dashboard</Button>
+                  <Link href={dashboardHref}>
+                    <Button variant="outline" size="sm">Dashboard</Button>
                   </Link>
-                  <Button variant="ghost" size="sm" onClick={handleLogout} className="font-semibold text-slate-600 hover:text-slate-900">Log out</Button>
+                  <Button variant="ghost" size="sm" onClick={handleLogout}>
+                    Log out
+                  </Button>
                 </>
               ) : (
                 <>
                   <Link href="/login">
-                    <Button variant="ghost" size="sm" className="font-semibold text-slate-600 hover:text-slate-900">Log in</Button>
+                    <Button variant="ghost" size="sm">Log in</Button>
                   </Link>
                   <Link href="/register">
-                    <Button variant="primary" size="sm" className="font-semibold">Register</Button>
+                    <Button variant="primary" size="sm">Get Started</Button>
                   </Link>
                 </>
               )}
             </div>
-          </nav>
 
-          {/* Mobile Menu Toggle */}
-          <button 
-            className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-[var(--radius-sm)] focus-ring transition-colors"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+            {/* Mobile menu toggle */}
+            <button
+              className="lg:hidden rounded-[var(--radius-md)] p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)] hover:text-[var(--color-text-primary)] transition-colors focus-ring"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle navigation menu"
+              aria-expanded={isMobileMenuOpen}
+            >
+              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile nav panel */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden absolute top-[calc(100%+1px)] left-0 w-full bg-white border-b border-slate-100 shadow-lg animate-in slide-in-from-top-2">
-            <nav className="flex flex-col px-4 pt-2 pb-6 space-y-1">
-              {navLinks.map((link) => (
-                <Link 
-                  key={link.href}
-                  href={link.href} 
-                  className={`px-4 py-3.5 rounded-[var(--radius-md)] text-base font-semibold ${
-                    pathname === link.href ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-600)]' : 'text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <div className="flex flex-col gap-3 pt-6 mt-4 border-t border-slate-100 px-2">
-                {user ? (
-                  <>
-                    <Link href={userRole === 'admin' ? '/admin/dashboard' : '/student/dashboard'} className="w-full">
-                      <Button variant="outline" className="w-full justify-center h-12 text-base">Dashboard</Button>
-                    </Link>
-                    <Button variant="ghost" className="w-full justify-center h-12 text-base" onClick={handleLogout}>Log out</Button>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/login" className="w-full">
-                      <Button variant="outline" className="w-full justify-center h-12 text-base">Log in</Button>
-                    </Link>
-                    <Link href="/register" className="w-full">
-                      <Button variant="primary" className="w-full justify-center h-12 text-base shadow-sm">Register</Button>
-                    </Link>
-                  </>
-                )}
-              </div>
+          <div className="lg:hidden border-t border-[var(--color-border)] bg-white animate-in slide-in-from-top-2 duration-150">
+            <nav className="mx-auto max-w-7xl px-4 sm:px-6 py-3 flex flex-col gap-0.5" aria-label="Mobile navigation">
+              {NAV_LINKS.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`
+                      px-4 py-2.5 text-sm font-medium rounded-[var(--radius-md)] transition-colors
+                      ${isActive
+                        ? 'text-[var(--color-brand-500)] bg-[var(--color-brand-50)]'
+                        : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)]'
+                      }
+                    `}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
             </nav>
+
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 py-4 border-t border-[var(--color-border)] flex flex-col gap-2.5">
+              {user ? (
+                <>
+                  <Link href={dashboardHref} className="w-full">
+                    <Button variant="outline" className="w-full justify-center">Dashboard</Button>
+                  </Link>
+                  <Button variant="ghost" className="w-full justify-center" onClick={handleLogout}>
+                    Log out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" className="w-full">
+                    <Button variant="outline" className="w-full justify-center">Log in</Button>
+                  </Link>
+                  <Link href="/register" className="w-full">
+                    <Button variant="primary" className="w-full justify-center">Get Started Free</Button>
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         )}
       </header>
 
-      <main className="flex-1 flex flex-col w-full animate-in fade-in duration-500">
+      {/* ── MAIN CONTENT ──────────────────────────────────────────────── */}
+      <main className="flex-1 flex flex-col w-full">
         {children}
       </main>
 
-      <footer className="bg-slate-50 border-t border-slate-200 mt-auto">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
-            <div className="md:col-span-1">
-              <Link href="/" className="text-xl font-extrabold tracking-tight text-[var(--color-brand-600)] mb-5 flex items-center gap-2">
-                <span className="bg-[var(--color-brand-600)] text-white p-1.5 rounded-[var(--radius-sm)] shadow-sm">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
+      {/* ── FOOTER ────────────────────────────────────────────────────── */}
+      <footer className="bg-[var(--color-dark)] text-[var(--color-text-inverse)] mt-auto">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14 lg:py-16">
+
+          {/* Top: Brand + Links */}
+          <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+
+            {/* Brand column */}
+            <div className="sm:col-span-2 lg:col-span-1">
+              <Link href="/" className="inline-flex items-center gap-2 focus-ring rounded-[var(--radius-sm)]" aria-label="GradZenX home">
+                <span className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-brand-500)] text-white">
+                  <GraduationCap className="h-4 w-4" strokeWidth={2.5} />
                 </span>
-                CareerLaunch
+                <span className="text-base font-bold tracking-tight text-white">
+                  GradZen<span className="text-[var(--color-brand-400)]">X</span>
+                </span>
               </Link>
-              <p className="text-sm text-slate-600 mt-4 leading-relaxed max-w-xs">
-                Empowering students to land their first job faster with verified opportunities and expert preparation resources.
+              <p className="mt-4 text-sm leading-relaxed text-white/60 max-w-xs">
+                Your career launchpad. Verified jobs, expert interview prep, and curated resources — built for students and fresh graduates.
               </p>
             </div>
-            
+
+            {/* Product links */}
             <div>
-              <h3 className="font-bold text-slate-900 mb-5 text-sm uppercase tracking-wider">Quick Links</h3>
-              <ul className="space-y-3.5">
-                <li><Link href="/jobs" className="text-sm font-medium text-slate-600 hover:text-[var(--color-brand-600)] transition-colors">Find Jobs</Link></li>
-                <li><Link href="/interview-preparation" className="text-sm font-medium text-slate-600 hover:text-[var(--color-brand-600)] transition-colors">Interview Prep</Link></li>
-                <li><Link href="/notes" className="text-sm font-medium text-slate-600 hover:text-[var(--color-brand-600)] transition-colors">Study Notes</Link></li>
-                <li><Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-[var(--color-brand-600)] transition-colors">Pricing</Link></li>
+              <p className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-4">Platform</p>
+              <ul className="space-y-3">
+                {FOOTER_PRODUCT.map(l => (
+                  <li key={l.href}>
+                    <Link href={l.href} className="text-sm text-white/60 hover:text-white transition-colors focus-ring rounded-sm">
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
-            
+
+            {/* Company links */}
             <div>
-              <h3 className="font-bold text-slate-900 mb-5 text-sm uppercase tracking-wider">Support</h3>
-              <ul className="space-y-3.5">
-                <li><Link href="/contact" className="text-sm font-medium text-slate-600 hover:text-[var(--color-brand-600)] transition-colors">Contact Us</Link></li>
-                <li><Link href="/about" className="text-sm font-medium text-slate-600 hover:text-[var(--color-brand-600)] transition-colors">About Us</Link></li>
+              <p className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-4">Company</p>
+              <ul className="space-y-3">
+                {FOOTER_COMPANY.map(l => (
+                  <li key={l.href}>
+                    <Link href={l.href} className="text-sm text-white/60 hover:text-white transition-colors focus-ring rounded-sm">
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Account links */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-4">Account</p>
+              <ul className="space-y-3">
+                {FOOTER_ACCOUNT.map(l => (
+                  <li key={l.href}>
+                    <Link href={l.href} className="text-sm text-white/60 hover:text-white transition-colors focus-ring rounded-sm">
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
-          <div className="border-t border-slate-200 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm font-medium text-slate-500">
-              © {new Date().getFullYear()} CareerLaunch. All rights reserved.
+
+          {/* Bottom bar */}
+          <div className="mt-12 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-white/40">
+              © {new Date().getFullYear()} GradZenX. All rights reserved.
+            </p>
+            <p className="text-xs text-white/30">
+              Helping students launch careers with confidence.
             </p>
           </div>
         </div>

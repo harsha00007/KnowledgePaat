@@ -2,26 +2,49 @@ import React from 'react';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
+  hint?: string;
   error?: string;
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className = '', label, error, ...props }, ref) => {
+  ({ className = '', label, hint, error, id, ...props }, ref) => {
+    const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
+
     return (
-      <div className="w-full">
+      <div className="w-full space-y-1.5">
         {label && (
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+          <label
+            htmlFor={inputId}
+            className="block text-sm font-medium text-[var(--color-text-primary)]"
+          >
             {label}
           </label>
         )}
         <input
+          id={inputId}
           ref={ref}
-          className={`flex h-11 w-full rounded-[var(--radius-lg)] border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-shadow ${
-            error ? 'border-red-500 focus:ring-red-500' : 'hover:border-slate-400'
-          } ${className}`}
+          className={`
+            flex h-10 w-full rounded-[var(--radius-md)] border bg-white px-3 py-2
+            text-sm text-[var(--color-text-primary)]
+            placeholder:text-[var(--color-text-tertiary)]
+            shadow-[var(--shadow-xs)]
+            transition-colors duration-150
+            focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:ring-offset-0 focus:border-[var(--color-brand-500)]
+            disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-[var(--color-bg-muted)]
+            ${error
+              ? 'border-[var(--color-error)] focus:ring-[var(--color-error)] focus:border-[var(--color-error)]'
+              : 'border-[var(--color-border)] hover:border-[var(--color-border-strong)]'
+            }
+            ${className}
+          `}
           {...props}
         />
-        {error && <p className="mt-1.5 text-sm text-red-500 font-medium">{error}</p>}
+        {hint && !error && (
+          <p className="text-xs text-[var(--color-text-tertiary)]">{hint}</p>
+        )}
+        {error && (
+          <p className="text-xs font-medium text-[var(--color-error)]">{error}</p>
+        )}
       </div>
     );
   }

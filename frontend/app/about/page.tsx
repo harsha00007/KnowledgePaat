@@ -1,64 +1,120 @@
 import React from 'react';
 import { PublicLayout } from '@/layouts/PublicLayout';
-import { Target, Lightbulb, Rocket } from 'lucide-react';
+import { Button } from '@/components/Button';
+import { Target, Lightbulb, Shield, GraduationCap, CheckCircle2, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AboutPage() {
   return (
     <PublicLayout>
-      <section className="bg-[var(--color-bg)] py-20 border-b border-slate-200/60">
-        <div className="container mx-auto px-4 text-center max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">About CareerLaunch</h1>
-          <p className="mt-5 text-lg text-slate-600 leading-relaxed">
-            Bridging the gap between talented freshers and the companies that need them.
+      {/* ── HERO ────────────────────────────────────────────────────────── */}
+      <section className="bg-white border-b border-[var(--color-border)] pt-16 pb-14">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-3.5 py-1 text-xs font-semibold text-[var(--color-brand-600)] mb-4">
+            About GradZenX
+          </div>
+          <h1 className="text-4xl font-bold tracking-tight text-[var(--color-text-primary)] sm:text-5xl">
+            Bridging the gap between students and their first career breakthrough
+          </h1>
+          <p className="mt-6 text-lg text-[var(--color-text-secondary)] leading-relaxed max-w-2xl mx-auto">
+            We are building a trustworthy, student-first platform designed to eliminate fake job noise, provide focused interview preparation, and empower graduates with real opportunities.
           </p>
         </div>
       </section>
 
-      <section className="py-20 bg-white flex-1">
-        <div className="container mx-auto px-4 max-w-4xl">
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-20 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150">
-            <div className="bg-[var(--color-brand-50)] p-8 rounded-[var(--radius-xl)] border border-[var(--color-brand-100)] transition-transform hover:-translate-y-1">
-              <div className="w-14 h-14 bg-white text-[var(--color-brand-600)] shadow-sm rounded-[var(--radius-lg)] flex items-center justify-center mb-6 border border-[var(--color-brand-100)]">
-                <Target className="w-7 h-7" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-4">Our Mission</h2>
-              <p className="text-slate-600 leading-relaxed text-lg">
-                To simplify the job search process for freshers by providing a single, trusted platform with verified opportunities, eliminating the noise of fake job postings and scams.
+      {/* ── THE PROBLEM & SOLUTION ─────────────────────────────────────── */}
+      <section className="py-16 bg-[var(--color-bg-subtle)] border-b border-[var(--color-border)]">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-brand-500)] mb-2">The Challenge</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-[var(--color-text-primary)] tracking-tight mb-4">
+                The early-career job hunt is broken
+              </h2>
+              <p className="text-sm sm:text-base text-[var(--color-text-secondary)] leading-relaxed mb-4">
+                Every year, millions of ambitious students graduate into an overwhelming job market filled with misleading job postings, unverified consultancies, and fragmented preparation advice.
+              </p>
+              <p className="text-sm sm:text-base text-[var(--color-text-secondary)] leading-relaxed">
+                Freshers waste valuable time filtering through irrelevant senior roles or questionable third-party portals instead of focusing on what matters: building skills and applying directly.
               </p>
             </div>
-            
-            <div className="bg-[var(--color-brand-50)] p-8 rounded-[var(--radius-xl)] border border-[var(--color-brand-100)] transition-transform hover:-translate-y-1">
-              <div className="w-14 h-14 bg-white text-[var(--color-brand-600)] shadow-sm rounded-[var(--radius-lg)] flex items-center justify-center mb-6 border border-[var(--color-brand-100)]">
-                <Lightbulb className="w-7 h-7" />
+            <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-8 shadow-[var(--shadow-sm)] space-y-4">
+              <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-3">Our Core Commitments</h3>
+              <div className="flex items-start gap-3">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-brand-50)] text-[var(--color-brand-600)] shrink-0 mt-0.5">
+                  <CheckCircle2 className="h-4 w-4" />
+                </span>
+                <div>
+                  <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">100% Direct Company Links</h4>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">No middlemen or hidden fees to apply.</p>
+                </div>
               </div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-4">Our Vision</h2>
-              <p className="text-slate-600 leading-relaxed text-lg">
-                We envision a world where every student has equal access to quality career resources, transparent application processes, and the guidance needed to kickstart their professional journey.
+              <div className="flex items-start gap-3">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-brand-50)] text-[var(--color-brand-600)] shrink-0 mt-0.5">
+                  <CheckCircle2 className="h-4 w-4" />
+                </span>
+                <div>
+                  <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">Verified Fresher Opportunities</h4>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">Carefully reviewed roles tailored to 0-2 years experience.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-brand-50)] text-[var(--color-brand-600)] shrink-0 mt-0.5">
+                  <CheckCircle2 className="h-4 w-4" />
+                </span>
+                <div>
+                  <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">Structured Preparation</h4>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">Curated aptitude, HR, and technical learning materials.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── MISSION & VISION ───────────────────────────────────────────── */}
+      <section className="py-16 bg-white">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] p-8 shadow-[var(--shadow-xs)]">
+              <div className="w-12 h-12 rounded-[var(--radius-lg)] bg-[var(--color-brand-50)] text-[var(--color-brand-600)] flex items-center justify-center mb-6">
+                <Target className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-[var(--color-text-primary)] mb-3">Our Mission</h3>
+              <p className="text-sm sm:text-base text-[var(--color-text-secondary)] leading-relaxed">
+                To simplify the transition from campus to corporate life by providing students with trusted, high-value career tools and transparent employment pathways.
+              </p>
+            </div>
+
+            <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] p-8 shadow-[var(--shadow-xs)]">
+              <div className="w-12 h-12 rounded-[var(--radius-lg)] bg-[var(--color-brand-50)] text-[var(--color-brand-600)] flex items-center justify-center mb-6">
+                <Lightbulb className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-[var(--color-text-primary)] mb-3">Our Vision</h3>
+              <p className="text-sm sm:text-base text-[var(--color-text-secondary)] leading-relaxed">
+                To become the most dependable and student-centric career acceleration platform globally, ensuring every graduate has an equal opportunity to thrive.
               </p>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="prose prose-blue max-w-none animate-in fade-in duration-1000 delay-300">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="p-3 bg-[var(--color-brand-50)] rounded-[var(--radius-lg)]">
-                <Rocket className="w-8 h-8 text-[var(--color-brand-600)]" />
-              </div>
-              <h2 className="text-3xl font-bold text-slate-900 m-0">Why We Built It</h2>
-            </div>
-            <div className="text-slate-600 space-y-6 leading-relaxed text-lg bg-white p-8 rounded-[var(--radius-xl)] border border-slate-100 shadow-[var(--shadow-soft)]">
-              <p>
-                Every year, millions of students graduate with dreams of landing their first job. However, the reality of the job hunt is often frustrating. Freshers are bombarded with fake job postings, consultancies demanding money, and confusing application portals.
-              </p>
-              <p>
-                We built CareerLaunch to solve this exact problem. We realized that students don't just need a list of jobs—they need <strong className="text-slate-900 font-semibold">verified</strong> jobs with direct links to official company portals. They need high-quality preparation materials that are organized and easy to digest.
-              </p>
-              <p>
-                CareerLaunch is more than just a job board. It is a comprehensive launchpad designed specifically for students and recent graduates, combining trusted opportunities with the educational resources needed to succeed in interviews.
-              </p>
-            </div>
+      {/* ── CTA ────────────────────────────────────────────────────────── */}
+      <section className="bg-[var(--color-dark)] py-16 text-center">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            Start preparing for your next role today
+          </h2>
+          <p className="mt-4 text-sm sm:text-base text-white/70 max-w-xl mx-auto">
+            Join GradZenX to access verified job openings, industry-standard interview preparation, and high-impact study materials.
+          </p>
+          <div className="mt-8 flex justify-center gap-4">
+            <Link href="/register">
+              <Button size="lg" className="bg-white text-[var(--color-brand-700)] hover:bg-[var(--color-brand-50)] border-transparent shadow-sm">
+                Get Started Free <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
-
         </div>
       </section>
     </PublicLayout>

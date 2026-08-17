@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StudentLayout } from '@/layouts/StudentLayout';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -17,152 +17,262 @@ import {
   Brain,
   Building,
   Terminal,
-  Code2
+  Code2,
+  CheckCircle2
 } from 'lucide-react';
 import Link from 'next/link';
+import { createClient } from '@/utils/supabase/client';
 
 export default function StudentDashboard() {
+  const [profile, setProfile] = useState<any>(null);
+  const [subscription, setSubscription] = useState<any>(null);
+  const [recentJobs, setRecentJobs] = useState<any[]>([]);
+  const [isFetching, setIsFetching] = useState(true);
+
+  const supabase = createClient();
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    setIsFetching(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Fetch profile for resume and completion info
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        if (profileData) setProfile(profileData);
+
+        // Fetch subscription
+        const { data: subData } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('student_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        if (subData) setSubscription(subData);
+      }
+
+      // Fetch top recent jobs
+      const { data: jobsData } = await supabase
+        .from('jobs')
+        .select('*')
+        .order('posted_at', { ascending: false })
+        .limit(4);
+      if (jobsData && jobsData.length > 0) {
+        setRecentJobs(jobsData);
+      } else {
+        // Fallback default jobs preview if database is empty
+        setRecentJobs([
+          { id: '1', company_name: 'TechNova Solutions', title: 'Frontend Developer Intern', location: 'Bangalore, India', employment_type: 'Internship', work_mode: 'Hybrid' },
+          { id: '2', company_name: 'Global Finance Inc.', title: 'Junior Data Analyst', location: 'Remote', employment_type: 'Full-time', work_mode: 'Remote' },
+          { id: '3', company_name: 'Creative Studios', title: 'UI/UX Designer', location: 'Mumbai, India', employment_type: 'Full-time', work_mode: 'Hybrid' },
+          { id: '4', company_name: 'CloudServe Systems', title: 'Software Engineer (Fresher)', location: 'Pune, India', employment_type: 'Full-time', work_mode: 'On-site' },
+        ]);
+      }
+    } catch (err) {
+      console.error("Error loading dashboard data:", err);
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  const hasResume = Boolean(profile?.resume_url);
+  const isPremium = subscription?.plan === 'Premium' && subscription?.status === 'Active';
+
   return (
     <StudentLayout>
-      <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="max-w-7xl mx-auto space-y-6 pb-12">
         
-        {/* ROW 1: Quick Stats / Status */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* WELCOME BANNER */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2">
+          <div>
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Student Dashboard</h1>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
+              Track your profile progress, explore verified jobs, and prepare for upcoming interviews.
+            </p>
+          </div>
+        </div>
+
+        {/* ── ROW 1: THREE SUMMARY CARDS ──────────────────────────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           
           {/* 1. Profile Completion */}
-          <Card className="p-6 border-slate-200 shadow-sm">
-            <div className="flex justify-between items-start mb-4">
-              <div className="h-10 w-10 bg-[var(--color-brand-50)] text-[var(--color-brand-600)] rounded-lg flex items-center justify-center">
-                <UserCheck className="w-5 h-5" />
+          <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)] flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">Profile Status</span>
+                <div className="h-8 w-8 rounded-[var(--radius-md)] bg-[var(--color-brand-50)] text-[var(--color-brand-600)] flex items-center justify-center">
+                  <UserCheck className="w-4 h-4" />
+                </div>
               </div>
-              <span className="text-sm font-medium text-slate-500">Profile Status</span>
+              <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">
+                {profile?.full_name ? 'Profile Active' : 'Profile Incomplete'}
+              </h2>
+              <p className="text-xs text-[var(--color-text-secondary)] mb-4">
+                Add your education, skills, and preferences for better job matching.
+              </p>
             </div>
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">80% Complete</h3>
-            <div className="w-full bg-gray-100 rounded-full h-2 mb-6">
-              <div className="bg-[var(--color-brand-600)] h-2 rounded-full" style={{ width: '80%' }}></div>
-            </div>
-            <Link href="/student/profile">
-              <Button variant="outline" className="w-full text-sm">Complete Profile</Button>
+            <Link href="/student/profile" className="block w-full">
+              <Button variant="outline" size="sm" className="w-full justify-center">
+                {profile?.full_name ? 'Edit Profile' : 'Complete Profile'}
+              </Button>
             </Link>
-          </Card>
+          </div>
 
           {/* 2. Resume Status */}
-          <Card className="p-6 border-slate-200 shadow-sm">
-            <div className="flex justify-between items-start mb-4">
-              <div className="h-10 w-10 bg-orange-50 text-orange-600 rounded-lg flex items-center justify-center">
-                <FileText className="w-5 h-5" />
+          <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)] flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">Resume Status</span>
+                <div className={`h-8 w-8 rounded-[var(--radius-md)] flex items-center justify-center ${hasResume ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                  <FileText className="w-4 h-4" />
+                </div>
               </div>
-              <span className="text-sm font-medium text-slate-500">Resume</span>
+              <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">
+                {hasResume ? 'Resume Uploaded' : 'No Resume'}
+              </h2>
+              <p className="text-xs text-[var(--color-text-secondary)] mb-4 truncate" title={profile?.resume_filename || ''}>
+                {hasResume ? (profile?.resume_filename || 'PDF Document') : 'Upload your resume to apply for openings directly.'}
+              </p>
             </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-2">No Resume Uploaded</h3>
-            <p className="text-sm text-slate-500 mb-6">Upload your resume to apply for jobs directly.</p>
-            <Link href="/student/resume">
-              <Button variant="primary" className="w-full text-sm">Upload Resume</Button>
+            <Link href="/student/resume" className="block w-full">
+              <Button variant={hasResume ? "outline" : "primary"} size="sm" className="w-full justify-center">
+                {hasResume ? 'View / Replace Resume' : 'Upload Resume'}
+              </Button>
             </Link>
-          </Card>
+          </div>
 
-          {/* 6. Subscription */}
-          <Card className="p-6 border-slate-200 shadow-sm">
-            <div className="flex justify-between items-start mb-4">
-              <div className="h-10 w-10 bg-green-50 text-green-600 rounded-lg flex items-center justify-center">
-                <CreditCard className="w-5 h-5" />
+          {/* 3. Subscription Status */}
+          <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)] flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">Membership</span>
+                <div className="h-8 w-8 rounded-[var(--radius-md)] bg-[var(--color-brand-50)] text-[var(--color-brand-600)] flex items-center justify-center">
+                  <CreditCard className="w-4 h-4" />
+                </div>
               </div>
-              <span className="text-sm font-medium text-slate-500">Current Plan</span>
+              <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">
+                {isPremium ? 'Premium Plan' : 'Free Plan'}
+              </h2>
+              <p className="text-xs text-[var(--color-text-secondary)] mb-4">
+                {isPremium ? 'Full access to all interview prep & study notes.' : 'Upgrade for company-wise questions & full notes.'}
+              </p>
             </div>
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">Free</h3>
-            <p className="text-sm text-slate-500 mb-6">Upgrade to Premium for exclusive content.</p>
-            <Link href="/pricing">
-              <Button variant="outline" className="w-full text-sm">Upgrade Plan</Button>
+            <Link href="/student/subscription" className="block w-full">
+              <Button variant={isPremium ? "outline" : "outline"} size="sm" className="w-full justify-center">
+                {isPremium ? 'View Subscription' : 'Upgrade Plan'}
+              </Button>
             </Link>
-          </Card>
+          </div>
 
         </div>
 
-        {/* ROW 2: Main Content Area */}
+        {/* ── ROW 2: RECOMMENDED JOBS & PREPARATION ────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* 3. Latest Jobs (Takes up 2 columns on large screens) */}
-          <Card className="p-6 border-slate-200 shadow-sm lg:col-span-2">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-slate-900">Recommended Jobs</h2>
-              <Link href="/jobs" className="text-sm font-medium text-[var(--color-brand-600)] hover:text-[var(--color-brand-700)] flex items-center gap-1">
-                View All <ArrowRight className="w-4 h-4" />
+          {/* Recommended Jobs (2 cols on lg) */}
+          <div className="lg:col-span-2 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-xs)]">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-base font-bold text-[var(--color-text-primary)]">Recommended Jobs</h2>
+                <p className="text-xs text-[var(--color-text-secondary)]">Verified fresher opportunities</p>
+              </div>
+              <Link 
+                href="/student/jobs" 
+                className="text-xs font-semibold text-[var(--color-brand-600)] hover:text-[var(--color-brand-700)] flex items-center gap-1 transition-colors"
+              >
+                View All <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
-            <div className="space-y-4">
-              {[
-                { company: 'TechNova Solutions', role: 'Frontend Developer Intern', location: 'Bangalore, India' },
-                { company: 'Global Finance Inc.', role: 'Junior Data Analyst', location: 'Remote' },
-                { company: 'Creative Studios', role: 'UI/UX Designer', location: 'Mumbai, India' },
-                { company: 'CloudServe Systems', role: 'SDE 1', location: 'Pune, India' },
-                { company: 'Innovate AI', role: 'Machine Learning Intern', location: 'Remote' },
-              ].map((job, i) => (
-                <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-[var(--color-brand-100)] hover:shadow-sm transition-all bg-white group">
-                  <div className="flex items-start gap-4">
-                    <div className="h-10 w-10 rounded bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
-                      <Building2 className="h-5 w-5 text-gray-400 group-hover:text-[var(--color-brand-500)] transition-colors" />
+
+            <div className="space-y-3">
+              {recentJobs.map((job) => (
+                <div 
+                  key={job.id} 
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-[var(--radius-lg)] border border-[var(--color-border)] hover:border-[var(--color-brand-300)] hover:bg-[var(--color-bg-subtle)] transition-all gap-3"
+                >
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="h-10 w-10 rounded-[var(--radius-md)] bg-[var(--color-bg-muted)] border border-[var(--color-border)] flex items-center justify-center shrink-0">
+                      <Building2 className="h-5 w-5 text-[var(--color-text-tertiary)]" />
                     </div>
-                    <div>
-                      <h4 className="font-semibold text-slate-900">{job.role}</h4>
-                      <p className="text-sm text-slate-500">{job.company}</p>
-                      <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
+                    <div className="min-w-0 truncate">
+                      <h3 className="text-sm font-semibold text-[var(--color-text-primary)] truncate">{job.title}</h3>
+                      <p className="text-xs text-[var(--color-text-secondary)] truncate">{job.company_name}</p>
+                      <div className="flex items-center gap-3 mt-1.5 text-[11px] text-[var(--color-text-tertiary)]">
                         <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.location}</span>
-                        <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" /> Full-time</span>
+                        <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" /> {job.employment_type}</span>
                       </div>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" className="mt-4 sm:mt-0 self-start sm:self-center">
-                    View
-                  </Button>
+                  
+                  <Link href="/student/jobs" className="shrink-0 self-start sm:self-center">
+                    <Button variant="outline" size="sm" className="text-xs h-8 px-3">
+                      View
+                    </Button>
+                  </Link>
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
 
-          {/* 4 & 5. Prep and Notes Side Column */}
-          <div className="space-y-6">
+          {/* Right Column: Prep & Notes */}
+          <div className="space-y-5">
             
-            {/* 4. Interview Preparation */}
-            <Card className="p-6 border-slate-200 shadow-sm">
-              <h2 className="text-lg font-bold text-slate-900 mb-4">Interview Prep</h2>
-              <div className="grid grid-cols-2 gap-3 mb-6">
+            {/* Interview Prep Card */}
+            <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)]">
+              <h2 className="text-sm font-bold text-[var(--color-text-primary)] mb-1">Interview Preparation</h2>
+              <p className="text-xs text-[var(--color-text-secondary)] mb-4">Practice questions by category</p>
+              
+              <div className="grid grid-cols-2 gap-2.5 mb-4">
                 <PrepCategory icon={<Users className="w-4 h-4" />} label="HR" />
                 <PrepCategory icon={<Code className="w-4 h-4" />} label="Technical" />
                 <PrepCategory icon={<Brain className="w-4 h-4" />} label="Aptitude" />
                 <PrepCategory icon={<Building className="w-4 h-4" />} label="Company" />
               </div>
-              <Link href="/interview-preparation">
-                <Button className="w-full text-sm">Start Preparation</Button>
+              
+              <Link href="/student/interview-preparation" className="block w-full">
+                <Button size="sm" className="w-full justify-center">Start Preparation</Button>
               </Link>
-            </Card>
+            </div>
 
-            {/* 5. Notes */}
-            <Card className="p-6 border-slate-200 shadow-sm">
-              <h2 className="text-lg font-bold text-slate-900 mb-4">Study Notes</h2>
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                <PrepCategory icon={<Users className="w-4 h-4" />} label="HR" />
+            {/* Study Notes Card */}
+            <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)]">
+              <h2 className="text-sm font-bold text-[var(--color-text-primary)] mb-1">Study Notes</h2>
+              <p className="text-xs text-[var(--color-text-secondary)] mb-4">Download concise revision guides</p>
+              
+              <div className="grid grid-cols-2 gap-2.5 mb-4">
+                <PrepCategory icon={<Users className="w-4 h-4" />} label="HR Notes" />
                 <PrepCategory icon={<Terminal className="w-4 h-4" />} label="Technical" />
                 <PrepCategory icon={<Brain className="w-4 h-4" />} label="Aptitude" />
                 <PrepCategory icon={<Code2 className="w-4 h-4" />} label="Programming" />
               </div>
-              <Link href="/notes">
-                <Button variant="outline" className="w-full text-sm">View Notes</Button>
+              
+              <Link href="/student/notes" className="block w-full">
+                <Button variant="outline" size="sm" className="w-full justify-center">View Notes</Button>
               </Link>
-            </Card>
+            </div>
 
           </div>
 
         </div>
+
       </div>
     </StudentLayout>
   );
 }
 
-function PrepCategory({ icon, label }: { icon: React.ReactNode, label: string }) {
+function PrepCategory({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <div className="flex flex-col items-center justify-center p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-[var(--color-brand-50)] hover:border-[var(--color-brand-100)] transition-colors cursor-pointer text-center">
-      <div className="text-slate-600 mb-2">{icon}</div>
-      <span className="text-xs font-medium text-gray-700">{label}</span>
+    <div className="flex flex-col items-center justify-center p-2.5 bg-[var(--color-bg-subtle)] rounded-[var(--radius-md)] border border-[var(--color-border)] hover:bg-[var(--color-brand-50)] hover:border-[var(--color-brand-200)] transition-colors text-center">
+      <div className="text-[var(--color-brand-600)] mb-1">{icon}</div>
+      <span className="text-[11px] font-semibold text-[var(--color-text-secondary)]">{label}</span>
     </div>
   );
 }

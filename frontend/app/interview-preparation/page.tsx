@@ -1,70 +1,152 @@
 import React from 'react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { Card } from '@/components/Card';
-import { Users, Code, Brain, Building } from 'lucide-react';
+import { Button } from '@/components/Button';
+import {
+  Users, Code, Brain, Building, ArrowRight,
+  CheckCircle2, BookOpen
+} from 'lucide-react';
 import Link from 'next/link';
+
+const CATEGORIES = [
+  {
+    title: 'HR Interview',
+    description: 'Behavioral questions, self-introduction, strengths and weaknesses, cultural fit — with sample answers and tips.',
+    icon: Users,
+    count: '120+ questions',
+    href: '#',
+    color: 'blue',
+  },
+  {
+    title: 'Technical Interview',
+    description: 'Data structures, algorithms, OS, DBMS, networking, and programming fundamentals for software roles.',
+    icon: Code,
+    count: '400+ questions',
+    href: '#',
+    color: 'purple',
+  },
+  {
+    title: 'Aptitude & Reasoning',
+    description: 'Quantitative aptitude, logical reasoning, and verbal ability — the essential shortlisting round.',
+    icon: Brain,
+    count: '300+ questions',
+    href: '#',
+    color: 'emerald',
+  },
+  {
+    title: 'Company-wise Questions',
+    description: 'Previously asked interview questions from TCS, Infosys, Wipro, Accenture, Amazon, and more.',
+    icon: Building,
+    count: '50+ companies',
+    href: '#',
+    color: 'amber',
+  },
+];
+
+const TIPS = [
+  'Practice answers out loud — not just in your head.',
+  'Research the company before every interview.',
+  'Use the STAR method for behavioral questions.',
+  'Prepare 3–5 thoughtful questions to ask the interviewer.',
+];
 
 export default function InterviewPreparationPage() {
   return (
     <PublicLayout>
-      <section className="bg-gray-50 py-16 border-b border-gray-200">
-        <div className="container mx-auto px-4 text-center max-w-3xl">
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Interview Preparation</h1>
-          <p className="mt-4 text-lg text-gray-600">
-            Master your upcoming interviews with our curated collection of questions and answers. Choose a category below to get started.
-          </p>
-        </div>
-      </section>
 
-      <section className="py-16 bg-white flex-1">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <CategoryCard 
-              title="HR Interview"
-              description="Common behavioral and cultural fit questions with tips on how to answer."
-              icon={<Users className="w-8 h-8 text-blue-600" />}
-              href="#"
-            />
-            <CategoryCard 
-              title="Technical Interview"
-              description="Core computer science concepts, programming fundamentals, and system design."
-              icon={<Code className="w-8 h-8 text-blue-600" />}
-              href="#"
-            />
-            <CategoryCard 
-              title="Aptitude & Reasoning"
-              description="Quantitative aptitude, logical reasoning, and verbal ability exercises."
-              icon={<Brain className="w-8 h-8 text-blue-600" />}
-              href="#"
-            />
-            <CategoryCard 
-              title="Company-wise Questions"
-              description="Specific interview experiences and previously asked questions by top tech companies."
-              icon={<Building className="w-8 h-8 text-blue-600" />}
-              href="#"
-            />
+      {/* ── PAGE HEADER ─────────────────────────────────────────────────── */}
+      <section className="bg-white border-b border-[var(--color-border)] pt-12 pb-10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="inline-flex items-center gap-2 rounded-full bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-3 py-1 text-xs font-semibold text-[var(--color-brand-600)] mb-5">
+              <BookOpen className="h-3.5 w-3.5" />
+              Interview Preparation
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text-primary)] sm:text-4xl">
+              Walk into every interview prepared
+            </h1>
+            <p className="mt-4 text-base text-[var(--color-text-secondary)] leading-relaxed">
+              Curated questions and answers across HR, technical, and aptitude categories — organized for freshers and recent graduates.
+            </p>
           </div>
         </div>
       </section>
+
+      {/* ── CATEGORIES ──────────────────────────────────────────────────── */}
+      <section className="bg-[var(--color-bg-subtle)] py-14 flex-1">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-6">
+            Choose a category
+          </p>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            {CATEGORIES.map((cat) => (
+              <CategoryCard key={cat.title} {...cat} />
+            ))}
+          </div>
+
+          {/* Quick Tips */}
+          <div className="mt-12 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-xs)]">
+            <h2 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">
+              Quick Tips for Interview Success
+            </h2>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {TIPS.map((tip) => (
+                <li key={tip} className="flex items-start gap-2.5 text-sm text-[var(--color-text-secondary)]">
+                  <CheckCircle2 className="h-4 w-4 text-[var(--color-success)] shrink-0 mt-0.5" />
+                  {tip}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* CTA */}
+          <div className="mt-10 text-center">
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+              Get access to company-specific questions and advanced content.
+            </p>
+            <Link href="/pricing">
+              <Button>
+                Upgrade to Premium <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
     </PublicLayout>
   );
 }
 
-function CategoryCard({ title, description, icon, href }: { title: string, description: string, icon: React.ReactNode, href: string }) {
+function CategoryCard({
+  title, description, icon: Icon, count, href,
+}: {
+  title: string; description: string; icon: React.ElementType;
+  count: string; href: string;
+}) {
   return (
-    <Link href={href} className="group">
-      <Card className="h-full p-8 hover:shadow-lg transition-all hover:-translate-y-1 border-gray-100 hover:border-blue-100">
-        <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-          {icon}
+    <Link href={href} className="group outline-none focus-ring rounded-[var(--radius-lg)]">
+      <div className="h-full rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-xs)] hover:shadow-[var(--shadow-md)] hover:border-[var(--color-brand-300)] transition-all duration-200">
+        <div className="flex items-start gap-4">
+          <div className="h-11 w-11 flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-brand-50)] text-[var(--color-brand-500)] shrink-0">
+            <Icon className="h-5 w-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <h3 className="text-sm font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-500)] transition-colors">
+                {title}
+              </h3>
+              <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-brand-500)] bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-2 py-0.5 rounded-full">
+                {count}
+              </span>
+            </div>
+            <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">{description}</p>
+            <div className="flex items-center gap-1 mt-3 text-xs font-semibold text-[var(--color-brand-500)] opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200">
+              Start Preparing <ArrowRight className="h-3.5 w-3.5" />
+            </div>
+          </div>
         </div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">{title}</h3>
-        <p className="text-gray-600 leading-relaxed">
-          {description}
-        </p>
-        <div className="mt-6 flex items-center text-blue-600 font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-          Start Preparing →
-        </div>
-      </Card>
+      </div>
     </Link>
   );
 }

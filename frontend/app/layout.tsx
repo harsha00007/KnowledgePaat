@@ -2,22 +2,14 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CareerLaunch MVP | Get Your First Job Faster",
-  description: "CareerLaunch empowers students to land their first job faster with verified opportunities and expert preparation resources.",
+  title: "GradZenX | Launch Your Career With Confidence",
+  description: "GradZenX helps students and fresh graduates find verified jobs, prepare for interviews, and access expert study resources — all in one platform.",
   openGraph: {
-    title: 'CareerLaunch MVP',
-    description: 'Empowering students to land their first job faster with verified opportunities and expert preparation resources.',
-    url: 'https://careerlaunch.com',
-    siteName: 'CareerLaunch',
-    images: [
-      {
-        url: 'https://careerlaunch.com/og-image.jpg',
-        width: 1200,
-        height: 630,
-      },
-    ],
-    locale: 'en_US',
-    type: 'website',
+    title: "GradZenX — Career Platform for Students",
+    description: "Find verified jobs, prepare for interviews, and access study resources designed for freshers and recent graduates.",
+    siteName: "GradZenX",
+    locale: "en_US",
+    type: "website",
   },
 };
 
@@ -28,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased bg-bg text-text">
+      <body className="antialiased">
         {children}
       </body>
     </html>

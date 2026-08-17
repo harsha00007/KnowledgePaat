@@ -8,6 +8,7 @@ import { Card } from '@/components/Card';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { AlertCircle, GraduationCap } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -58,25 +59,26 @@ export default function LoginPage() {
 
   return (
     <PublicLayout>
-      <section className="flex-1 flex items-center justify-center bg-[var(--color-bg)] py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <section className="flex-1 flex items-center justify-center bg-[var(--color-bg-subtle)] py-16 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div className="text-center">
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-              Welcome back
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-brand-500)] text-white shadow-sm mb-4">
+              <GraduationCap className="h-6 w-6" strokeWidth={2.5} />
+            </div>
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">
+              Sign in to GradZen<span className="text-[var(--color-brand-500)]">X</span>
             </h1>
-            <p className="mt-2 text-sm text-slate-600">
-              Sign in to access your dashboard
+            <p className="mt-1.5 text-sm text-[var(--color-text-secondary)]">
+              Access your student dashboard and career resources
             </p>
           </div>
           
-          <Card className="p-8 shadow-xl border-slate-100 bg-white">
-            <form className="space-y-6" onSubmit={handleLogin}>
+          <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-8 shadow-[var(--shadow-sm)]">
+            <form className="space-y-4" onSubmit={handleLogin}>
               {error && (
-                <div className="bg-red-50 text-red-600 p-4 rounded-[var(--radius-md)] text-sm font-medium border border-red-100 flex items-start gap-3">
-                  <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  {error}
+                <div className="bg-red-50 text-[var(--color-error)] p-3.5 rounded-[var(--radius-md)] text-sm font-medium border border-red-200 flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{error}</span>
                 </div>
               )}
               
@@ -104,39 +106,36 @@ export default function LoginPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
+              <div className="flex items-center justify-between pt-1">
+                <label className="flex items-center text-xs text-[var(--color-text-secondary)] cursor-pointer">
                   <input
-                    id="remember-me"
                     type="checkbox"
-                    className="h-4 w-4 rounded border-slate-300 text-[var(--color-brand-600)] focus:ring-[var(--color-brand-500)] focus-ring transition-colors"
+                    className="h-3.5 w-3.5 rounded border-[var(--color-border)] text-[var(--color-brand-500)] focus:ring-[var(--color-brand-500)]"
                   />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm font-medium text-slate-700">
-                    Remember me
-                  </label>
-                </div>
+                  <span className="ml-2">Remember me</span>
+                </label>
 
-                <div className="text-sm">
-                  <Link href="/forgot-password" className="font-semibold text-[var(--color-brand-600)] hover:text-[var(--color-brand-500)] transition-colors focus-ring rounded-sm">
-                    Forgot your password?
+                <div className="text-xs">
+                  <Link href="/forgot-password" className="font-semibold text-[var(--color-brand-600)] hover:text-[var(--color-brand-700)] transition-colors">
+                    Forgot password?
                   </Link>
                 </div>
               </div>
 
-              <div>
-                <Button type="submit" className="w-full h-11 text-base shadow-sm" isLoading={isLoading}>
+              <div className="pt-2">
+                <Button type="submit" className="w-full h-10 text-sm font-semibold justify-center shadow-sm" isLoading={isLoading}>
                   Sign in
                 </Button>
               </div>
             </form>
             
-            <p className="mt-8 text-center text-sm text-slate-600">
-              Don't have an account?{' '}
-              <Link href="/register" className="font-semibold text-[var(--color-brand-600)] hover:text-[var(--color-brand-500)] transition-colors focus-ring rounded-sm">
-                Register here
+            <div className="mt-6 pt-6 border-t border-[var(--color-border)] text-center text-xs text-[var(--color-text-secondary)]">
+              Don't have an account yet?{' '}
+              <Link href="/register" className="font-semibold text-[var(--color-brand-600)] hover:text-[var(--color-brand-700)] transition-colors">
+                Create free account
               </Link>
-            </p>
-          </Card>
+            </div>
+          </div>
         </div>
       </section>
     </PublicLayout>

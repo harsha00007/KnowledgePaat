@@ -16,7 +16,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Target,
-  AlertTriangle
+  AlertTriangle,
+  Users,
+  Code,
+  Brain,
+  Building
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
@@ -135,26 +139,24 @@ export default function InterviewPrepPage() {
     setCompanyFilter('');
   };
 
-  // Extract unique companies
-  const allCompanies = Array.from(new Set(questions.flatMap(q => q.company_tags)));
+  const allCompanies = Array.from(new Set(questions.flatMap(q => q.company_tags).filter(Boolean)));
 
-  // Filter Logic
   const filteredQuestions = questions.filter(q => {
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch = 
       searchQuery === '' || 
       q.title.toLowerCase().includes(searchLower) ||
-      q.technology_tags.some(t => t.toLowerCase().includes(searchLower)) ||
-      q.company_tags.some(c => c.toLowerCase().includes(searchLower));
+      (q.technology_tags && q.technology_tags.some(t => t.toLowerCase().includes(searchLower))) ||
+      (q.company_tags && q.company_tags.some(c => c.toLowerCase().includes(searchLower)));
 
     const matchesCategory = categoryFilter === '' || q.category_id === categoryFilter;
     const matchesDifficulty = difficultyFilter === '' || q.difficulty === difficultyFilter;
-    const matchesCompany = companyFilter === '' || q.company_tags.includes(companyFilter);
+    const matchesCompany = companyFilter === '' || (q.company_tags && q.company_tags.includes(companyFilter));
 
     return matchesSearch && matchesCategory && matchesDifficulty && matchesCompany;
   });
 
-  const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || 'Unknown';
+  const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || 'General';
 
   const openQuestion = (index: number) => {
     setSelectedQuestionIndex(index);
@@ -165,47 +167,79 @@ export default function InterviewPrepPage() {
 
   return (
     <StudentLayout>
-      <div className="max-w-7xl mx-auto space-y-8 pb-12">
+      <div className="max-w-7xl mx-auto space-y-6 pb-12">
         
-        {/* HEADER & PROGRESS */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* HEADER & PROGRESS BANNER */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Interview Preparation</h1>
-            <p className="text-sm text-slate-500 mt-1">Prepare for interviews with curated questions and answers.</p>
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Interview Preparation</h1>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 font-medium">
+              Curated interview questions and ideal answers across core categories.
+            </p>
           </div>
           
-          <div className="bg-blue-50 border border-blue-100 px-4 py-3 rounded-lg flex items-center gap-3">
-            <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center text-[var(--color-brand-600)]">
-              <Target className="w-5 h-5" />
+          {/* Progress Pill */}
+          <div className="rounded-[var(--radius-lg)] border border-[var(--color-brand-200)] bg-white px-4 py-2 shadow-xs flex items-center gap-3">
+            <div className="h-8 w-8 bg-[var(--color-brand-50)] text-[var(--color-brand-600)] rounded-full flex items-center justify-center">
+              <Target className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-xs text-[var(--color-brand-600)] font-medium uppercase tracking-wider">Overall Progress</p>
-              <p className="text-lg font-bold text-blue-900 leading-tight">
-                {completedQuestionIds.size} / {questions.length} <span className="text-sm font-normal text-blue-700">Completed</span>
+              <p className="text-[11px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-wider">Completion</p>
+              <p className="text-sm font-bold text-[var(--color-text-primary)] leading-tight">
+                {completedQuestionIds.size} / {questions.length} Completed
               </p>
             </div>
           </div>
         </div>
 
-        {/* SEARCH & FILTERS */}
-        <Card className="p-4 border-slate-200 shadow-sm shadow-sm flex flex-col lg:flex-row gap-4 items-center">
+        {/* CATEGORY SELECTOR CARDS */}
+        {!categoryFilter && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {categories.map(cat => {
+              const catQCount = questions.filter(q => q.category_id === cat.id).length;
+              return (
+                <div 
+                  key={cat.id} 
+                  className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-xs)] hover:shadow-[var(--shadow-md)] hover:border-[var(--color-brand-300)] cursor-pointer transition-all flex flex-col justify-between group"
+                  onClick={() => setCategoryFilter(cat.id)}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="h-9 w-9 bg-[var(--color-brand-50)] text-[var(--color-brand-600)] rounded-[var(--radius-md)] flex items-center justify-center">
+                      <BookOpen className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-bold text-[var(--color-brand-700)] bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-2 py-0.5 rounded-full">
+                      {catQCount} Qs
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-600)] transition-colors mb-1">{cat.name}</h3>
+                    <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">{cat.description}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* SEARCH & FILTERS BAR */}
+        <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-xs)] flex flex-col lg:flex-row gap-3 items-center">
           <div className="relative w-full lg:w-1/3">
-            <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[var(--color-text-tertiary)] absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
-              placeholder="Search questions, tech, or company..." 
+              placeholder="Search questions, skills, companies..." 
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] text-sm"
+              className="w-full pl-9 pr-3 py-2 border border-[var(--color-border)] bg-white rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] shadow-xs transition-colors"
             />
           </div>
 
-          <div className="hidden lg:block w-px h-8 bg-gray-200"></div>
+          <div className="hidden lg:block w-px h-6 bg-[var(--color-border)]"></div>
 
-          <div className="w-full lg:flex-1 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="w-full lg:flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <select 
               value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
             >
               <option value="">All Categories</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -213,9 +247,9 @@ export default function InterviewPrepPage() {
             
             <select 
               value={difficultyFilter} onChange={e => setDifficultyFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
             >
-              <option value="">Difficulty</option>
+              <option value="">All Difficulty</option>
               <option value="Easy">Easy</option>
               <option value="Medium">Medium</option>
               <option value="Hard">Hard</option>
@@ -223,107 +257,95 @@ export default function InterviewPrepPage() {
 
             <select 
               value={companyFilter} onChange={e => setCompanyFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
             >
-              <option value="">Company</option>
+              <option value="">All Companies</option>
               {allCompanies.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
 
-            <Button variant="outline" onClick={resetFilters} className="text-sm h-full w-full whitespace-nowrap">
-              <Filter className="w-4 h-4 mr-2" /> Reset
+            <Button variant="outline" size="sm" onClick={resetFilters} className="text-xs h-full justify-center">
+              <Filter className="w-3.5 h-3.5 mr-1" /> Reset
             </Button>
           </div>
-        </Card>
-
-        {/* CATEGORY CARDS */}
-        {!categoryFilter && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {categories.map(cat => {
-              const catQCount = questions.filter(q => q.category_id === cat.id).length;
-              return (
-                <Card 
-                  key={cat.id} 
-                  className="p-5 border-slate-200 shadow-sm hover:border-blue-400 hover:shadow-md cursor-pointer transition-all"
-                  onClick={() => setCategoryFilter(cat.id)}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="h-10 w-10 bg-gray-50 rounded-lg flex items-center justify-center text-slate-600">
-                      <BookOpen className="w-5 h-5" />
-                    </div>
-                    <span className="text-xs font-medium text-slate-500 bg-gray-100 px-2.5 py-1 rounded-full">
-                      {catQCount} Qs
-                    </span>
-                  </div>
-                  <h3 className="font-semibold text-slate-900 mb-1">{cat.name}</h3>
-                  <p className="text-xs text-slate-500 line-clamp-2">{cat.description}</p>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+        </div>
 
         {/* QUESTIONS LIST */}
         <div>
-          <h2 className="text-lg font-bold text-slate-900 mb-4">
-            {filteredQuestions.length} Questions Found
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-[var(--color-text-primary)]">
+              {filteredQuestions.length} Questions Available
+            </h2>
+            {categoryFilter && (
+              <button 
+                onClick={() => setCategoryFilter('')} 
+                className="text-xs text-[var(--color-brand-600)] hover:underline font-semibold"
+              >
+                Show All Categories
+              </button>
+            )}
+          </div>
           
           {isFetching ? (
             <div className="flex justify-center items-center h-48">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-[var(--color-brand-500)] border-t-transparent"></div>
             </div>
           ) : filteredQuestions.length === 0 ? (
             <EmptyState 
-              title="No interview questions available."
-              description="Try adjusting your filters or search terms."
-              action={<Button onClick={resetFilters}>Clear Filters</Button>}
+              title="No interview questions found."
+              description="Try adjusting your filter or search criteria."
+              action={<Button variant="outline" size="sm" onClick={resetFilters}>Clear Filters</Button>}
             />
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {filteredQuestions.map((q, index) => {
                 const isCompleted = completedQuestionIds.has(q.id);
                 
                 return (
-                  <Card key={q.id} className="p-5 border-slate-200 shadow-sm hover:border-gray-300 transition-colors flex flex-col md:flex-row md:items-center gap-4">
-                    
+                  <div 
+                    key={q.id} 
+                    className={`rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-xs)] hover:border-[var(--color-brand-300)] transition-all flex flex-col md:flex-row md:items-center gap-3.5 ${isCompleted ? 'bg-[var(--color-bg-subtle)]' : ''}`}
+                  >
                     <button 
                       onClick={() => handleToggleComplete(q.id)}
-                      className="shrink-0 mt-1 md:mt-0 focus:outline-none"
+                      className="shrink-0 mt-0.5 md:mt-0 focus:outline-none"
+                      aria-label={isCompleted ? "Mark incomplete" : "Mark completed"}
                     >
                       {isCompleted ? (
-                        <CheckCircle className="w-6 h-6 text-green-500" />
+                        <CheckCircle className="w-5 h-5 text-emerald-600" />
                       ) : (
-                        <Circle className="w-6 h-6 text-gray-300 hover:text-green-400" />
+                        <Circle className="w-5 h-5 text-gray-300 hover:text-emerald-500 transition-colors" />
                       )}
                     </button>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className="text-xs font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                        <span className="text-[11px] font-bold text-[var(--color-brand-700)] bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-2 py-0.5 rounded-full">
                           {getCategoryName(q.category_id)}
                         </span>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                          q.difficulty === 'Easy' ? 'bg-green-50 text-green-700' :
-                          q.difficulty === 'Medium' ? 'bg-yellow-50 text-yellow-700' :
-                          'bg-red-50 text-red-700'
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                          q.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                          q.difficulty === 'Medium' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                          'bg-red-50 text-red-700 border-red-200'
                         }`}>
                           {q.difficulty}
                         </span>
-                        <span className="flex items-center gap-1 text-xs text-slate-500">
-                          <Clock className="w-3 h-3" /> {q.estimated_time}
-                        </span>
+                        {q.estimated_time && (
+                          <span className="flex items-center gap-1 text-[11px] text-[var(--color-text-tertiary)] bg-[var(--color-bg-subtle)] px-2 py-0.5 rounded-full">
+                            <Clock className="w-3 h-3" /> {q.estimated_time}
+                          </span>
+                        )}
                       </div>
-                      <h3 className={`text-base font-semibold leading-snug ${isCompleted ? 'text-slate-500 line-through' : 'text-slate-900'}`}>
+                      <h3 className={`text-sm font-semibold leading-snug ${isCompleted ? 'text-[var(--color-text-tertiary)]' : 'text-[var(--color-text-primary)]'}`}>
                         {q.title}
                       </h3>
                     </div>
 
-                    <div className="shrink-0 pt-2 md:pt-0 border-t border-gray-100 md:border-t-0 md:pl-4">
-                      <Button variant="outline" className="w-full md:w-auto text-sm" onClick={() => openQuestion(index)}>
+                    <div className="shrink-0 pt-2 md:pt-0 border-t border-[var(--color-border)] md:border-t-0">
+                      <Button variant="outline" size="sm" className="w-full md:w-auto text-xs" onClick={() => openQuestion(index)}>
                         View Answer
                       </Button>
                     </div>
-                  </Card>
+                  </div>
                 );
               })}
             </div>
@@ -333,34 +355,36 @@ export default function InterviewPrepPage() {
       </div>
 
       {/* QUESTION DETAILS MODAL */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Question Details" className="max-w-3xl">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Question Details" className="max-w-2xl">
         {currentQuestion && selectedQuestionIndex !== null && (
-          <div className="space-y-6 flex flex-col">
+          <div className="space-y-5">
             
-            {/* Header / Meta */}
-            <div className="flex flex-wrap items-center gap-2 pb-4 border-b border-gray-100">
-              <span className="text-xs font-medium text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full">
+            {/* Meta tags */}
+            <div className="flex flex-wrap items-center gap-2 pb-3 border-b border-[var(--color-border)]">
+              <span className="text-xs font-bold text-[var(--color-brand-700)] bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-2.5 py-0.5 rounded-full">
                 {getCategoryName(currentQuestion.category_id)}
               </span>
-              <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                currentQuestion.difficulty === 'Easy' ? 'bg-green-50 text-green-700' :
-                currentQuestion.difficulty === 'Medium' ? 'bg-yellow-50 text-yellow-700' :
-                'bg-red-50 text-red-700'
+              <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                currentQuestion.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                currentQuestion.difficulty === 'Medium' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                'bg-red-50 text-red-700 border-red-200'
               }`}>
                 {currentQuestion.difficulty}
               </span>
-              <span className="flex items-center gap-1 text-xs text-slate-500 bg-gray-100 px-2.5 py-1 rounded-full">
-                <Clock className="w-3.5 h-3.5" /> {currentQuestion.estimated_time}
-              </span>
+              {currentQuestion.estimated_time && (
+                <span className="flex items-center gap-1 text-xs text-[var(--color-text-tertiary)]">
+                  <Clock className="w-3.5 h-3.5" /> {currentQuestion.estimated_time}
+                </span>
+              )}
             </div>
 
             {/* Title */}
             <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Q: {currentQuestion.title}</h2>
-              {currentQuestion.company_tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
+              <h2 className="text-lg font-bold text-[var(--color-text-primary)] leading-snug">Q: {currentQuestion.title}</h2>
+              {currentQuestion.company_tags && currentQuestion.company_tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
                   {currentQuestion.company_tags.map(c => (
-                    <span key={c} className="text-xs text-slate-500 border border-slate-200 shadow-sm px-2 py-0.5 rounded">
+                    <span key={c} className="text-[11px] font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-2 py-0.5 rounded">
                       {c}
                     </span>
                   ))}
@@ -369,49 +393,51 @@ export default function InterviewPrepPage() {
             </div>
 
             {/* Answer */}
-            <div className="bg-gray-50 border border-slate-200 shadow-sm rounded-xl p-5">
-              <h3 className="text-sm font-bold text-slate-900 mb-3 uppercase tracking-wider">Ideal Answer</h3>
-              <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed">
+            <div className="bg-[var(--color-bg-subtle)] border border-[var(--color-border)] rounded-[var(--radius-lg)] p-5">
+              <h3 className="text-xs font-bold text-[var(--color-brand-700)] mb-2 uppercase tracking-wider flex items-center gap-1.5">
+                <CheckCircle className="w-4 h-4 text-emerald-600" /> Ideal Answer
+              </h3>
+              <p className="text-[var(--color-text-secondary)] text-sm whitespace-pre-wrap leading-relaxed">
                 {currentQuestion.answer}
               </p>
             </div>
 
-            {/* Tips & Mistakes Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {currentQuestion.tips && (
-                <div className="border border-green-100 bg-green-50/30 rounded-xl p-4">
-                  <h3 className="text-sm font-bold text-green-800 flex items-center gap-2 mb-2">
-                    <Target className="w-4 h-4" /> Pro Tips
-                  </h3>
-                  <p className="text-sm text-green-900/80">{currentQuestion.tips}</p>
-                </div>
-              )}
-              {currentQuestion.common_mistakes && (
-                <div className="border border-red-100 bg-red-50/30 rounded-xl p-4">
-                  <h3 className="text-sm font-bold text-red-800 flex items-center gap-2 mb-2">
-                    <AlertTriangle className="w-4 h-4" /> Common Mistakes
-                  </h3>
-                  <p className="text-sm text-red-900/80">{currentQuestion.common_mistakes}</p>
-                </div>
-              )}
-            </div>
+            {/* Tips & Mistakes */}
+            {(currentQuestion.tips || currentQuestion.common_mistakes) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {currentQuestion.tips && (
+                  <div className="border border-emerald-200 bg-emerald-50/60 rounded-[var(--radius-lg)] p-4">
+                    <h3 className="text-xs font-bold text-emerald-800 flex items-center gap-1.5 mb-1.5">
+                      <Target className="w-3.5 h-3.5" /> Pro Tips
+                    </h3>
+                    <p className="text-xs text-emerald-950 leading-relaxed">{currentQuestion.tips}</p>
+                  </div>
+                )}
+                {currentQuestion.common_mistakes && (
+                  <div className="border border-red-200 bg-red-50/60 rounded-[var(--radius-lg)] p-4">
+                    <h3 className="text-xs font-bold text-red-800 flex items-center gap-1.5 mb-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5" /> Common Pitfalls
+                    </h3>
+                    <p className="text-xs text-red-950 leading-relaxed">{currentQuestion.common_mistakes}</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Action Bar */}
-            <div className="pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4 mt-auto">
-              
-              {/* Prev/Next Nav */}
-              <div className="flex items-center gap-2 w-full sm:w-auto order-2 sm:order-1">
+            <div className="pt-4 border-t border-[var(--color-border)] flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Button 
                   variant="outline" 
-                  className="flex-1 sm:flex-none"
+                  size="sm"
                   disabled={selectedQuestionIndex === 0}
                   onClick={() => setSelectedQuestionIndex(selectedQuestionIndex - 1)}
                 >
-                  <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Previous
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="flex-1 sm:flex-none"
+                  size="sm"
                   disabled={selectedQuestionIndex === filteredQuestions.length - 1}
                   onClick={() => setSelectedQuestionIndex(selectedQuestionIndex + 1)}
                 >
@@ -419,21 +445,18 @@ export default function InterviewPrepPage() {
                 </Button>
               </div>
 
-              {/* Mark Complete */}
-              <div className="w-full sm:w-auto order-1 sm:order-2">
-                <Button 
-                  variant={completedQuestionIds.has(currentQuestion.id) ? "outline" : "primary"}
-                  className={`w-full sm:w-auto ${!completedQuestionIds.has(currentQuestion.id) && 'bg-green-600 hover:bg-green-700'}`}
-                  onClick={() => handleToggleComplete(currentQuestion.id)}
-                >
-                  {completedQuestionIds.has(currentQuestion.id) ? (
-                    <><CheckCircle className="w-4 h-4 mr-2 text-green-600" /> Completed</>
-                  ) : (
-                    <><Circle className="w-4 h-4 mr-2" /> Mark as Completed</>
-                  )}
-                </Button>
-              </div>
-
+              <Button 
+                variant={completedQuestionIds.has(currentQuestion.id) ? "outline" : "primary"}
+                size="sm"
+                className={`w-full sm:w-auto ${completedQuestionIds.has(currentQuestion.id) ? 'border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : ''}`}
+                onClick={() => handleToggleComplete(currentQuestion.id)}
+              >
+                {completedQuestionIds.has(currentQuestion.id) ? (
+                  <><CheckCircle className="w-3.5 h-3.5 mr-1.5" /> Completed</>
+                ) : (
+                  <><Circle className="w-3.5 h-3.5 mr-1.5" /> Mark as Completed</>
+                )}
+              </Button>
             </div>
 
           </div>

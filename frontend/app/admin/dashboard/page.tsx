@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/layouts/AdminLayout';
-import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { 
   Users, 
@@ -12,7 +11,9 @@ import {
   BookOpen, 
   CreditCard,
   Plus,
-  ArrowRight
+  ArrowRight,
+  ShieldCheck,
+  Calendar
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
@@ -71,8 +72,7 @@ export default function AdminDashboardPage() {
       ] = await Promise.all([
         supabase.from('profiles').select('id, full_name, email, created_at').eq('role', 'student').order('created_at', { ascending: false }).limit(5),
         supabase.from('jobs').select('id, title, company_name, posted_at').order('posted_at', { ascending: false }).limit(5),
-        // Join with profiles to get the student's name
-        supabase.from('subscriptions').select('id, plan, start_date, profiles(full_name, email)').eq('plan', 'Premium').eq('status', 'Active').order('start_date', { ascending: false }).limit(5)
+        supabase.from('subscriptions').select('id, plan, start_date, profiles:student_id (full_name, email)').eq('plan', 'Premium').eq('status', 'Active').order('start_date', { ascending: false }).limit(5)
       ]);
 
       setRecentStudents(studentsData || []);
@@ -87,161 +87,183 @@ export default function AdminDashboardPage() {
   };
 
   const statCards = [
-    { title: 'Total Students', value: stats.students, icon: <Users className="w-6 h-6 text-blue-600" />, bg: 'bg-blue-50' },
-    { title: 'Total Jobs', value: stats.jobs, icon: <Briefcase className="w-6 h-6 text-indigo-600" />, bg: 'bg-indigo-50' },
-    { title: 'Interview Questions', value: stats.questions, icon: <MessageSquare className="w-6 h-6 text-purple-600" />, bg: 'bg-purple-50' },
-    { title: 'Study Notes', value: stats.notes, icon: <BookOpen className="w-6 h-6 text-pink-600" />, bg: 'bg-pink-50' },
-    { title: 'Premium Subscribers', value: stats.premium, icon: <CreditCard className="w-6 h-6 text-[var(--color-success)]" />, bg: 'bg-[var(--color-success-50)]' },
+    { title: 'Total Students', value: stats.students, icon: Users, color: 'text-blue-600 bg-blue-50 border-blue-200' },
+    { title: 'Active Jobs', value: stats.jobs, icon: Briefcase, color: 'text-indigo-600 bg-indigo-50 border-indigo-200' },
+    { title: 'Interview Questions', value: stats.questions, icon: MessageSquare, color: 'text-purple-600 bg-purple-50 border-purple-200' },
+    { title: 'Study Notes', value: stats.notes, icon: BookOpen, color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
+    { title: 'Premium Subscribers', value: stats.premium, icon: CreditCard, color: 'text-amber-600 bg-amber-50 border-amber-200' },
   ];
 
   return (
     <AdminLayout>
-      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="max-w-7xl mx-auto space-y-6 pb-12">
         
-        {/* SUMMARY CARDS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {statCards.map((stat, idx) => (
-            <Card key={idx} className="p-5 border-slate-200 shadow-sm flex items-center gap-4 bg-white hover:shadow-[var(--shadow-hover)] transition-shadow">
-              <div className={`h-12 w-12 rounded-[var(--radius-lg)] flex items-center justify-center shrink-0 ${stat.bg}`}>
-                {stat.icon}
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-500 line-clamp-1">{stat.title}</p>
-                {isFetching ? (
-                  <div className="h-6 w-12 bg-slate-200 animate-pulse rounded mt-1"></div>
-                ) : (
-                  <h3 className="text-2xl font-bold text-slate-900">{stat.value}</h3>
-                )}
-              </div>
-            </Card>
-          ))}
+        {/* HEADER */}
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Platform Overview</h1>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 font-medium">
+            Monitor real-time student registrations, job postings, content archive, and subscriptions.
+          </p>
         </div>
 
-        {/* QUICK ACTIONS */}
-        <div className="mb-8">
-          <h2 className="text-lg font-bold text-slate-900 mb-4">Quick Actions</h2>
-          <div className="flex flex-wrap gap-3">
-            <Button onClick={() => router.push('/admin/jobs')} variant="outline" className="bg-white text-slate-700 hover:bg-slate-50 shadow-sm border-slate-200">
-              <Plus className="w-4 h-4 mr-2" /> Add Job
+        {/* SUMMARY CARDS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {statCards.map((stat, idx) => {
+            const Icon = stat.icon;
+            return (
+              <div key={idx} className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)] flex items-center gap-3.5">
+                <div className={`h-11 w-11 rounded-[var(--radius-lg)] border flex items-center justify-center shrink-0 ${stat.color}`}>
+                  <Icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-[var(--color-text-tertiary)] line-clamp-1">{stat.title}</p>
+                  {isFetching ? (
+                    <div className="h-6 w-12 bg-gray-100 animate-pulse rounded mt-1"></div>
+                  ) : (
+                    <h3 className="text-xl font-bold text-[var(--color-text-primary)] mt-0.5">{stat.value}</h3>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* QUICK ACTIONS BAR */}
+        <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)]">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-tertiary)] mb-3">Quick Management Actions</h2>
+          <div className="flex flex-wrap gap-2.5">
+            <Button size="sm" variant="primary" onClick={() => router.push('/admin/jobs')} className="text-xs">
+              <Plus className="w-3.5 h-3.5 mr-1" /> Add New Job
             </Button>
-            <Button onClick={() => router.push('/admin/interview-questions')} variant="outline" className="bg-white text-slate-700 hover:bg-slate-50 shadow-sm border-slate-200">
-              <Plus className="w-4 h-4 mr-2" /> Add Interview Question
+            <Button size="sm" variant="outline" onClick={() => router.push('/admin/interview-questions')} className="text-xs">
+              <Plus className="w-3.5 h-3.5 mr-1" /> Add Question
             </Button>
-            <Button onClick={() => router.push('/admin/notes')} variant="outline" className="bg-white text-slate-700 hover:bg-slate-50 shadow-sm border-slate-200">
-              <Plus className="w-4 h-4 mr-2" /> Upload Notes
+            <Button size="sm" variant="outline" onClick={() => router.push('/admin/notes')} className="text-xs">
+              <Plus className="w-3.5 h-3.5 mr-1" /> Upload Note
             </Button>
-            <Button onClick={() => router.push('/admin/students')} variant="outline" className="bg-white text-slate-700 hover:bg-slate-50 shadow-sm border-slate-200">
-              <Users className="w-4 h-4 mr-2" /> View Students
+            <Button size="sm" variant="outline" onClick={() => router.push('/admin/students')} className="text-xs">
+              <Users className="w-3.5 h-3.5 mr-1" /> View Students
             </Button>
-            <Button onClick={() => router.push('/admin/subscriptions')} variant="outline" className="bg-white text-slate-700 hover:bg-slate-50 shadow-sm border-slate-200">
-              <CreditCard className="w-4 h-4 mr-2" /> Manage Subscriptions
+            <Button size="sm" variant="outline" onClick={() => router.push('/admin/subscriptions')} className="text-xs">
+              <CreditCard className="w-3.5 h-3.5 mr-1" /> Manage Subscriptions
             </Button>
           </div>
         </div>
 
-        {/* RECENT ACTIVITY GRIDS */}
+        {/* RECENT ACTIVITY 3-COLUMN GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Recent Students */}
-          <Card className="border-slate-200 shadow-sm bg-white overflow-hidden flex flex-col hover:shadow-md transition-shadow">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-                <Users className="w-4 h-4 text-slate-500" /> Recent Students
+          <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white shadow-[var(--shadow-xs)] overflow-hidden flex flex-col">
+            <div className="px-5 py-3.5 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-bg-subtle)]">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-primary)] flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-[var(--color-brand-600)]" /> Recent Students
               </h3>
-              <button onClick={() => router.push('/admin/students')} className="text-xs font-medium text-[var(--color-brand-600)] hover:text-[var(--color-brand-700)] flex items-center focus-ring rounded-sm">
-                View All <ArrowRight className="w-3 h-3 ml-1" />
+              <button onClick={() => router.push('/admin/students')} className="text-xs font-semibold text-[var(--color-brand-600)] hover:underline flex items-center">
+                View All <ArrowRight className="w-3 h-3 ml-0.5" />
               </button>
             </div>
             <div className="p-0 flex-1">
               {isFetching ? (
-                <div className="p-4 space-y-4">
-                  {[1, 2, 3].map(i => <div key={i} className="h-10 bg-slate-100 animate-pulse rounded-[var(--radius-md)]"></div>)}
+                <div className="p-4 space-y-3">
+                  {[1, 2, 3].map(i => <div key={i} className="h-10 bg-gray-100 animate-pulse rounded"></div>)}
                 </div>
               ) : recentStudents.length === 0 ? (
-                <div className="p-6 text-center text-slate-500 text-sm">No students found.</div>
+                <div className="p-6 text-center text-xs text-[var(--color-text-tertiary)] font-medium">No students registered yet.</div>
               ) : (
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y divide-[var(--color-border)]">
                   {recentStudents.map(student => (
-                    <li key={student.id} className="p-4 hover:bg-slate-50 transition-colors">
-                      <p className="text-sm font-semibold text-slate-900">{student.full_name || 'Anonymous'}</p>
-                      <div className="flex items-center justify-between mt-1">
-                        <p className="text-xs text-slate-500">{student.email}</p>
-                        <p className="text-xs text-slate-400">{new Date(student.created_at).toLocaleDateString()}</p>
+                    <li key={student.id} className="p-3.5 hover:bg-[var(--color-bg-subtle)] transition-colors">
+                      <p className="text-xs font-bold text-[var(--color-text-primary)]">{student.full_name || 'Anonymous Student'}</p>
+                      <div className="flex items-center justify-between mt-1 text-[11px]">
+                        <p className="text-[var(--color-text-secondary)] truncate max-w-[160px]">{student.email}</p>
+                        <p className="text-[var(--color-text-tertiary)] flex items-center gap-1 shrink-0">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(student.created_at).toLocaleDateString()}
+                        </p>
                       </div>
                     </li>
                   ))}
                 </ul>
               )}
             </div>
-          </Card>
+          </div>
 
           {/* Recent Jobs */}
-          <Card className="border-slate-200 shadow-sm bg-white overflow-hidden flex flex-col hover:shadow-md transition-shadow">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-                <Briefcase className="w-4 h-4 text-slate-500" /> Recent Job Posts
+          <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white shadow-[var(--shadow-xs)] overflow-hidden flex flex-col">
+            <div className="px-5 py-3.5 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-bg-subtle)]">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-primary)] flex items-center gap-1.5">
+                <Briefcase className="w-4 h-4 text-indigo-600" /> Recent Job Posts
               </h3>
-              <button onClick={() => router.push('/admin/jobs')} className="text-xs font-medium text-[var(--color-brand-600)] hover:text-[var(--color-brand-700)] flex items-center focus-ring rounded-sm">
-                View All <ArrowRight className="w-3 h-3 ml-1" />
+              <button onClick={() => router.push('/admin/jobs')} className="text-xs font-semibold text-[var(--color-brand-600)] hover:underline flex items-center">
+                View All <ArrowRight className="w-3 h-3 ml-0.5" />
               </button>
             </div>
             <div className="p-0 flex-1">
               {isFetching ? (
-                <div className="p-4 space-y-4">
-                  {[1, 2, 3].map(i => <div key={i} className="h-10 bg-slate-100 animate-pulse rounded-[var(--radius-md)]"></div>)}
+                <div className="p-4 space-y-3">
+                  {[1, 2, 3].map(i => <div key={i} className="h-10 bg-gray-100 animate-pulse rounded"></div>)}
                 </div>
               ) : recentJobs.length === 0 ? (
-                <div className="p-6 text-center text-slate-500 text-sm">No jobs posted yet.</div>
+                <div className="p-6 text-center text-xs text-[var(--color-text-tertiary)] font-medium">No jobs posted yet.</div>
               ) : (
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y divide-[var(--color-border)]">
                   {recentJobs.map(job => (
-                    <li key={job.id} className="p-4 hover:bg-slate-50 transition-colors">
-                      <p className="text-sm font-semibold text-slate-900 truncate">{job.title}</p>
-                      <div className="flex items-center justify-between mt-1">
-                        <p className="text-xs text-slate-500 truncate">{job.company_name}</p>
-                        <p className="text-xs text-slate-400 shrink-0">{new Date(job.posted_at).toLocaleDateString()}</p>
+                    <li key={job.id} className="p-3.5 hover:bg-[var(--color-bg-subtle)] transition-colors">
+                      <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">{job.title}</p>
+                      <div className="flex items-center justify-between mt-1 text-[11px]">
+                        <p className="text-[var(--color-text-secondary)] font-medium truncate max-w-[160px]">{job.company_name}</p>
+                        <p className="text-[var(--color-text-tertiary)] shrink-0 flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(job.posted_at).toLocaleDateString()}
+                        </p>
                       </div>
                     </li>
                   ))}
                 </ul>
               )}
             </div>
-          </Card>
+          </div>
 
           {/* Recent Premium */}
-          <Card className="border-slate-200 shadow-sm bg-white overflow-hidden flex flex-col hover:shadow-md transition-shadow">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-slate-500" /> Recent Premium
+          <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white shadow-[var(--shadow-xs)] overflow-hidden flex flex-col">
+            <div className="px-5 py-3.5 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-bg-subtle)]">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-primary)] flex items-center gap-1.5">
+                <CreditCard className="w-4 h-4 text-emerald-600" /> Active Premium
               </h3>
-              <button onClick={() => router.push('/admin/subscriptions')} className="text-xs font-medium text-[var(--color-brand-600)] hover:text-[var(--color-brand-700)] flex items-center focus-ring rounded-sm">
-                View All <ArrowRight className="w-3 h-3 ml-1" />
+              <button onClick={() => router.push('/admin/subscriptions')} className="text-xs font-semibold text-[var(--color-brand-600)] hover:underline flex items-center">
+                View All <ArrowRight className="w-3 h-3 ml-0.5" />
               </button>
             </div>
             <div className="p-0 flex-1">
               {isFetching ? (
-                <div className="p-4 space-y-4">
-                  {[1, 2, 3].map(i => <div key={i} className="h-10 bg-slate-100 animate-pulse rounded-[var(--radius-md)]"></div>)}
+                <div className="p-4 space-y-3">
+                  {[1, 2, 3].map(i => <div key={i} className="h-10 bg-gray-100 animate-pulse rounded"></div>)}
                 </div>
               ) : recentPremium.length === 0 ? (
-                <div className="p-6 text-center text-slate-500 text-sm">No premium subscriptions yet.</div>
+                <div className="p-6 text-center text-xs text-[var(--color-text-tertiary)] font-medium">No premium subscribers yet.</div>
               ) : (
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y divide-[var(--color-border)]">
                   {recentPremium.map(sub => (
-                    <li key={sub.id} className="p-4 hover:bg-slate-50 transition-colors">
-                      <p className="text-sm font-semibold text-slate-900 truncate">
-                        {sub.profiles?.full_name || 'Anonymous User'}
+                    <li key={sub.id} className="p-3.5 hover:bg-[var(--color-bg-subtle)] transition-colors">
+                      <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">
+                        {sub.profiles?.full_name || sub.profiles?.email || 'Anonymous Student'}
                       </p>
-                      <div className="flex items-center justify-between mt-1">
-                        <p className="text-xs text-[var(--color-success)] font-semibold uppercase tracking-wider">Premium</p>
-                        <p className="text-xs text-slate-400">{new Date(sub.start_date).toLocaleDateString()}</p>
+                      <div className="flex items-center justify-between mt-1 text-[11px]">
+                        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.2 rounded font-bold uppercase text-[10px]">
+                          Active Premium
+                        </span>
+                        <p className="text-[var(--color-text-tertiary)] shrink-0 flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(sub.start_date).toLocaleDateString()}
+                        </p>
                       </div>
                     </li>
                   ))}
                 </ul>
               )}
             </div>
-          </Card>
+          </div>
 
         </div>
 

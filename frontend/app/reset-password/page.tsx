@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { AlertCircle, Lock } from 'lucide-react';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -41,7 +42,6 @@ export default function ResetPasswordPage() {
       setError(updateError.message);
       setIsLoading(false);
     } else {
-      // Password updated successfully
       alert("Password updated successfully!");
       router.push('/login');
     }
@@ -49,22 +49,26 @@ export default function ResetPasswordPage() {
 
   return (
     <PublicLayout>
-      <section className="flex-1 flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md space-y-8">
+      <section className="flex-1 flex items-center justify-center bg-[var(--color-bg-subtle)] py-16 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div className="text-center">
-            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-brand-50)] text-[var(--color-brand-600)] border border-[var(--color-brand-200)] shadow-sm mb-4">
+              <Lock className="h-6 w-6" />
+            </div>
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">
               Create new password
             </h1>
-            <p className="mt-2 text-sm text-gray-600">
-              Please enter your new password below.
+            <p className="mt-1.5 text-sm text-[var(--color-text-secondary)]">
+              Enter your new secure password below
             </p>
           </div>
           
-          <Card className="p-8 shadow-xl border-gray-100 bg-white">
-            <form className="space-y-6" onSubmit={handleUpdate}>
+          <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-8 shadow-[var(--shadow-sm)]">
+            <form className="space-y-4" onSubmit={handleUpdate}>
               {error && (
-                <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
-                  {error}
+                <div className="bg-red-50 text-[var(--color-error)] p-3.5 rounded-[var(--radius-md)] text-sm font-medium border border-red-200 flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{error}</span>
                 </div>
               )}
               
@@ -72,7 +76,7 @@ export default function ResetPasswordPage() {
                 <Input 
                   label="New Password" 
                   type="password" 
-                  placeholder="Create a strong password (min 8 chars)" 
+                  placeholder="Min 8 characters" 
                   required
                   minLength={8}
                   value={password}
@@ -84,7 +88,7 @@ export default function ResetPasswordPage() {
                 <Input 
                   label="Confirm New Password" 
                   type="password" 
-                  placeholder="Confirm your new password" 
+                  placeholder="Re-enter new password" 
                   required
                   minLength={8}
                   value={confirmPassword}
@@ -92,13 +96,13 @@ export default function ResetPasswordPage() {
                 />
               </div>
 
-              <div>
-                <Button type="submit" className="w-full" isLoading={isLoading}>
+              <div className="pt-2">
+                <Button type="submit" className="w-full h-10 text-sm font-semibold justify-center shadow-sm" isLoading={isLoading}>
                   Update Password
                 </Button>
               </div>
             </form>
-          </Card>
+          </div>
         </div>
       </section>
     </PublicLayout>

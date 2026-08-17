@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { AdminLayout } from '@/layouts/AdminLayout';
-import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
 import { EmptyState } from '@/components/EmptyState';
@@ -18,8 +17,6 @@ import {
   ChevronRight,
   Plus,
   BookOpen,
-  Code,
-  Building,
   CheckCircle,
   HelpCircle,
   AlertCircle
@@ -87,7 +84,6 @@ export default function AdminQuestionsPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [techInput, setTechInput] = useState('');
   const [compInput, setCompInput] = useState('');
-  const [tagInput, setTagInput] = useState('');
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -121,12 +117,11 @@ export default function AdminQuestionsPage() {
 
       if (qError) throw qError;
       if (qData) {
-        // Map relationship
-        const mapped = qData.map(q => ({ ...q, category: q.interview_categories })) as Question[];
+        const mapped = qData.map((q: any) => ({ ...q, category: q.interview_categories })) as Question[];
         setQuestions(mapped);
       }
     } catch (err) {
-      console.error("Error fetching data:", err);
+      console.error("Error fetching interview questions:", err);
     } finally {
       setIsFetching(false);
     }
@@ -205,8 +200,8 @@ export default function AdminQuestionsPage() {
     const errors: Record<string, string> = {};
     if (!formData.title?.trim()) errors.title = "Question Title is required.";
     if (!formData.category_id) errors.category_id = "Category is required.";
-    if (!formData.answer?.trim()) errors.answer = "Answer is required.";
-    if (!formData.difficulty) errors.difficulty = "Difficulty is required.";
+    if (!formData.answer?.trim()) errors.answer = "Ideal Answer is required.";
+    if (!formData.difficulty) errors.difficulty = "Difficulty level is required.";
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -235,13 +230,11 @@ export default function AdminQuestionsPage() {
         // Update
         const { error } = await supabase.from('interview_questions').update(payload).eq('id', selectedQuestion.id);
         if (error) throw error;
-        // Refresh full list to get relations correct
         await fetchData();
       } else {
         // Insert
         const { error } = await supabase.from('interview_questions').insert(payload);
         if (error) throw error;
-        // Refresh full list to get relations correct
         await fetchData();
       }
       setIsFormModalOpen(false);
@@ -287,36 +280,38 @@ export default function AdminQuestionsPage() {
 
   return (
     <AdminLayout>
-      <div className="max-w-7xl mx-auto space-y-6 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="max-w-7xl mx-auto space-y-6 pb-12">
         
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Interview Questions Management</h1>
-            <p className="text-sm text-slate-500 mt-1">Manage interview preparation content for students.</p>
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Interview Questions</h1>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 font-medium">
+              Manage curated interview questions, difficulty ratings, and recommended answers.
+            </p>
           </div>
-          <Button onClick={openAddForm} className="shrink-0 bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white">
-            <Plus className="w-4 h-4 mr-2" /> Add Question
+          <Button size="sm" onClick={openAddForm} className="shrink-0 text-xs">
+            <Plus className="w-4 h-4 mr-1.5" /> Add Question
           </Button>
         </div>
 
-        {/* SEARCH & FILTERS */}
-        <Card className="p-4 border-slate-200 shadow-sm flex flex-col lg:flex-row gap-4">
+        {/* SEARCH & FILTERS BAR */}
+        <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-xs)] flex flex-col lg:flex-row gap-3 items-center">
           <div className="relative w-full lg:flex-1">
-            <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[var(--color-text-tertiary)] absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
               placeholder="Search by Question, Category, Tech or Company..." 
               value={searchQuery}
               onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] text-sm"
+              className="w-full pl-9 pr-3 py-2 border border-[var(--color-border)] bg-white rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] shadow-xs transition-colors"
             />
           </div>
 
-          <div className="w-full lg:w-auto grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="w-full lg:w-auto grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <select 
               value={categoryFilter} onChange={e => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
             >
               <option value="">All Categories</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -324,9 +319,9 @@ export default function AdminQuestionsPage() {
             
             <select 
               value={diffFilter} onChange={e => { setDiffFilter(e.target.value); setCurrentPage(1); }}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
             >
-              <option value="">Difficulty</option>
+              <option value="">All Difficulty</option>
               <option value="Easy">Easy</option>
               <option value="Medium">Medium</option>
               <option value="Hard">Hard</option>
@@ -334,31 +329,31 @@ export default function AdminQuestionsPage() {
 
             <select 
               value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
             >
-              <option value="">Status</option>
+              <option value="">All Statuses</option>
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
             </select>
 
-            <Button variant="outline" onClick={resetFilters} className="text-sm h-full w-full">
-              <Filter className="w-4 h-4 mr-2" /> Reset
+            <Button variant="outline" size="sm" onClick={resetFilters} className="text-xs h-full justify-center">
+              <Filter className="w-3.5 h-3.5 mr-1" /> Reset
             </Button>
           </div>
-        </Card>
+        </div>
 
-        {/* DATA TABLE */}
-        <Card className="border-slate-200 shadow-sm overflow-hidden bg-white">
+        {/* DATA TABLE CONTAINER */}
+        <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white shadow-[var(--shadow-xs)] overflow-hidden">
           {isFetching ? (
             <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-[var(--color-brand-500)] border-t-transparent"></div>
             </div>
           ) : filteredQuestions.length === 0 ? (
             <div className="p-8">
               <EmptyState 
                 title="No interview questions found."
-                description="Try adjusting your search criteria or add a new question."
-                action={<Button onClick={openAddForm}>Add Question</Button>}
+                description="Try adjusting your search criteria or create a new question."
+                action={<Button size="sm" onClick={openAddForm}>Add Question</Button>}
               />
             </div>
           ) : (
@@ -367,57 +362,60 @@ export default function AdminQuestionsPage() {
               <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                      <th className="px-6 py-4 w-1/3">Question Title</th>
-                      <th className="px-6 py-4">Category</th>
-                      <th className="px-6 py-4">Difficulty</th>
-                      <th className="px-6 py-4">Tags</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
+                    <tr className="bg-[var(--color-bg-subtle)] border-b border-[var(--color-border)] text-[11px] uppercase tracking-wider text-[var(--color-text-tertiary)] font-bold">
+                      <th className="px-5 py-3.5 w-2/5">Question Title</th>
+                      <th className="px-5 py-3.5">Category</th>
+                      <th className="px-5 py-3.5">Difficulty</th>
+                      <th className="px-5 py-3.5">Tags</th>
+                      <th className="px-5 py-3.5">Status</th>
+                      <th className="px-5 py-3.5 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-[var(--color-border)] text-xs">
                     {paginatedQuestions.map(q => (
-                      <tr key={q.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-4">
-                          <p className="text-sm font-bold text-slate-900 line-clamp-2">{q.title}</p>
-                          <p className="text-xs text-slate-500 mt-1">{new Date(q.created_at).toLocaleDateString()}</p>
+                      <tr key={q.id} className="hover:bg-[var(--color-bg-subtle)]/70 transition-colors">
+                        <td className="px-5 py-3.5">
+                          <p className="font-bold text-[var(--color-text-primary)] line-clamp-2 leading-snug">{q.title}</p>
+                          <p className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5">{new Date(q.created_at).toLocaleDateString()}</p>
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-700">{q.category?.name}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium border ${
-                            q.difficulty === 'Easy' ? 'bg-green-50 text-green-700 border-green-200' : 
-                            q.difficulty === 'Medium' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 
+                        <td className="px-5 py-3.5 font-medium text-[var(--color-text-secondary)]">{q.category?.name}</td>
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                            q.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 
+                            q.difficulty === 'Medium' ? 'bg-amber-50 text-amber-700 border-amber-200' : 
                             'bg-red-50 text-red-700 border-red-200'
                           }`}>
                             {q.difficulty}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-5 py-3.5">
                           <div className="flex flex-wrap gap-1">
-                            {q.technology_tags.slice(0, 2).map(t => <span key={t} className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-[10px]">{t}</span>)}
-                            {q.company_tags.slice(0, 2).map(c => <span key={c} className="bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded text-[10px]">{c}</span>)}
-                            {(q.technology_tags.length + q.company_tags.length > 4) && <span className="text-[10px] text-slate-500">+{q.technology_tags.length + q.company_tags.length - 4}</span>}
+                            {q.technology_tags?.slice(0, 2).map(t => (
+                              <span key={t} className="bg-[var(--color-brand-50)] text-[var(--color-brand-700)] px-1.5 py-0.2 rounded text-[10px] font-bold border border-[var(--color-brand-200)]">{t}</span>
+                            ))}
+                            {q.company_tags?.slice(0, 2).map(c => (
+                              <span key={c} className="bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] px-1.5 py-0.2 rounded text-[10px] font-bold border border-[var(--color-border)]">{c}</span>
+                            ))}
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                            q.status === 'Active' ? 'bg-[var(--color-success-50)] text-[var(--color-success)]' : 'bg-slate-100 text-slate-700'
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                            q.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'
                           }`}>
                             {q.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-right space-x-1">
-                          <button onClick={() => { setSelectedQuestion(q); setIsViewModalOpen(true); }} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="View">
+                        <td className="px-5 py-3.5 text-right space-x-1 whitespace-nowrap">
+                          <button onClick={() => { setSelectedQuestion(q); setIsViewModalOpen(true); }} className="p-1.5 text-[var(--color-brand-600)] hover:bg-[var(--color-brand-50)] rounded transition-colors" title="View">
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button onClick={() => openEditForm(q)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded" title="Edit">
+                          <button onClick={() => openEditForm(q)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Edit">
                             <Edit className="w-4 h-4" />
                           </button>
-                          <button onClick={() => { setSelectedQuestion(q); setIsStatusModalOpen(true); }} className={`p-1.5 rounded ${q.status === 'Active' ? 'text-amber-600 hover:bg-amber-50' : 'text-green-600 hover:bg-green-50'}`} title={q.status === 'Active' ? "Deactivate" : "Activate"}>
+                          <button onClick={() => { setSelectedQuestion(q); setIsStatusModalOpen(true); }} className={`p-1.5 rounded transition-colors ${q.status === 'Active' ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`} title={q.status === 'Active' ? "Deactivate" : "Activate"}>
                             <Power className="w-4 h-4" />
                           </button>
-                          <button onClick={() => { setSelectedQuestion(q); setIsDeleteModalOpen(true); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Delete">
+                          <button onClick={() => { setSelectedQuestion(q); setIsDeleteModalOpen(true); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </td>
@@ -427,159 +425,170 @@ export default function AdminQuestionsPage() {
                 </table>
               </div>
 
-              {/* Mobile Cards */}
-              <div className="lg:hidden divide-y divide-slate-100">
+              {/* Mobile Card List */}
+              <div className="lg:hidden divide-y divide-[var(--color-border)]">
                 {paginatedQuestions.map(q => (
-                  <div key={q.id} className="p-4 flex flex-col gap-3">
-                    <div className="flex justify-between items-start">
-                      <p className="text-sm font-bold text-slate-900 leading-snug pr-2">{q.title}</p>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${q.status === 'Active' ? 'bg-[var(--color-success-50)] text-[var(--color-success)]' : 'bg-slate-100 text-slate-700'}`}>
+                  <div key={q.id} className="p-4 space-y-2.5">
+                    <div className="flex justify-between items-start gap-2">
+                      <p className="text-xs font-bold text-[var(--color-text-primary)] leading-snug">{q.title}</p>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 border ${q.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
                         {q.status}
                       </span>
                     </div>
                     
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                      <span className="bg-slate-100 px-2 py-0.5 rounded">{q.category?.name}</span>
-                      <span className={`px-2 py-0.5 rounded font-medium border ${
-                        q.difficulty === 'Easy' ? 'bg-green-50 text-green-700 border-green-200' : 
-                        q.difficulty === 'Medium' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="bg-[var(--color-bg-subtle)] border border-[var(--color-border)] px-2 py-0.5 rounded text-[11px] font-medium text-[var(--color-text-secondary)]">{q.category?.name}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                        q.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 
+                        q.difficulty === 'Medium' ? 'bg-amber-50 text-amber-700 border-amber-200' : 
                         'bg-red-50 text-red-700 border-red-200'
                       }`}>
                         {q.difficulty}
                       </span>
                     </div>
 
-                    <div className="flex justify-end gap-2 border-t border-slate-100 pt-3 mt-1">
-                      <Button variant="outline" className="text-xs py-1 px-2 h-auto" onClick={() => { setSelectedQuestion(q); setIsViewModalOpen(true); }}><Eye className="w-3.5 h-3.5" /></Button>
-                      <Button variant="outline" className="text-xs py-1 px-2 h-auto" onClick={() => openEditForm(q)}><Edit className="w-3.5 h-3.5" /></Button>
-                      <Button variant="outline" className="text-xs py-1 px-2 h-auto" onClick={() => { setSelectedQuestion(q); setIsStatusModalOpen(true); }}><Power className="w-3.5 h-3.5" /></Button>
-                      <Button variant="outline" className="text-xs py-1 px-2 h-auto border-red-200 text-red-600 hover:bg-red-50" onClick={() => { setSelectedQuestion(q); setIsDeleteModalOpen(true); }}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    <div className="flex justify-end gap-1.5 pt-2 border-t border-[var(--color-border)]">
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => { setSelectedQuestion(q); setIsViewModalOpen(true); }}>View</Button>
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => openEditForm(q)}>Edit</Button>
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => { setSelectedQuestion(q); setIsStatusModalOpen(true); }}>{q.status === 'Active' ? 'Deactivate' : 'Activate'}</Button>
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5 text-red-600 hover:bg-red-50" onClick={() => { setSelectedQuestion(q); setIsDeleteModalOpen(true); }}>Delete</Button>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Pagination */}
-              <div className="p-4 border-t border-slate-200 flex items-center justify-between bg-slate-50/50">
-                <span className="text-sm text-slate-500">
-                  Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredQuestions.length)} of {filteredQuestions.length}
+              {/* Pagination Bar */}
+              <div className="p-3.5 border-t border-[var(--color-border)] flex items-center justify-between bg-[var(--color-bg-subtle)] text-xs">
+                <span className="font-medium text-[var(--color-text-tertiary)]">
+                  Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredQuestions.length)} of {filteredQuestions.length} questions
                 </span>
-                <div className="flex gap-2">
-                  <Button variant="outline" className="p-2" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}><ChevronLeft className="w-4 h-4" /></Button>
-                  <Button variant="outline" className="p-2" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(p => p + 1)}><ChevronRight className="w-4 h-4" /></Button>
+                <div className="flex gap-1.5">
+                  <Button variant="outline" size="sm" className="p-1.5 h-8 w-8 justify-center" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}><ChevronLeft className="w-4 h-4" /></Button>
+                  <Button variant="outline" size="sm" className="p-1.5 h-8 w-8 justify-center" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(p => p + 1)}><ChevronRight className="w-4 h-4" /></Button>
                 </div>
               </div>
             </>
           )}
-        </Card>
+        </div>
 
       </div>
 
       {/* FORM MODAL (ADD / EDIT) */}
-      <Modal isOpen={isFormModalOpen} onClose={() => !isProcessing && setIsFormModalOpen(false)} title={selectedQuestion ? "Edit Question" : "Add New Question"} className="max-w-4xl">
-        <div className="space-y-6">
+      <Modal isOpen={isFormModalOpen} onClose={() => !isProcessing && setIsFormModalOpen(false)} title={selectedQuestion ? "Edit Question" : "Add Interview Question"} className="max-w-3xl">
+        <div className="space-y-4 text-xs">
           
-          <div className="space-y-4">
-            <Input label="Question Title *" name="title" value={formData.title} onChange={handleFormChange} error={formErrors.title} placeholder="e.g. What is the Virtual DOM?" />
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Category *</label>
-                <select name="category_id" value={formData.category_id} onChange={handleFormChange} className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] ${formErrors.category_id ? 'border-red-300' : 'border-slate-300'}`}>
-                  <option value="" disabled>Select Category</option>
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                {formErrors.category_id && <p className="text-red-500 text-xs mt-1">{formErrors.category_id}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Difficulty *</label>
-                <select name="difficulty" value={formData.difficulty} onChange={handleFormChange} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)]">
-                  <option value="Easy">Easy</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Hard">Hard</option>
-                </select>
-              </div>
-            </div>
-
+          <div>
+            <label className="block font-bold text-[var(--color-text-primary)] mb-1">Question Title *</label>
+            <input type="text" name="title" value={formData.title || ''} onChange={handleFormChange} placeholder="e.g. What is the difference between SQL and NoSQL?" className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white" />
+            {formErrors.title && <p className="text-red-500 mt-1">{formErrors.title}</p>}
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Detailed Answer *</label>
-              <textarea 
-                name="answer" 
-                value={formData.answer} 
-                onChange={handleFormChange} 
-                rows={6}
-                placeholder="Provide a comprehensive answer..."
-                className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] ${formErrors.answer ? 'border-red-300' : 'border-slate-300'}`}
-              />
-              {formErrors.answer && <p className="text-red-500 text-xs mt-1">{formErrors.answer}</p>}
+              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Category *</label>
+              <select name="category_id" value={formData.category_id} onChange={handleFormChange} className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white">
+                <option value="" disabled>Select Category</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              {formErrors.category_id && <p className="text-red-500 mt-1">{formErrors.category_id}</p>}
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Interview Tips (Optional)</label>
+              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Difficulty *</label>
+              <select name="difficulty" value={formData.difficulty} onChange={handleFormChange} className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white">
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-bold text-[var(--color-text-primary)] mb-1">Detailed Answer *</label>
+            <textarea 
+              name="answer" 
+              value={formData.answer || ''} 
+              onChange={handleFormChange} 
+              rows={5}
+              placeholder="Comprehensive model answer..."
+              className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white"
+            />
+            {formErrors.answer && <p className="text-red-500 mt-1">{formErrors.answer}</p>}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Pro Tips (Optional)</label>
               <textarea 
                 name="tips" 
                 value={formData.tips || ''} 
                 onChange={handleFormChange} 
                 rows={2}
-                placeholder="e.g. Always mention time complexity."
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)]"
+                placeholder="e.g. Always structure your answer using STAR method."
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white"
               />
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Technology Tags */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Technology Tags</label>
-                <div className="flex gap-2 mb-2">
-                  <input type="text" value={techInput} onChange={e => setTechInput(e.target.value)} onKeyDown={(e) => handleArrayAdd(e, techInput, setTechInput, 'technology_tags')} className="flex-1 rounded-md border border-slate-300 px-3 py-1.5 text-sm" placeholder="e.g. React" />
-                  <Button type="button" onClick={(e) => handleArrayAdd(e, techInput, setTechInput, 'technology_tags')} className="px-3 py-1.5">Add</Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {(formData.technology_tags || []).map(t => (
-                    <span key={t} className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
-                      {t} <button type="button" onClick={() => handleArrayRemove(t, 'technology_tags')} className="hover:text-red-500">&times;</button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Company Tags */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Company Tags</label>
-                <div className="flex gap-2 mb-2">
-                  <input type="text" value={compInput} onChange={e => setCompInput(e.target.value)} onKeyDown={(e) => handleArrayAdd(e, compInput, setCompInput, 'company_tags')} className="flex-1 rounded-md border border-slate-300 px-3 py-1.5 text-sm" placeholder="e.g. Google" />
-                  <Button type="button" onClick={(e) => handleArrayAdd(e, compInput, setCompInput, 'company_tags')} className="px-3 py-1.5">Add</Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {(formData.company_tags || []).map(c => (
-                    <span key={c} className="bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
-                      {c} <button type="button" onClick={() => handleArrayRemove(c, 'company_tags')} className="hover:text-red-500">&times;</button>
-                    </span>
-                  ))}
-                </div>
-              </div>
+            <div>
+              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Common Pitfalls (Optional)</label>
+              <textarea 
+                name="common_mistakes" 
+                value={formData.common_mistakes || ''} 
+                onChange={handleFormChange} 
+                rows={2}
+                placeholder="e.g. Giving one-word answers or not explaining trade-offs."
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white"
+              />
             </div>
-
-            {/* Status */}
-            <div className="pt-2">
-              <label className="block text-sm font-medium text-slate-700 mb-2">Visibility Status</label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
-                  <input type="radio" name="status" value="Active" checked={formData.status === 'Active'} onChange={handleFormChange} className="text-blue-600 focus:ring-[var(--color-brand-500)]" />
-                  Active (Visible to Students)
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
-                  <input type="radio" name="status" value="Inactive" checked={formData.status === 'Inactive'} onChange={handleFormChange} className="text-blue-600 focus:ring-[var(--color-brand-500)]" />
-                  Inactive (Hidden)
-                </label>
-              </div>
-            </div>
-
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
-            <Button variant="outline" onClick={() => setIsFormModalOpen(false)} disabled={isProcessing}>Cancel</Button>
-            <Button variant="primary" onClick={handleSave} disabled={isProcessing}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Technology Tags</label>
+              <div className="flex gap-2 mb-1.5">
+                <input type="text" value={techInput} onChange={e => setTechInput(e.target.value)} onKeyDown={(e) => handleArrayAdd(e, techInput, setTechInput, 'technology_tags')} className="flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-1.5 text-xs outline-none" placeholder="e.g. React, SQL" />
+                <Button type="button" size="sm" onClick={(e) => handleArrayAdd(e, techInput, setTechInput, 'technology_tags')}>Add</Button>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {(formData.technology_tags || []).map(t => (
+                  <span key={t} className="bg-[var(--color-brand-50)] text-[var(--color-brand-700)] px-2 py-0.5 rounded-full text-[11px] font-semibold flex items-center gap-1 border border-[var(--color-brand-200)]">
+                    {t} <button type="button" onClick={() => handleArrayRemove(t, 'technology_tags')} className="hover:text-red-500">&times;</button>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Company Tags</label>
+              <div className="flex gap-2 mb-1.5">
+                <input type="text" value={compInput} onChange={e => setCompInput(e.target.value)} onKeyDown={(e) => handleArrayAdd(e, compInput, setCompInput, 'company_tags')} className="flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-1.5 text-xs outline-none" placeholder="e.g. Google, TCS" />
+                <Button type="button" size="sm" onClick={(e) => handleArrayAdd(e, compInput, setCompInput, 'company_tags')}>Add</Button>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {(formData.company_tags || []).map(c => (
+                  <span key={c} className="bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] px-2 py-0.5 rounded-full text-[11px] font-semibold flex items-center gap-1 border border-[var(--color-border)]">
+                    {c} <button type="button" onClick={() => handleArrayRemove(c, 'company_tags')} className="hover:text-red-500">&times;</button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-bold text-[var(--color-text-primary)] mb-1">Visibility Status</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="status" value="Active" checked={formData.status === 'Active'} onChange={handleFormChange} />
+                <span>Active (Visible to Students)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="status" value="Inactive" checked={formData.status === 'Inactive'} onChange={handleFormChange} />
+                <span>Inactive (Hidden)</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2.5 pt-4 border-t border-[var(--color-border)]">
+            <Button variant="outline" size="sm" onClick={() => setIsFormModalOpen(false)} disabled={isProcessing}>Cancel</Button>
+            <Button variant="primary" size="sm" onClick={handleSave} disabled={isProcessing}>
               {isProcessing ? 'Saving...' : 'Save Question'}
             </Button>
           </div>
@@ -587,70 +596,47 @@ export default function AdminQuestionsPage() {
       </Modal>
 
       {/* VIEW QUESTION MODAL */}
-      <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Question Preview" className="max-w-3xl">
+      <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Question Preview" className="max-w-2xl">
         {selectedQuestion && (
-          <div className="space-y-6">
-            <div className="flex items-start justify-between gap-4">
-              <h2 className="text-xl font-bold text-slate-900 leading-snug">{selectedQuestion.title}</h2>
-              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shrink-0 ${selectedQuestion.status === 'Active' ? 'bg-[var(--color-success-50)] text-[var(--color-success)]' : 'bg-slate-100 text-slate-700'}`}>
+          <div className="space-y-4 text-xs">
+            <div className="flex items-start justify-between pb-3 border-b border-[var(--color-border)]">
+              <h2 className="text-base font-bold text-[var(--color-text-primary)] leading-snug">{selectedQuestion.title}</h2>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 border ${selectedQuestion.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
                 {selectedQuestion.status}
               </span>
             </div>
 
-            <div className="flex flex-wrap gap-2 mb-4">
-              <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
-                <BookOpen className="w-3.5 h-3.5"/> {selectedQuestion.category?.name}
+            <div className="flex flex-wrap gap-2">
+              <span className="bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] border border-[var(--color-border)] px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1">
+                <BookOpen className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /> {selectedQuestion.category?.name}
               </span>
-              <span className={`px-2 py-1 rounded text-xs font-medium border flex items-center gap-1 ${
-                selectedQuestion.difficulty === 'Easy' ? 'bg-green-50 text-green-700 border-green-200' : 
-                selectedQuestion.difficulty === 'Medium' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                selectedQuestion.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 
+                selectedQuestion.difficulty === 'Medium' ? 'bg-amber-50 text-amber-700 border-amber-200' : 
                 'bg-red-50 text-red-700 border-red-200'
               }`}>
-                <AlertCircle className="w-3.5 h-3.5"/> {selectedQuestion.difficulty}
+                {selectedQuestion.difficulty}
               </span>
             </div>
 
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-600"/> Correct Answer
-              </h3>
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-                {selectedQuestion.answer}
-              </div>
+            <div className="bg-[var(--color-bg-subtle)] p-4 rounded-[var(--radius-lg)] border border-[var(--color-border)]">
+              <h4 className="font-bold text-[var(--color-brand-700)] mb-1.5 uppercase text-[11px] flex items-center gap-1.5">
+                <CheckCircle className="w-4 h-4 text-emerald-600" /> Ideal Answer
+              </h4>
+              <p className="text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed">{selectedQuestion.answer}</p>
             </div>
 
             {selectedQuestion.tips && (
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
-                  <HelpCircle className="w-4 h-4 text-blue-600"/> Interview Tips
-                </h3>
-                <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 text-sm text-blue-800">
-                  {selectedQuestion.tips}
-                </div>
+              <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-[var(--radius-lg)]">
+                <h4 className="font-bold text-emerald-900 mb-1 flex items-center gap-1">
+                  <HelpCircle className="w-3.5 h-3.5" /> Interview Tips
+                </h4>
+                <p className="text-emerald-950 leading-relaxed">{selectedQuestion.tips}</p>
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Technologies</h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedQuestion.technology_tags && selectedQuestion.technology_tags.length > 0 ? (
-                    selectedQuestion.technology_tags.map(t => <span key={t} className="bg-slate-100 px-2 py-0.5 rounded text-xs text-slate-700">{t}</span>)
-                  ) : <span className="text-xs text-slate-400">None</span>}
-                </div>
-              </div>
-              <div>
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Companies</h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedQuestion.company_tags && selectedQuestion.company_tags.length > 0 ? (
-                    selectedQuestion.company_tags.map(c => <span key={c} className="bg-slate-100 px-2 py-0.5 rounded text-xs text-slate-700">{c}</span>)
-                  ) : <span className="text-xs text-slate-400">None</span>}
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex justify-end pt-4 border-t border-slate-100">
-              <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>Close Preview</Button>
+            <div className="flex justify-end pt-4 border-t border-[var(--color-border)]">
+              <Button variant="outline" size="sm" onClick={() => setIsViewModalOpen(false)}>Close</Button>
             </div>
           </div>
         )}
@@ -659,20 +645,21 @@ export default function AdminQuestionsPage() {
       {/* ACTIVATE / DEACTIVATE MODAL */}
       <Modal isOpen={isStatusModalOpen} onClose={() => !isProcessing && setIsStatusModalOpen(false)} title="Confirm Status Change">
         {selectedQuestion && (
-          <div className="space-y-4">
-            <p className="text-slate-600">
+          <div className="space-y-4 text-xs">
+            <p className="text-[var(--color-text-secondary)] leading-relaxed">
               Are you sure you want to <strong>{selectedQuestion.status === 'Active' ? 'deactivate' : 'activate'}</strong> this question?
             </p>
             {selectedQuestion.status === 'Active' && (
-              <div className="bg-amber-50 border-l-4 border-amber-500 p-3 text-sm text-amber-800">
-                Deactivating this question will immediately hide it from students during their interview prep.
+              <div className="bg-amber-50 border border-amber-200 p-3 rounded-[var(--radius-lg)] text-amber-900 font-medium">
+                Deactivating this question will immediately hide it from student interview preparation sessions.
               </div>
             )}
-            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="outline" onClick={() => setIsStatusModalOpen(false)} disabled={isProcessing}>Cancel</Button>
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-[var(--color-border)]">
+              <Button variant="outline" size="sm" onClick={() => setIsStatusModalOpen(false)} disabled={isProcessing}>Cancel</Button>
               <Button 
                 variant="primary" 
-                className={selectedQuestion.status === 'Active' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-green-600 hover:bg-green-700'}
+                size="sm"
+                className={selectedQuestion.status === 'Active' ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}
                 onClick={handleToggleStatus} 
                 disabled={isProcessing}
               >
@@ -686,20 +673,21 @@ export default function AdminQuestionsPage() {
       {/* DELETE MODAL */}
       <Modal isOpen={isDeleteModalOpen} onClose={() => !isProcessing && setIsDeleteModalOpen(false)} title="Delete Question">
         {selectedQuestion && (
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 bg-red-50 text-red-800 p-4 rounded-lg border border-red-100">
+          <div className="space-y-4 text-xs">
+            <div className="flex items-start gap-3 bg-red-50 text-red-900 p-4 rounded-[var(--radius-lg)] border border-red-200">
               <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold">Warning: This action is permanent.</p>
-                <p className="text-sm mt-1">
-                  Are you sure you want to completely delete the question <strong>"{selectedQuestion.title}"</strong>? All student progress associated with this question will also be destroyed.
+                <p className="font-bold text-red-950">Warning: This action cannot be undone.</p>
+                <p className="mt-1 leading-relaxed text-red-900">
+                  Are you sure you want to completely delete the question <strong>"{selectedQuestion.title}"</strong>? Associated student completion records will also be removed.
                 </p>
               </div>
             </div>
-            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)} disabled={isProcessing}>Cancel</Button>
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-[var(--color-border)]">
+              <Button variant="outline" size="sm" onClick={() => setIsDeleteModalOpen(false)} disabled={isProcessing}>Cancel</Button>
               <Button 
                 variant="primary" 
+                size="sm"
                 className="bg-red-600 hover:bg-red-700 border-transparent text-white"
                 onClick={handleDelete} 
                 disabled={isProcessing}
@@ -712,22 +700,5 @@ export default function AdminQuestionsPage() {
       </Modal>
 
     </AdminLayout>
-  );
-}
-
-function Input({ label, name, value, onChange, error, placeholder }: any) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
-      <input
-        type="text"
-        name={name}
-        value={value || ''}
-        onChange={onChange}
-        placeholder={placeholder}
-        className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] ${error ? 'border-red-300' : 'border-slate-300'}`}
-      />
-      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-    </div>
   );
 }

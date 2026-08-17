@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { StudentLayout } from '@/layouts/StudentLayout';
-import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { 
   Check, 
@@ -11,7 +10,9 @@ import {
   ShieldCheck, 
   Zap, 
   Briefcase, 
-  BookOpen 
+  BookOpen,
+  CheckCircle2,
+  Calendar
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
@@ -67,170 +68,202 @@ export default function SubscriptionPage() {
       <div className="max-w-5xl mx-auto space-y-8 pb-12">
         
         {/* HEADER */}
-        <div className="text-center md:text-left">
-          <h1 className="text-3xl font-bold text-slate-900">Subscription</h1>
-          <p className="text-base text-slate-500 mt-2">Choose the plan that best supports your job search.</p>
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">My Subscription</h1>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 font-medium">
+            Manage your current membership plan and unlock premium career preparation features.
+          </p>
         </div>
 
         {/* CURRENT PLAN CARD */}
-        <Card className="p-6 border-blue-100 bg-blue-50/30">
-          <h2 className="text-lg font-bold text-slate-900 mb-4">Current Plan Overview</h2>
+        <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-xs)]">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-tertiary)] mb-4">Current Plan Status</h2>
           
           {isFetching ? (
-            <div className="animate-pulse flex space-x-4">
-              <div className="flex-1 space-y-4 py-1">
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              </div>
+            <div className="flex items-center gap-3 py-2">
+              <div className="animate-spin h-5 w-5 border-2 border-[var(--color-brand-500)] border-t-transparent rounded-full"></div>
+              <p className="text-xs text-[var(--color-text-tertiary)]">Checking subscription status...</p>
             </div>
-          ) : subscription ? (
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className={`h-14 w-14 rounded-full flex items-center justify-center ${isPremium ? 'bg-blue-100 text-[var(--color-brand-600)]' : 'bg-gray-200 text-slate-600'}`}>
-                  {isPremium ? <Star className="w-7 h-7" /> : <ShieldCheck className="w-7 h-7" />}
+                <div className={`h-12 w-12 rounded-full flex items-center justify-center border shrink-0 ${isPremium ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-600)] border-[var(--color-brand-200)]' : 'bg-[var(--color-bg-muted)] text-[var(--color-text-tertiary)] border-[var(--color-border)]'}`}>
+                  {isPremium ? <Star className="w-6 h-6 fill-current" /> : <ShieldCheck className="w-6 h-6" />}
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900">{subscription.plan} Plan</h3>
-                  <div className="flex items-center gap-3 text-sm mt-1">
-                    <span className={`px-2 py-0.5 rounded-full font-medium text-xs ${
-                      subscription.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-[var(--color-text-primary)]">
+                      {subscription ? `${subscription.plan} Plan` : 'Free Tier'}
+                    </h3>
+                    <span className={`px-2.5 py-0.5 rounded-full font-bold text-[11px] border ${
+                      isPremium 
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                        : 'bg-gray-100 text-gray-700 border-gray-200'
                     }`}>
-                      {subscription.status}
+                      {subscription?.status || 'Active'}
                     </span>
-                    <span className="text-slate-500">
-                      Started: {new Date(subscription.start_date).toLocaleDateString()}
-                    </span>
-                    {subscription.end_date && (
-                      <span className="text-slate-500">
-                        Expires: {new Date(subscription.end_date).toLocaleDateString()}
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--color-text-tertiary)] font-medium mt-1">
+                    {subscription?.start_date && (
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        Started: {new Date(subscription.start_date).toLocaleDateString()}
+                      </span>
+                    )}
+                    {subscription?.end_date && (
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        Renews / Expires: {new Date(subscription.end_date).toLocaleDateString()}
                       </span>
                     )}
                   </div>
                 </div>
               </div>
 
-              {isPremium && (
-                <Button onClick={() => router.push('/student/payment')}>
-                  Renew Premium
+              {!isPremium ? (
+                <Button 
+                  size="sm"
+                  onClick={() => router.push('/student/payment')}
+                  className="shrink-0"
+                >
+                  Upgrade to Premium
                 </Button>
+              ) : (
+                <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 self-start sm:self-center">
+                  All Features Unlocked
+                </span>
               )}
             </div>
-          ) : (
-            <p className="text-slate-500">No active subscription found.</p>
           )}
-        </Card>
+        </div>
 
         {/* PLAN COMPARISON */}
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-6 text-center">Compare Plans</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4 text-center">Compare Available Plans</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
             
             {/* FREE PLAN */}
-            <Card className="p-8 border-slate-200 shadow-sm flex flex-col h-full bg-white relative overflow-hidden">
-              <div className="mb-6">
-                <h3 className="text-2xl font-bold text-slate-900">Free</h3>
-                <p className="text-slate-500 mt-2 text-sm">Essential tools to start your career journey.</p>
-                <div className="mt-4">
-                  <span className="text-4xl font-extrabold text-slate-900">₹0</span>
-                  <span className="text-slate-500 text-sm">/ forever</span>
+            <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-7 shadow-[var(--shadow-xs)] flex flex-col justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-[var(--color-text-primary)]">Free Plan</h3>
+                <p className="text-xs text-[var(--color-text-secondary)] mt-1">Essential tools for students starting their career search.</p>
+                <div className="my-5">
+                  <span className="text-3xl font-extrabold text-[var(--color-text-primary)]">₹0</span>
+                  <span className="text-xs font-semibold text-[var(--color-text-tertiary)] ml-1">/ forever</span>
                 </div>
+                
+                <ul className="space-y-3 pt-4 border-t border-[var(--color-border)] mb-8 text-xs font-medium text-[var(--color-text-secondary)]">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Browse verified fresher jobs</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Basic HR & Aptitude questions</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Standard study notes & summaries</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Single primary resume upload</span>
+                  </li>
+                </ul>
               </div>
-              
-              <ul className="space-y-4 mb-8 flex-1">
-                <li className="flex items-start gap-3 text-gray-700 text-sm">
-                  <Check className="w-5 h-5 text-green-500 shrink-0" /> Limited job access
-                </li>
-                <li className="flex items-start gap-3 text-gray-700 text-sm">
-                  <Check className="w-5 h-5 text-green-500 shrink-0" /> Basic interview questions
-                </li>
-                <li className="flex items-start gap-3 text-gray-700 text-sm">
-                  <Check className="w-5 h-5 text-green-500 shrink-0" /> Basic study notes
-                </li>
-                <li className="flex items-start gap-3 text-gray-700 text-sm">
-                  <Check className="w-5 h-5 text-green-500 shrink-0" /> Resume upload
-                </li>
-              </ul>
-              
+
               <Button 
-                variant={!isPremium ? "outline" : "outline"} 
-                className={`w-full ${!isPremium ? 'border-gray-400 text-slate-600 bg-gray-50 cursor-default' : ''}`}
+                variant="outline" 
+                size="sm"
+                className="w-full justify-center text-xs"
                 disabled={!isPremium}
               >
-                {!isPremium ? 'Current Plan' : 'Downgrade'}
+                {!isPremium ? 'Current Active Plan' : 'Free Tier'}
               </Button>
-            </Card>
+            </div>
 
             {/* PREMIUM PLAN */}
-            <Card className="p-8 border-blue-500 flex flex-col h-full bg-white relative shadow-md">
-              <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
-                RECOMMENDED
+            <div className="rounded-[var(--radius-xl)] border-2 border-[var(--color-brand-500)] bg-white p-7 shadow-[var(--shadow-md)] flex flex-col justify-between relative">
+              <div className="absolute -top-3 right-6 bg-[var(--color-brand-500)] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full">
+                Recommended
               </div>
-              <div className="mb-6">
-                <h3 className="text-2xl font-bold text-[var(--color-brand-600)]">Premium</h3>
-                <p className="text-slate-500 mt-2 text-sm">Everything you need to land your dream job faster.</p>
-                <div className="mt-4">
-                  <span className="text-4xl font-extrabold text-slate-900">₹999</span>
-                  <span className="text-slate-500 text-sm">/ year</span>
+
+              <div>
+                <h3 className="text-lg font-bold text-[var(--color-brand-600)] flex items-center gap-1.5">
+                  <Star className="w-4 h-4 fill-current" /> Premium Plan
+                </h3>
+                <p className="text-xs text-[var(--color-text-secondary)] mt-1">Complete package to prepare for competitive technical interviews.</p>
+                <div className="my-5">
+                  <span className="text-3xl font-extrabold text-[var(--color-text-primary)]">₹999</span>
+                  <span className="text-xs font-semibold text-[var(--color-text-tertiary)] ml-1">/ year</span>
                 </div>
+                
+                <ul className="space-y-3 pt-4 border-t border-[var(--color-border)] mb-8 text-xs font-medium text-[var(--color-text-primary)]">
+                  <li className="flex items-center gap-2 font-semibold text-[var(--color-brand-700)]">
+                    <Check className="w-4 h-4 text-[var(--color-brand-600)] shrink-0" />
+                    <span>Everything in Free Plan</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-[var(--color-brand-600)] shrink-0" />
+                    <span>Company-wise interview question archive</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-[var(--color-brand-600)] shrink-0" />
+                    <span>Full technical notes and downloadable cheat sheets</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-[var(--color-brand-600)] shrink-0" />
+                    <span>Priority job listing alerts</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-[var(--color-brand-600)] shrink-0" />
+                    <span>Direct student email support</span>
+                  </li>
+                </ul>
               </div>
-              
-              <ul className="space-y-4 mb-8 flex-1">
-                <li className="flex items-start gap-3 text-gray-700 text-sm font-medium">
-                  <Check className="w-5 h-5 text-blue-500 shrink-0" /> Unlimited job access
-                </li>
-                <li className="flex items-start gap-3 text-gray-700 text-sm font-medium">
-                  <Check className="w-5 h-5 text-blue-500 shrink-0" /> Company-wise interview questions
-                </li>
-                <li className="flex items-start gap-3 text-gray-700 text-sm font-medium">
-                  <Check className="w-5 h-5 text-blue-500 shrink-0" /> Complete study notes
-                </li>
-                <li className="flex items-start gap-3 text-gray-700 text-sm font-medium">
-                  <Check className="w-5 h-5 text-blue-500 shrink-0" /> Priority job updates
-                </li>
-                <li className="flex items-start gap-3 text-gray-700 text-sm font-medium">
-                  <Check className="w-5 h-5 text-blue-500 shrink-0" /> Premium resources
-                </li>
-              </ul>
-              
+
               <Button 
-                variant={isPremium ? "outline" : "primary"} 
-                className={`w-full ${isPremium ? 'border-gray-400 text-slate-600 bg-gray-50 cursor-default' : 'bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white'}`}
+                variant={isPremium ? "outline" : "primary"}
+                size="sm"
+                className="w-full justify-center text-xs"
                 onClick={() => !isPremium && router.push('/student/payment')}
+                disabled={isPremium}
               >
-                {isPremium ? 'Current Plan' : 'Upgrade to Premium'}
+                {isPremium ? 'Current Active Plan' : 'Upgrade to Premium'}
               </Button>
-            </Card>
+            </div>
 
           </div>
         </div>
 
-        {/* PREMIUM BENEFITS */}
-        <div className="pt-8">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6 text-center">Why Upgrade to Premium?</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="p-6 border-gray-100 bg-gray-50/50 text-center flex flex-col items-center">
-              <div className="h-12 w-12 bg-blue-100 text-[var(--color-brand-600)] rounded-full flex items-center justify-center mb-4">
-                <Zap className="w-6 h-6" />
+        {/* VALUE PILLARS */}
+        <div className="pt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-xs)] text-center">
+              <div className="h-9 w-9 bg-[var(--color-brand-50)] text-[var(--color-brand-600)] rounded-full flex items-center justify-center mx-auto mb-2.5">
+                <Zap className="w-4 h-4" />
               </div>
-              <h4 className="font-bold text-slate-900 mb-2">Priority Updates</h4>
-              <p className="text-sm text-slate-500">Get notified about top-tier jobs before free users, giving you a crucial head start.</p>
-            </Card>
+              <h4 className="font-bold text-xs text-[var(--color-text-primary)] mb-1">Priority Notifications</h4>
+              <p className="text-[11px] text-[var(--color-text-secondary)] leading-relaxed">Stay informed as soon as top companies open applications.</p>
+            </div>
             
-            <Card className="p-6 border-gray-100 bg-gray-50/50 text-center flex flex-col items-center">
-              <div className="h-12 w-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-4">
-                <Briefcase className="w-6 h-6" />
+            <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-xs)] text-center">
+              <div className="h-9 w-9 bg-[var(--color-brand-50)] text-[var(--color-brand-600)] rounded-full flex items-center justify-center mx-auto mb-2.5">
+                <Briefcase className="w-4 h-4" />
               </div>
-              <h4 className="font-bold text-slate-900 mb-2">Company Specifics</h4>
-              <p className="text-sm text-slate-500">Unlock exact interview questions frequently asked by companies like Amazon and Google.</p>
-            </Card>
+              <h4 className="font-bold text-xs text-[var(--color-text-primary)] mb-1">Company-Specific Banks</h4>
+              <p className="text-[11px] text-[var(--color-text-secondary)] leading-relaxed">Practice questions asked by Amazon, TCS, Infosys, and more.</p>
+            </div>
 
-            <Card className="p-6 border-gray-100 bg-gray-50/50 text-center flex flex-col items-center">
-              <div className="h-12 w-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mb-4">
-                <BookOpen className="w-6 h-6" />
+            <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-xs)] text-center">
+              <div className="h-9 w-9 bg-[var(--color-brand-50)] text-[var(--color-brand-600)] rounded-full flex items-center justify-center mx-auto mb-2.5">
+                <BookOpen className="w-4 h-4" />
               </div>
-              <h4 className="font-bold text-slate-900 mb-2">Complete Library</h4>
-              <p className="text-sm text-slate-500">Gain full access to our entire catalog of premium study notes and cheat sheets.</p>
-            </Card>
+              <h4 className="font-bold text-xs text-[var(--color-text-primary)] mb-1">Complete Notes Archive</h4>
+              <p className="text-[11px] text-[var(--color-text-secondary)] leading-relaxed">Download revision PDFs and technical guides directly to your device.</p>
+            </div>
           </div>
         </div>
 

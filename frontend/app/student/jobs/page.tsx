@@ -16,8 +16,8 @@ import {
   Bookmark,
   BookmarkCheck,
   Filter,
-  X,
-  ExternalLink
+  ExternalLink,
+  CheckCircle2
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
@@ -48,7 +48,6 @@ export default function JobsPage() {
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [locationFilter, setLocationFilter] = useState('');
   const [workModeFilter, setWorkModeFilter] = useState('');
   const [experienceFilter, setExperienceFilter] = useState('');
 
@@ -139,32 +138,30 @@ export default function JobsPage() {
   const resetFilters = () => {
     setSearchQuery('');
     setCategoryFilter('');
-    setLocationFilter('');
     setWorkModeFilter('');
     setExperienceFilter('');
   };
 
   // Filter Logic
   const filteredJobs = jobs.filter(job => {
+    const query = searchQuery.toLowerCase();
     const matchesSearch = 
-      searchQuery === '' || 
-      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.required_skills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()));
+      query === '' || 
+      job.title.toLowerCase().includes(query) ||
+      job.company_name.toLowerCase().includes(query) ||
+      job.location.toLowerCase().includes(query) ||
+      job.required_skills.some(skill => skill.toLowerCase().includes(query));
 
     const matchesCategory = categoryFilter === '' || job.category === categoryFilter;
-    const matchesLocation = locationFilter === '' || job.location.includes(locationFilter);
     const matchesWorkMode = workModeFilter === '' || job.work_mode === workModeFilter;
     const matchesExperience = experienceFilter === '' || job.experience === experienceFilter;
 
-    return matchesSearch && matchesCategory && matchesLocation && matchesWorkMode && matchesExperience;
+    return matchesSearch && matchesCategory && matchesWorkMode && matchesExperience;
   });
 
-  // Extract unique values for filter dropdowns
-  const uniqueCategories = Array.from(new Set(jobs.map(j => j.category)));
-  const uniqueWorkModes = Array.from(new Set(jobs.map(j => j.work_mode)));
-  const uniqueExperiences = Array.from(new Set(jobs.map(j => j.experience)));
+  const uniqueCategories = Array.from(new Set(jobs.map(j => j.category).filter(Boolean)));
+  const uniqueWorkModes = Array.from(new Set(jobs.map(j => j.work_mode).filter(Boolean)));
+  const uniqueExperiences = Array.from(new Set(jobs.map(j => j.experience).filter(Boolean)));
 
   const openJobDetails = (job: Job) => {
     setSelectedJob(job);
@@ -177,36 +174,38 @@ export default function JobsPage() {
 
   return (
     <StudentLayout>
-      <div className="max-w-7xl mx-auto space-y-6 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="max-w-7xl mx-auto space-y-6 pb-12">
         
         {/* HEADER */}
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Jobs</h1>
-          <p className="text-sm text-slate-500 mt-1">Explore verified fresher job opportunities.</p>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Verified Jobs</h1>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 font-medium">
+            Explore and apply directly to verified fresher and entry-level positions.
+          </p>
         </div>
 
         {/* SEARCH & FILTERS BAR */}
-        <Card className="p-4 border-slate-200 shadow-sm shadow-sm flex flex-col lg:flex-row gap-4 items-center">
+        <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-xs)] flex flex-col lg:flex-row gap-3 items-center">
           
           {/* Search Box */}
           <div className="relative w-full lg:w-1/3">
-            <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[var(--color-text-tertiary)] absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
-              placeholder="Search by Title, Company, Skills..." 
+              placeholder="Search by Title, Company, or Skill..." 
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] text-sm"
+              className="w-full pl-9 pr-3 py-2 border border-[var(--color-border)] bg-white rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:border-[var(--color-brand-500)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] shadow-xs transition-colors"
             />
           </div>
 
-          <div className="hidden lg:block w-px h-8 bg-gray-200"></div>
+          <div className="hidden lg:block w-px h-6 bg-[var(--color-border)]"></div>
 
           {/* Dropdown Filters */}
-          <div className="w-full lg:flex-1 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="w-full lg:flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <select 
               value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
             >
               <option value="">All Categories</option>
               {uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -214,111 +213,138 @@ export default function JobsPage() {
             
             <select 
               value={workModeFilter} onChange={e => setWorkModeFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
             >
-              <option value="">Work Mode</option>
+              <option value="">All Work Modes</option>
               {uniqueWorkModes.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
 
             <select 
               value={experienceFilter} onChange={e => setExperienceFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white"
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
             >
-              <option value="">Experience</option>
+              <option value="">All Experience</option>
               {uniqueExperiences.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
 
-            <Button variant="outline" onClick={resetFilters} className="text-sm h-full w-full whitespace-nowrap">
-              <Filter className="w-4 h-4 mr-2" /> Reset
+            <Button variant="outline" size="sm" onClick={resetFilters} className="text-xs h-full justify-center">
+              <Filter className="w-3.5 h-3.5 mr-1" /> Reset
             </Button>
           </div>
-        </Card>
+        </div>
 
         {/* JOB LIST */}
         {isFetching ? (
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-[var(--color-brand-500)] border-t-transparent"></div>
           </div>
         ) : filteredJobs.length === 0 ? (
           <EmptyState 
-            title="No jobs found."
-            description="Try adjusting your search or filter criteria to find what you're looking for."
-            action={<Button onClick={resetFilters}>Clear Filters</Button>}
+            title="No jobs matching your filters."
+            description="Try changing your search terms or clearing the selected filters."
+            action={<Button variant="outline" size="sm" onClick={resetFilters}>Clear Filters</Button>}
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {filteredJobs.map(job => {
               const isSaved = savedJobIds.has(job.id);
               
               return (
-                <Card key={job.id} className="p-6 border-slate-200 shadow-sm hover:border-[var(--color-brand-200)] transition-all shadow-sm hover:shadow-md flex flex-col h-full bg-white group cursor-pointer" onClick={() => openJobDetails(job)}>
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center shrink-0">
-                        {job.company_logo_url ? (
-                          <img src={job.company_logo_url} alt={job.company_name} className="h-8 w-8 object-contain" />
-                        ) : (
-                          <Building2 className="h-6 w-6 text-gray-400 group-hover:text-[var(--color-brand-500)] transition-colors" />
-                        )}
+                <div 
+                  key={job.id} 
+                  className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)] hover:shadow-[var(--shadow-md)] hover:border-[var(--color-brand-300)] transition-all flex flex-col justify-between cursor-pointer group"
+                  onClick={() => openJobDetails(job)}
+                >
+                  <div>
+                    {/* Top Row */}
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 bg-[var(--color-bg-muted)] rounded-[var(--radius-md)] border border-[var(--color-border)] flex items-center justify-center shrink-0">
+                          {job.company_logo_url ? (
+                            <img src={job.company_logo_url} alt={job.company_name} className="h-7 w-7 object-contain" />
+                          ) : (
+                            <Building2 className="h-5 w-5 text-[var(--color-text-tertiary)]" />
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="text-base font-bold text-[var(--color-text-primary)] leading-snug group-hover:text-[var(--color-brand-600)] transition-colors">
+                            {job.title}
+                          </h3>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-xs font-semibold text-[var(--color-text-secondary)]">{job.company_name}</span>
+                            <span className="text-[var(--color-text-tertiary)]">·</span>
+                            <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-[var(--color-success)]">
+                              <CheckCircle2 className="h-3 w-3" /> Verified
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-slate-900 leading-tight">{job.title}</h3>
-                        <p className="text-sm text-slate-500">{job.company_name}</p>
-                      </div>
+                      
+                      <button 
+                        onClick={(e) => handleToggleSave(job.id, e)}
+                        className={`p-1.5 rounded-full transition-colors ${isSaved ? 'text-[var(--color-brand-600)] bg-[var(--color-brand-50)]' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-subtle)]'}`}
+                        title={isSaved ? "Remove from Saved" : "Save Job"}
+                        aria-label={isSaved ? "Saved" : "Save"}
+                      >
+                        {isSaved ? <BookmarkCheck className="w-4 h-4 fill-current" /> : <Bookmark className="w-4 h-4" />}
+                      </button>
                     </div>
+
+                    {/* Metadata tags */}
+                    <div className="flex flex-wrap gap-2 text-xs text-[var(--color-text-secondary)] font-medium mb-3">
+                      <span className="inline-flex items-center gap-1 bg-[var(--color-bg-subtle)] border border-[var(--color-border)] px-2 py-0.5 rounded-[var(--radius-sm)]">
+                        <MapPin className="w-3 h-3 text-[var(--color-text-tertiary)]" /> {job.location} ({job.work_mode})
+                      </span>
+                      <span className="inline-flex items-center gap-1 bg-[var(--color-bg-subtle)] border border-[var(--color-border)] px-2 py-0.5 rounded-[var(--radius-sm)]">
+                        <Briefcase className="w-3 h-3 text-[var(--color-text-tertiary)]" /> {job.experience}
+                      </span>
+                      {job.salary && (
+                        <span className="inline-flex items-center gap-1 bg-[var(--color-bg-subtle)] border border-[var(--color-border)] px-2 py-0.5 rounded-[var(--radius-sm)]">
+                          <IndianRupee className="w-3 h-3 text-[var(--color-text-tertiary)]" /> {job.salary}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Short Description */}
+                    <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2 mb-4 leading-relaxed">
+                      {job.short_description}
+                    </p>
                     
-                    <button 
-                      onClick={(e) => handleToggleSave(job.id, e)}
-                      className={`p-2 rounded-full transition-colors ${isSaved ? 'text-[var(--color-brand-600)] bg-blue-50 hover:bg-blue-100' : 'text-gray-400 hover:bg-gray-100'}`}
-                      title={isSaved ? "Remove Saved Job" : "Save Job"}
+                    {/* Skill Pills */}
+                    <div className="flex flex-wrap gap-1.5 mb-5">
+                      {job.required_skills.slice(0, 3).map(skill => (
+                        <span key={skill} className="px-2 py-0.5 bg-[var(--color-brand-50)] text-[var(--color-brand-700)] text-[11px] font-semibold rounded-full border border-[var(--color-brand-200)]">
+                          {skill}
+                        </span>
+                      ))}
+                      {job.required_skills.length > 3 && (
+                        <span className="px-2 py-0.5 bg-[var(--color-bg-subtle)] text-[var(--color-text-tertiary)] text-[11px] font-medium rounded-full border border-[var(--color-border)]">
+                          +{job.required_skills.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 pt-3 border-t border-[var(--color-border)]">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="flex-1 text-xs justify-center" 
+                      onClick={(e) => { e.stopPropagation(); openJobDetails(job); }}
                     >
-                      {isSaved ? <BookmarkCheck className="w-5 h-5 fill-current" /> : <Bookmark className="w-5 h-5" />}
-                    </button>
-                  </div>
-
-                  <div className="flex flex-wrap gap-3 text-sm text-slate-600 mb-4">
-                    <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded">
-                      <MapPin className="w-4 h-4 text-gray-400" /> {job.location} ({job.work_mode})
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded">
-                      <Briefcase className="w-4 h-4 text-gray-400" /> {job.experience}
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded">
-                      <Clock className="w-4 h-4 text-gray-400" /> {job.employment_type}
-                    </div>
-                    {job.salary && (
-                      <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded">
-                        <IndianRupee className="w-4 h-4 text-gray-400" /> {job.salary}
-                      </div>
-                    )}
-                  </div>
-
-                  <p className="text-sm text-slate-600 mb-6 line-clamp-2 flex-1">
-                    {job.short_description}
-                  </p>
-                  
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {job.required_skills.slice(0, 3).map(skill => (
-                      <span key={skill} className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full">
-                        {skill}
-                      </span>
-                    ))}
-                    {job.required_skills.length > 3 && (
-                      <span className="px-2.5 py-1 bg-gray-50 text-slate-500 text-xs font-medium rounded-full">
-                        +{job.required_skills.length - 3} more
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-3 mt-auto pt-4 border-t border-gray-100">
-                    <Button variant="outline" className="flex-1 text-sm" onClick={(e) => { e.stopPropagation(); openJobDetails(job); }}>
                       View Details
                     </Button>
-                    <Button variant="primary" className="flex-1 text-sm bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white" onClick={(e) => { e.stopPropagation(); handleApply(job.apply_url); }}>
+                    <Button 
+                      variant="primary" 
+                      size="sm"
+                      className="flex-1 text-xs justify-center" 
+                      onClick={(e) => { e.stopPropagation(); handleApply(job.apply_url); }}
+                    >
                       Apply Now
                     </Button>
                   </div>
-                </Card>
+                </div>
               );
             })}
           </div>
@@ -326,38 +352,38 @@ export default function JobsPage() {
       </div>
 
       {/* JOB DETAILS MODAL */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Job Details" className="max-w-3xl">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Job Details" className="max-w-2xl">
         {selectedJob && (
-          <div className="space-y-6">
-            <div className="flex items-start gap-4 pb-4 border-b border-gray-100">
-              <div className="h-16 w-16 bg-gray-50 rounded-lg border border-slate-200 shadow-sm flex items-center justify-center shrink-0">
+          <div className="space-y-5">
+            <div className="flex items-start gap-3.5 pb-4 border-b border-[var(--color-border)]">
+              <div className="h-12 w-12 bg-[var(--color-bg-muted)] rounded-[var(--radius-md)] border border-[var(--color-border)] flex items-center justify-center shrink-0">
                 {selectedJob.company_logo_url ? (
-                  <img src={selectedJob.company_logo_url} alt={selectedJob.company_name} className="h-10 w-10 object-contain" />
+                  <img src={selectedJob.company_logo_url} alt={selectedJob.company_name} className="h-8 w-8 object-contain" />
                 ) : (
-                  <Building2 className="h-8 w-8 text-gray-400" />
+                  <Building2 className="h-6 w-6 text-[var(--color-text-tertiary)]" />
                 )}
               </div>
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-slate-900">{selectedJob.title}</h2>
-                <p className="text-lg text-slate-600 font-medium">{selectedJob.company_name}</p>
-                <div className="flex flex-wrap gap-4 text-sm text-slate-500 mt-2">
-                  <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {selectedJob.location} ({selectedJob.work_mode})</span>
-                  <span className="flex items-center gap-1"><Briefcase className="w-4 h-4" /> {selectedJob.experience}</span>
-                  {selectedJob.salary && <span className="flex items-center gap-1"><IndianRupee className="w-4 h-4" /> {selectedJob.salary}</span>}
-                  <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> Posted {new Date(selectedJob.posted_at).toLocaleDateString()}</span>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl font-bold text-[var(--color-text-primary)]">{selectedJob.title}</h2>
+                <p className="text-sm font-semibold text-[var(--color-text-secondary)]">{selectedJob.company_name}</p>
+                <div className="flex flex-wrap gap-3 text-xs text-[var(--color-text-tertiary)] font-medium mt-2">
+                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {selectedJob.location} ({selectedJob.work_mode})</span>
+                  <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" /> {selectedJob.experience}</span>
+                  {selectedJob.salary && <span className="flex items-center gap-1"><IndianRupee className="w-3 h-3" /> {selectedJob.salary}</span>}
+                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Posted {new Date(selectedJob.posted_at).toLocaleDateString()}</span>
                 </div>
               </div>
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">Job Description</h3>
-              <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed">{selectedJob.full_description}</p>
+              <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-1.5">Job Overview</h3>
+              <p className="text-[var(--color-text-secondary)] text-sm whitespace-pre-wrap leading-relaxed">{selectedJob.full_description}</p>
             </div>
 
-            {selectedJob.responsibilities.length > 0 && (
+            {selectedJob.responsibilities && selectedJob.responsibilities.length > 0 && (
               <div>
-                <h3 className="text-lg font-bold text-slate-900 mb-2">Key Responsibilities</h3>
-                <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-1.5">Key Responsibilities</h3>
+                <ul className="list-disc pl-4 text-xs sm:text-sm text-[var(--color-text-secondary)] space-y-1">
                   {selectedJob.responsibilities.map((resp, i) => (
                     <li key={i}>{resp}</li>
                   ))}
@@ -366,29 +392,30 @@ export default function JobsPage() {
             )}
 
             <div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">Required Skills</h3>
-              <div className="flex flex-wrap gap-2">
+              <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-2">Required Skills</h3>
+              <div className="flex flex-wrap gap-1.5">
                 {selectedJob.required_skills.map(skill => (
-                  <span key={skill} className="px-3 py-1 bg-blue-50 text-blue-700 text-sm font-medium rounded-full">
+                  <span key={skill} className="px-2.5 py-0.5 bg-[var(--color-brand-50)] text-[var(--color-brand-700)] text-xs font-semibold rounded-full border border-[var(--color-brand-200)]">
                     {skill}
                   </span>
                 ))}
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-100">
+            <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-[var(--color-border)]">
               <Button 
-                variant={savedJobIds.has(selectedJob.id) ? "outline" : "outline"} 
+                variant="outline" 
+                size="sm"
                 onClick={() => handleToggleSave(selectedJob.id)}
               >
                 {savedJobIds.has(selectedJob.id) ? (
-                  <><BookmarkCheck className="w-4 h-4 mr-2" /> Saved</>
+                  <><BookmarkCheck className="w-3.5 h-3.5 mr-1.5" /> Saved</>
                 ) : (
-                  <><Bookmark className="w-4 h-4 mr-2" /> Save Job</>
+                  <><Bookmark className="w-3.5 h-3.5 mr-1.5" /> Save Job</>
                 )}
               </Button>
-              <Button onClick={() => handleApply(selectedJob.apply_url)}>
-                Apply Now <ExternalLink className="w-4 h-4 ml-2" />
+              <Button variant="primary" size="sm" onClick={() => handleApply(selectedJob.apply_url)}>
+                Apply on Official Site <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
               </Button>
             </div>
           </div>

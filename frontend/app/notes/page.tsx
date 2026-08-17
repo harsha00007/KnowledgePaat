@@ -1,70 +1,149 @@
 import React from 'react';
 import { PublicLayout } from '@/layouts/PublicLayout';
-import { Card } from '@/components/Card';
-import { Calculator, Users, Terminal, Code2 } from 'lucide-react';
+import { Button } from '@/components/Button';
+import {
+  Calculator, Users, Terminal, Code2,
+  ArrowRight, FileText, Download
+} from 'lucide-react';
 import Link from 'next/link';
+
+const CATEGORIES = [
+  {
+    title: 'Aptitude Notes',
+    description: 'Formulas, shortcuts, and practice sets for quantitative aptitude and logical reasoning.',
+    icon: Calculator,
+    count: '80+ topics',
+    href: '#',
+  },
+  {
+    title: 'HR & Soft Skills',
+    description: 'Answer templates for common HR questions, resume writing guides, and email drafts.',
+    icon: Users,
+    count: '40+ guides',
+    href: '#',
+  },
+  {
+    title: 'Technical Concepts',
+    description: 'Core CS fundamentals — OS, DBMS, Computer Networks, and Data Structures.',
+    icon: Terminal,
+    count: '120+ topics',
+    href: '#',
+  },
+  {
+    title: 'Programming',
+    description: 'Cheatsheets and reference guides for Java, Python, C++, SQL, and Web Development.',
+    icon: Code2,
+    count: '60+ cheatsheets',
+    href: '#',
+  },
+];
 
 export default function NotesPage() {
   return (
     <PublicLayout>
-      <section className="bg-gray-50 py-16 border-b border-gray-200">
-        <div className="container mx-auto px-4 text-center max-w-3xl">
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Study Notes</h1>
-          <p className="mt-4 text-lg text-gray-600">
-            Access high-quality, concise study materials to accelerate your learning and revision.
-          </p>
-        </div>
-      </section>
 
-      <section className="py-16 bg-white flex-1">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <CategoryCard 
-              title="Aptitude Notes"
-              description="Formulas, shortcuts, and concepts for quantitative and logical reasoning."
-              icon={<Calculator className="w-8 h-8 text-blue-600" />}
-              href="#"
-            />
-            <CategoryCard 
-              title="HR Notes"
-              description="Templates for common answers, resume writing guides, and email drafts."
-              icon={<Users className="w-8 h-8 text-blue-600" />}
-              href="#"
-            />
-            <CategoryCard 
-              title="Technical Notes"
-              description="OS, DBMS, Computer Networks, and Data Structures core concepts."
-              icon={<Terminal className="w-8 h-8 text-blue-600" />}
-              href="#"
-            />
-            <CategoryCard 
-              title="Programming Notes"
-              description="Cheatsheets for Java, Python, C++, and Web Development."
-              icon={<Code2 className="w-8 h-8 text-blue-600" />}
-              href="#"
-            />
+      {/* ── PAGE HEADER ─────────────────────────────────────────────────── */}
+      <section className="bg-white border-b border-[var(--color-border)] pt-12 pb-10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="inline-flex items-center gap-2 rounded-full bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-3 py-1 text-xs font-semibold text-[var(--color-brand-600)] mb-5">
+              <FileText className="h-3.5 w-3.5" />
+              Study Resources
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text-primary)] sm:text-4xl">
+              Study notes for every stage
+            </h1>
+            <p className="mt-4 text-base text-[var(--color-text-secondary)] leading-relaxed">
+              High-quality, concise study materials organized by topic — built to help you revise faster and perform better.
+            </p>
           </div>
         </div>
       </section>
+
+      {/* ── CATEGORIES ──────────────────────────────────────────────────── */}
+      <section className="bg-[var(--color-bg-subtle)] py-14 flex-1">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-6">
+            Browse by category
+          </p>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            {CATEGORIES.map((cat) => (
+              <NotesCategoryCard key={cat.title} {...cat} />
+            ))}
+          </div>
+
+          {/* How it works */}
+          <div className="mt-12 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-xs)]">
+            <h2 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">
+              How to use GradZenX Notes
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              {[
+                { step: '01', title: 'Choose a category', desc: 'Pick the topic area relevant to your upcoming test or interview.' },
+                { step: '02', title: 'Read or download', desc: 'View notes directly in the app or download the PDF for offline study.' },
+                { step: '03', title: 'Revise and practice', desc: 'Use the notes alongside interview questions for complete preparation.' },
+              ].map((item) => (
+                <div key={item.step} className="flex items-start gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-brand-500)] text-white text-xs font-bold shrink-0">
+                    {item.step}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--color-text-primary)]">{item.title}</p>
+                    <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 leading-relaxed">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="mt-10 text-center">
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+              Premium members get access to advanced technical notes and programming cheatsheets.
+            </p>
+            <Link href="/pricing">
+              <Button>
+                Upgrade for Full Access <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
     </PublicLayout>
   );
 }
 
-function CategoryCard({ title, description, icon, href }: { title: string, description: string, icon: React.ReactNode, href: string }) {
+function NotesCategoryCard({
+  title, description, icon: Icon, count, href,
+}: {
+  title: string; description: string; icon: React.ElementType;
+  count: string; href: string;
+}) {
   return (
-    <Link href={href} className="group">
-      <Card className="h-full p-8 hover:shadow-lg transition-all hover:-translate-y-1 border-gray-100 hover:border-blue-100">
-        <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-          {icon}
+    <Link href={href} className="group outline-none focus-ring rounded-[var(--radius-lg)]">
+      <div className="h-full rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-xs)] hover:shadow-[var(--shadow-md)] hover:border-[var(--color-brand-300)] transition-all duration-200">
+        <div className="flex items-start gap-4">
+          <div className="h-11 w-11 flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-brand-50)] text-[var(--color-brand-500)] shrink-0">
+            <Icon className="h-5 w-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <h3 className="text-sm font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-500)] transition-colors">
+                {title}
+              </h3>
+              <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-brand-500)] bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-2 py-0.5 rounded-full">
+                {count}
+              </span>
+            </div>
+            <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">{description}</p>
+            <div className="flex items-center gap-1 mt-3 text-xs font-semibold text-[var(--color-brand-500)] opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200">
+              View Notes <ArrowRight className="h-3.5 w-3.5" />
+            </div>
+          </div>
         </div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">{title}</h3>
-        <p className="text-gray-600 leading-relaxed">
-          {description}
-        </p>
-        <div className="mt-6 flex items-center text-blue-600 font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-          View Notes →
-        </div>
-      </Card>
+      </div>
     </Link>
   );
 }
