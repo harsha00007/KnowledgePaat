@@ -12,11 +12,18 @@ import {
   BookOpen, 
   FileText, 
   CreditCard,
+  ShoppingBag,
+  PackageCheck,
+  ShoppingCart,
   Menu,
   X,
-  GraduationCap
+  GraduationCap,
+  Bot,
+  Sparkles,
+  TrendingUp
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { useCart } from '@/hooks/useCart';
 
 export function StudentLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -25,6 +32,7 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
+  const { cartCount } = useCart();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -54,7 +62,12 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
     { name: 'Resume', href: '/student/resume', icon: FileUp },
     { name: 'Jobs', href: '/student/jobs', icon: Briefcase },
     { name: 'Interview Preparation', href: '/student/interview-preparation', icon: BookOpen },
+    { name: 'Mock Interviews', href: '/student/mock-interview', icon: Bot },
+    { name: 'Career Progress', href: '/student/career-progress', icon: TrendingUp },
+    { name: 'Career Intelligence', href: '/student/career-intelligence', icon: Sparkles },
     { name: 'Notes', href: '/student/notes', icon: FileText },
+    { name: 'Store', href: '/student/store', icon: ShoppingBag },
+    { name: 'My Purchases', href: '/student/purchases', icon: PackageCheck },
     { name: 'Subscription', href: '/student/subscription', icon: CreditCard },
   ];
 
@@ -168,6 +181,20 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Cart Button */}
+            <Link 
+              href="/student/cart" 
+              className="relative p-2 rounded-full hover:bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-brand-600)] transition-colors"
+              title="View Cart"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {cartCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-[var(--color-brand-600)] text-white text-[10px] font-extrabold h-4.5 w-4.5 rounded-full flex items-center justify-center border-2 border-white">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+
             <Link 
               href="/student/profile" 
               className="flex items-center gap-2 text-xs font-semibold text-[var(--color-brand-600)] bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-3 py-1.5 rounded-full hover:bg-[var(--color-brand-100)] transition-colors"

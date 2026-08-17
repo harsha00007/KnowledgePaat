@@ -5,11 +5,12 @@ import { AdminLayout } from '@/layouts/AdminLayout';
 import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
 import { EmptyState } from '@/components/EmptyState';
+import { PremiumBadge } from '@/components/PremiumBadge';
 import { 
   Search, 
   Filter, 
   Eye, 
-  Edit,
+  Edit, 
   Power, 
   Trash2, 
   AlertTriangle,
@@ -19,9 +20,11 @@ import {
   BookOpen,
   CheckCircle,
   HelpCircle,
-  AlertCircle
+  AlertCircle,
+  Lock
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { normalizePlanId } from '@/config/plans';
 
 type Category = {
   id: string;
@@ -41,6 +44,8 @@ type Question = {
   technology_tags: string[];
   tags: string[];
   status: string;
+  minimum_plan?: string;
+  access_type?: string;
   created_at: string;
   updated_at: string;
   category?: { name: string };
@@ -57,7 +62,8 @@ const initialForm: Partial<Question> = {
   company_tags: [],
   technology_tags: [],
   tags: [],
-  status: 'Active'
+  status: 'Active',
+  minimum_plan: 'free'
 };
 
 export default function AdminQuestionsPage() {
@@ -70,6 +76,7 @@ export default function AdminQuestionsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [diffFilter, setDiffFilter] = useState('');
+  const [planFilter, setPlanFilter] = useState('');
 
   // Modals
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
@@ -139,8 +146,11 @@ export default function AdminQuestionsPage() {
     const matchesStatus = statusFilter === '' || q.status === statusFilter;
     const matchesCat = categoryFilter === '' || q.category_id === categoryFilter;
     const matchesDiff = diffFilter === '' || q.difficulty === diffFilter;
+    
+    const itemPlan = normalizePlanId(q.minimum_plan || q.access_type);
+    const matchesPlan = planFilter === '' || itemPlan === planFilter;
 
-    return matchesSearch && matchesStatus && matchesCat && matchesDiff;
+    return matchesSearch && matchesStatus && matchesCat && matchesDiff && matchesPlan;
   });
 
   // Pagination Logic
@@ -152,19 +162,23 @@ export default function AdminQuestionsPage() {
     setStatusFilter('');
     setCategoryFilter('');
     setDiffFilter('');
+    setPlanFilter('');
     setCurrentPage(1);
   };
 
   // ---------------- FORM HANDLING ---------------- //
   const openAddForm = () => {
-    setFormData({ ...initialForm, category_id: categories.length > 0 ? categories[0].id : '' });
+    setFormData({ ...initialForm, category_id: categories.length > 0 ? categories[0].id : '', minimum_plan: 'free' });
     setFormErrors({});
     setSelectedQuestion(null);
     setIsFormModalOpen(true);
   };
 
   const openEditForm = (q: Question) => {
-    setFormData(q);
+    setFormData({
+      ...q,
+      minimum_plan: normalizePlanId(q.minimum_plan || q.access_type)
+    });
     setFormErrors({});
     setSelectedQuestion(q);
     setIsFormModalOpen(true);
@@ -223,7 +237,9 @@ export default function AdminQuestionsPage() {
         company_tags: formData.company_tags || [],
         technology_tags: formData.technology_tags || [],
         tags: formData.tags || [],
-        status: formData.status
+        status: formData.status,
+        minimum_plan: formData.minimum_plan || 'free',
+        access_type: formData.minimum_plan === 'free' ? 'Free' : 'Premium'
       };
 
       if (selectedQuestion) {
@@ -287,7 +303,7 @@ export default function AdminQuestionsPage() {
           <div>
             <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Interview Questions</h1>
             <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 font-medium">
-              Manage curated interview questions, difficulty ratings, and recommended answers.
+              Manage curated interview questions, difficulty ratings, and minimum plan requirements.
             </p>
           </div>
           <Button size="sm" onClick={openAddForm} className="shrink-0 text-xs">
@@ -308,7 +324,7 @@ export default function AdminQuestionsPage() {
             />
           </div>
 
-          <div className="w-full lg:w-auto grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="w-full lg:w-auto grid grid-cols-2 sm:grid-cols-5 gap-2.5">
             <select 
               value={categoryFilter} onChange={e => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
               className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
@@ -325,6 +341,17 @@ export default function AdminQuestionsPage() {
               <option value="Easy">Easy</option>
               <option value="Medium">Medium</option>
               <option value="Hard">Hard</option>
+            </select>
+
+            <select 
+              value={planFilter} onChange={e => { setPlanFilter(e.target.value); setCurrentPage(1); }}
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
+            >
+              <option value="">All Tiers</option>
+              <option value="free">Free</option>
+              <option value="starter">Starter</option>
+              <option value="pro">Pro</option>
+              <option value="premium">Premium</option>
             </select>
 
             <select 
@@ -364,9 +391,9 @@ export default function AdminQuestionsPage() {
                   <thead>
                     <tr className="bg-[var(--color-bg-subtle)] border-b border-[var(--color-border)] text-[11px] uppercase tracking-wider text-[var(--color-text-tertiary)] font-bold">
                       <th className="px-5 py-3.5 w-2/5">Question Title</th>
+                      <th className="px-5 py-3.5">Required Plan</th>
                       <th className="px-5 py-3.5">Category</th>
                       <th className="px-5 py-3.5">Difficulty</th>
-                      <th className="px-5 py-3.5">Tags</th>
                       <th className="px-5 py-3.5">Status</th>
                       <th className="px-5 py-3.5 text-right">Actions</th>
                     </tr>
@@ -378,6 +405,9 @@ export default function AdminQuestionsPage() {
                           <p className="font-bold text-[var(--color-text-primary)] line-clamp-2 leading-snug">{q.title}</p>
                           <p className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5">{new Date(q.created_at).toLocaleDateString()}</p>
                         </td>
+                        <td className="px-5 py-3.5">
+                          <PremiumBadge minimumPlan={q.minimum_plan || q.access_type} showLockIfPaid={false} />
+                        </td>
                         <td className="px-5 py-3.5 font-medium text-[var(--color-text-secondary)]">{q.category?.name}</td>
                         <td className="px-5 py-3.5">
                           <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${
@@ -387,16 +417,6 @@ export default function AdminQuestionsPage() {
                           }`}>
                             {q.difficulty}
                           </span>
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <div className="flex flex-wrap gap-1">
-                            {q.technology_tags?.slice(0, 2).map(t => (
-                              <span key={t} className="bg-[var(--color-brand-50)] text-[var(--color-brand-700)] px-1.5 py-0.2 rounded text-[10px] font-bold border border-[var(--color-brand-200)]">{t}</span>
-                            ))}
-                            {q.company_tags?.slice(0, 2).map(c => (
-                              <span key={c} className="bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] px-1.5 py-0.2 rounded text-[10px] font-bold border border-[var(--color-border)]">{c}</span>
-                            ))}
-                          </div>
                         </td>
                         <td className="px-5 py-3.5">
                           <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
@@ -431,9 +451,12 @@ export default function AdminQuestionsPage() {
                   <div key={q.id} className="p-4 space-y-2.5">
                     <div className="flex justify-between items-start gap-2">
                       <p className="text-xs font-bold text-[var(--color-text-primary)] leading-snug">{q.title}</p>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 border ${q.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
-                        {q.status}
-                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <PremiumBadge minimumPlan={q.minimum_plan || q.access_type} showLockIfPaid={false} />
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${q.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+                          {q.status}
+                        </span>
+                      </div>
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -483,7 +506,7 @@ export default function AdminQuestionsPage() {
             {formErrors.title && <p className="text-red-500 mt-1">{formErrors.title}</p>}
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block font-bold text-[var(--color-text-primary)] mb-1">Category *</label>
               <select name="category_id" value={formData.category_id} onChange={handleFormChange} className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white">
@@ -498,6 +521,15 @@ export default function AdminQuestionsPage() {
                 <option value="Easy">Easy</option>
                 <option value="Medium">Medium</option>
                 <option value="Hard">Hard</option>
+              </select>
+            </div>
+            <div>
+              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Minimum Required Plan</label>
+              <select name="minimum_plan" value={formData.minimum_plan || 'free'} onChange={handleFormChange} className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white font-semibold text-[var(--color-brand-700)]">
+                <option value="free">Free (All Students)</option>
+                <option value="starter">Starter Plan (₹49+)</option>
+                <option value="pro">Pro Plan (₹99+)</option>
+                <option value="premium">Premium Plan (₹149)</option>
               </select>
             </div>
           </div>
@@ -600,7 +632,12 @@ export default function AdminQuestionsPage() {
         {selectedQuestion && (
           <div className="space-y-4 text-xs">
             <div className="flex items-start justify-between pb-3 border-b border-[var(--color-border)]">
-              <h2 className="text-base font-bold text-[var(--color-text-primary)] leading-snug">{selectedQuestion.title}</h2>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="text-base font-bold text-[var(--color-text-primary)] leading-snug">{selectedQuestion.title}</h2>
+                </div>
+                <PremiumBadge minimumPlan={selectedQuestion.minimum_plan || selectedQuestion.access_type} />
+              </div>
               <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 border ${selectedQuestion.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
                 {selectedQuestion.status}
               </span>

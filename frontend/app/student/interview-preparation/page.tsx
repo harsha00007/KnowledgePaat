@@ -6,23 +6,30 @@ import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
 import { EmptyState } from '@/components/EmptyState';
+import { PremiumBadge } from '@/components/PremiumBadge';
+import { UpgradeModal } from '@/components/UpgradeModal';
 import { 
   Search, 
-  CheckCircle,
-  Circle,
-  Clock,
-  BookOpen,
-  Filter,
-  ChevronLeft,
-  ChevronRight,
-  Target,
+  CheckCircle, 
+  Circle, 
+  Clock, 
+  BookOpen, 
+  Filter, 
+  ChevronLeft, 
+  ChevronRight, 
+  Target, 
   AlertTriangle,
   Users,
   Code,
   Brain,
-  Building
+  Building,
+  Lock,
+  Sparkles,
+  HelpCircle
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { calculateUserAccess, isContentAccessible, UserAccess } from '@/lib/subscription';
+import { PLANS, normalizePlanId, PlanId } from '@/config/plans';
 
 type Category = {
   id: string;
@@ -41,23 +48,30 @@ type Question = {
   estimated_time: string;
   company_tags: string[];
   technology_tags: string[];
+  minimum_plan?: string;
+  access_type?: string;
 };
 
 export default function InterviewPrepPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [completedQuestionIds, setCompletedQuestionIds] = useState<Set<string>>(new Set());
+  const [userAccess, setUserAccess] = useState<UserAccess>(calculateUserAccess(null));
   const [isFetching, setIsFetching] = useState(true);
   
   // Search & Filters
+  const [ownedProductIds, setOwnedProductIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('');
   const [companyFilter, setCompanyFilter] = useState('');
+  const [planFilter, setPlanFilter] = useState('');
 
   // Modal State
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [modalRequiredPlan, setModalRequiredPlan] = useState<string>('starter');
 
   const supabase = createClient();
 
@@ -70,12 +84,34 @@ export default function InterviewPrepPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+      // Fetch user subscription and purchased products for access control
+      if (user) {
+        const { data: subData } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('student_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        setUserAccess(calculateUserAccess(subData));
+
+        const { data: purchasesData } = await supabase
+          .from('student_purchases')
+          .select('product_id')
+          .eq('student_id', user.id);
+
+        if (purchasesData) {
+          setOwnedProductIds(new Set(purchasesData.map(p => p.product_id)));
+        }
+      }
+
       // Fetch Categories
       const { data: catData } = await supabase.from('interview_categories').select('*').order('order_index');
       if (catData) setCategories(catData as Category[]);
 
       // Fetch Questions
-      const { data: qData } = await supabase.from('interview_questions').select('*').order('order_index');
+      const { data: qData } = await supabase.from('interview_questions').select('*').order('created_at', { ascending: false });
       if (qData) setQuestions(qData as Question[]);
 
       // Fetch Progress
@@ -100,9 +136,16 @@ export default function InterviewPrepPage() {
   const handleToggleComplete = async (questionId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return alert("You must be logged in.");
+      if (!user) return;
 
       const isCompleted = completedQuestionIds.has(questionId);
+      
+      setCompletedQuestionIds(prev => {
+        const next = new Set(prev);
+        if (isCompleted) next.delete(questionId);
+        else next.add(questionId);
+        return next;
+      });
 
       if (isCompleted) {
         await supabase
@@ -110,25 +153,66 @@ export default function InterviewPrepPage() {
           .delete()
           .eq('student_id', user.id)
           .eq('question_id', questionId);
-        
-        setCompletedQuestionIds(prev => {
-          const next = new Set(prev);
-          next.delete(questionId);
-          return next;
-        });
       } else {
         await supabase
           .from('student_question_progress')
           .insert({ student_id: user.id, question_id: questionId, completed: true });
-          
-        setCompletedQuestionIds(prev => {
-          const next = new Set(prev);
-          next.add(questionId);
-          return next;
-        });
       }
     } catch (err) {
-      console.error("Error updating progress:", err);
+      console.error("Error toggling completion:", err);
+    }
+  };
+
+  const checkQuestionAccess = (question: Question) => {
+    const reqPlan = question?.minimum_plan || question?.access_type || 'free';
+    if (userAccess.hasAccess(reqPlan)) return true;
+    if (ownedProductIds.size > 0) return true; // Digital question pack or master bundle unlocks question bank
+    return false;
+  };
+
+  // Filter Questions
+  const filteredQuestions = questions.filter(q => {
+    const query = searchQuery.toLowerCase();
+    const matchesSearch = query === '' || 
+      q.title.toLowerCase().includes(query) || 
+      (q.technology_tags && q.technology_tags.some(t => t.toLowerCase().includes(query))) ||
+      (q.company_tags && q.company_tags.some(c => c.toLowerCase().includes(query)));
+
+    const matchesCat = categoryFilter === '' || q.category_id === categoryFilter;
+    const matchesDiff = difficultyFilter === '' || q.difficulty === difficultyFilter;
+    const matchesComp = companyFilter === '' || (q.company_tags && q.company_tags.includes(companyFilter));
+    
+    const itemPlan = normalizePlanId(q.minimum_plan || q.access_type);
+    const matchesPlan = planFilter === '' || itemPlan === planFilter;
+
+    return matchesSearch && matchesCat && matchesDiff && matchesComp && matchesPlan;
+  });
+
+  const selectedQuestion = selectedQuestionIndex !== null ? filteredQuestions[selectedQuestionIndex] : null;
+
+  const handleOpenQuestion = (index: number) => {
+    const question = filteredQuestions[index];
+    const isUnlocked = checkQuestionAccess(question);
+    
+    if (!isUnlocked) {
+      setModalRequiredPlan(question?.minimum_plan || question?.access_type || 'free');
+      setIsUpgradeModalOpen(true);
+      return;
+    }
+
+    setSelectedQuestionIndex(index);
+    setIsModalOpen(true);
+  };
+
+  const handleNextQuestion = () => {
+    if (selectedQuestionIndex !== null && selectedQuestionIndex < filteredQuestions.length - 1) {
+      setSelectedQuestionIndex(selectedQuestionIndex + 1);
+    }
+  };
+
+  const handlePrevQuestion = () => {
+    if (selectedQuestionIndex !== null && selectedQuestionIndex > 0) {
+      setSelectedQuestionIndex(selectedQuestionIndex - 1);
     }
   };
 
@@ -137,117 +221,101 @@ export default function InterviewPrepPage() {
     setCategoryFilter('');
     setDifficultyFilter('');
     setCompanyFilter('');
+    setPlanFilter('');
   };
 
-  const allCompanies = Array.from(new Set(questions.flatMap(q => q.company_tags).filter(Boolean)));
-
-  const filteredQuestions = questions.filter(q => {
-    const searchLower = searchQuery.toLowerCase();
-    const matchesSearch = 
-      searchQuery === '' || 
-      q.title.toLowerCase().includes(searchLower) ||
-      (q.technology_tags && q.technology_tags.some(t => t.toLowerCase().includes(searchLower))) ||
-      (q.company_tags && q.company_tags.some(c => c.toLowerCase().includes(searchLower)));
-
-    const matchesCategory = categoryFilter === '' || q.category_id === categoryFilter;
-    const matchesDifficulty = difficultyFilter === '' || q.difficulty === difficultyFilter;
-    const matchesCompany = companyFilter === '' || (q.company_tags && q.company_tags.includes(companyFilter));
-
-    return matchesSearch && matchesCategory && matchesDifficulty && matchesCompany;
-  });
-
-  const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || 'General';
-
-  const openQuestion = (index: number) => {
-    setSelectedQuestionIndex(index);
-    setIsModalOpen(true);
-  };
-
-  const currentQuestion = selectedQuestionIndex !== null ? filteredQuestions[selectedQuestionIndex] : null;
+  const allCompanies = Array.from(new Set(questions.flatMap(q => q.company_tags || []))).filter(Boolean);
+  const userPlanConfig = PLANS[userAccess.effectivePlan];
 
   return (
     <StudentLayout>
       <div className="max-w-7xl mx-auto space-y-6 pb-12">
         
-        {/* HEADER & PROGRESS BANNER */}
+        {/* HEADER & METRIC SUMMARY */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Interview Preparation</h1>
             <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 font-medium">
-              Curated interview questions and ideal answers across core categories.
+              Curated HR, Technical, and Aptitude questions with model answers and pro tips.
             </p>
           </div>
-          
-          {/* Progress Pill */}
-          <div className="rounded-[var(--radius-lg)] border border-[var(--color-brand-200)] bg-white px-4 py-2 shadow-xs flex items-center gap-3">
-            <div className="h-8 w-8 bg-[var(--color-brand-50)] text-[var(--color-brand-600)] rounded-full flex items-center justify-center">
-              <Target className="w-4 h-4" />
+
+          <div className="flex items-center gap-3">
+            {/* Progress Badge */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[var(--color-border)] text-xs shadow-xs font-semibold text-[var(--color-text-secondary)]">
+              <CheckCircle className="w-4 h-4 text-emerald-600" />
+              <span>Completed: <strong className="text-[var(--color-text-primary)]">{completedQuestionIds.size} / {questions.length}</strong></span>
             </div>
-            <div>
-              <p className="text-[11px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-wider">Completion</p>
-              <p className="text-sm font-bold text-[var(--color-text-primary)] leading-tight">
-                {completedQuestionIds.size} / {questions.length} Completed
-              </p>
+
+            {/* Plan Tier Badge */}
+            <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-[var(--color-border)] text-xs shadow-xs">
+              <span className="text-[var(--color-text-tertiary)]">Plan:</span>
+              <span className={`font-bold ${userPlanConfig.badgeTextColor}`}>
+                {userPlanConfig.name} Member
+              </span>
             </div>
           </div>
         </div>
 
         {/* CATEGORY SELECTOR CARDS */}
-        {!categoryFilter && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {categories.map(cat => {
-              const catQCount = questions.filter(q => q.category_id === cat.id).length;
-              return (
-                <div 
-                  key={cat.id} 
-                  className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-xs)] hover:shadow-[var(--shadow-md)] hover:border-[var(--color-brand-300)] cursor-pointer transition-all flex flex-col justify-between group"
-                  onClick={() => setCategoryFilter(cat.id)}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="h-9 w-9 bg-[var(--color-brand-50)] text-[var(--color-brand-600)] rounded-[var(--radius-md)] flex items-center justify-center">
-                      <BookOpen className="w-4 h-4" />
-                    </div>
-                    <span className="text-xs font-bold text-[var(--color-brand-700)] bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-2 py-0.5 rounded-full">
-                      {catQCount} Qs
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-600)] transition-colors mb-1">{cat.name}</h3>
-                    <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">{cat.description}</p>
-                  </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <button 
+            onClick={() => setCategoryFilter('')} 
+            className={`p-3.5 rounded-[var(--radius-xl)] border text-left transition-all ${
+              categoryFilter === '' 
+                ? 'bg-[var(--color-brand-50)] border-[var(--color-brand-500)] shadow-xs' 
+                : 'bg-white border-[var(--color-border)] hover:bg-[var(--color-bg-subtle)]'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-bold text-[var(--color-text-primary)]">All Questions</span>
+              <BookOpen className={`w-4 h-4 ${categoryFilter === '' ? 'text-[var(--color-brand-600)]' : 'text-[var(--color-text-tertiary)]'}`} />
+            </div>
+            <p className="text-[11px] text-[var(--color-text-secondary)]">{questions.length} Questions</p>
+          </button>
+
+          {categories.map((cat) => {
+            const count = questions.filter(q => q.category_id === cat.id).length;
+            const isSelected = categoryFilter === cat.id;
+
+            return (
+              <button 
+                key={cat.id} 
+                onClick={() => setCategoryFilter(cat.id)}
+                className={`p-3.5 rounded-[var(--radius-xl)] border text-left transition-all ${
+                  isSelected 
+                    ? 'bg-[var(--color-brand-50)] border-[var(--color-brand-500)] shadow-xs' 
+                    : 'bg-white border-[var(--color-border)] hover:bg-[var(--color-bg-subtle)]'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-[var(--color-text-primary)] truncate">{cat.name}</span>
+                  <Target className={`w-4 h-4 ${isSelected ? 'text-[var(--color-brand-600)]' : 'text-[var(--color-text-tertiary)]'}`} />
                 </div>
-              );
-            })}
-          </div>
-        )}
+                <p className="text-[11px] text-[var(--color-text-secondary)]">{count} Questions</p>
+              </button>
+            );
+          })}
+        </div>
 
         {/* SEARCH & FILTERS BAR */}
-        <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-xs)] flex flex-col lg:flex-row gap-3 items-center">
-          <div className="relative w-full lg:w-1/3">
+        <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-xs)] space-y-3">
+          <div className="relative">
             <Search className="w-4 h-4 text-[var(--color-text-tertiary)] absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
-              placeholder="Search questions, skills, companies..." 
+              placeholder="Search questions, technologies (e.g. React, SQL), or concepts..." 
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 border border-[var(--color-border)] bg-white rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] shadow-xs transition-colors"
+              className="w-full pl-9 pr-4 py-2 border border-[var(--color-border)] rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] shadow-xs transition-colors bg-white"
             />
           </div>
 
-          <div className="hidden lg:block w-px h-6 bg-[var(--color-border)]"></div>
-
-          <div className="w-full lg:flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
             <select 
-              value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}
-              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
-            >
-              <option value="">All Categories</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            
-            <select 
-              value={difficultyFilter} onChange={e => setDifficultyFilter(e.target.value)}
-              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
+              value={difficultyFilter} 
+              onChange={e => setDifficultyFilter(e.target.value)}
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
             >
               <option value="">All Difficulty</option>
               <option value="Easy">Easy</option>
@@ -256,212 +324,234 @@ export default function InterviewPrepPage() {
             </select>
 
             <select 
-              value={companyFilter} onChange={e => setCompanyFilter(e.target.value)}
-              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
+              value={companyFilter} 
+              onChange={e => setCompanyFilter(e.target.value)}
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
             >
               <option value="">All Companies</option>
-              {allCompanies.map(c => <option key={c} value={c}>{c}</option>)}
+              {allCompanies.map(comp => <option key={comp} value={comp}>{comp}</option>)}
             </select>
 
-            <Button variant="outline" size="sm" onClick={resetFilters} className="text-xs h-full justify-center">
+            <select 
+              value={planFilter} 
+              onChange={e => setPlanFilter(e.target.value)}
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
+            >
+              <option value="">All Plan Tiers</option>
+              <option value="free">Free Questions</option>
+              <option value="starter">Starter Questions</option>
+              <option value="pro">Pro Questions</option>
+              <option value="premium">Premium Questions</option>
+            </select>
+
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={resetFilters} 
+              className="col-span-2 sm:col-span-1 text-xs justify-center"
+            >
               <Filter className="w-3.5 h-3.5 mr-1" /> Reset
             </Button>
           </div>
         </div>
 
         {/* QUESTIONS LIST */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-[var(--color-text-primary)]">
-              {filteredQuestions.length} Questions Available
-            </h2>
-            {categoryFilter && (
-              <button 
-                onClick={() => setCategoryFilter('')} 
-                className="text-xs text-[var(--color-brand-600)] hover:underline font-semibold"
-              >
-                Show All Categories
-              </button>
-            )}
+        {isFetching ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-[var(--color-brand-500)] border-t-transparent"></div>
           </div>
-          
-          {isFetching ? (
-            <div className="flex justify-center items-center h-48">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-[var(--color-brand-500)] border-t-transparent"></div>
-            </div>
-          ) : filteredQuestions.length === 0 ? (
-            <EmptyState 
-              title="No interview questions found."
-              description="Try adjusting your filter or search criteria."
-              action={<Button variant="outline" size="sm" onClick={resetFilters}>Clear Filters</Button>}
-            />
-          ) : (
-            <div className="space-y-3">
-              {filteredQuestions.map((q, index) => {
-                const isCompleted = completedQuestionIds.has(q.id);
-                
-                return (
-                  <div 
-                    key={q.id} 
-                    className={`rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-xs)] hover:border-[var(--color-brand-300)] transition-all flex flex-col md:flex-row md:items-center gap-3.5 ${isCompleted ? 'bg-[var(--color-bg-subtle)]' : ''}`}
-                  >
+        ) : filteredQuestions.length === 0 ? (
+          <EmptyState 
+            title="No questions found"
+            description="Try selecting a different category or clearing your search filters."
+            action={<Button variant="outline" size="sm" onClick={resetFilters}>Reset Filters</Button>}
+          />
+        ) : (
+          <div className="space-y-3">
+            {filteredQuestions.map((q, idx) => {
+              const isCompleted = completedQuestionIds.has(q.id);
+              const reqPlan = q.minimum_plan || q.access_type || 'free';
+              const isUnlocked = isContentAccessible(reqPlan, userAccess);
+              const planMeta = PLANS[normalizePlanId(reqPlan)];
+
+              return (
+                <div 
+                  key={q.id}
+                  onClick={() => handleOpenQuestion(idx)}
+                  className={`rounded-[var(--radius-xl)] border p-4 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group ${
+                    !isUnlocked 
+                      ? 'bg-slate-50/70 border-[var(--color-border)] hover:border-[var(--color-brand-300)]' 
+                      : 'bg-white border-[var(--color-border)] hover:border-[var(--color-brand-400)] hover:shadow-[var(--shadow-xs)]'
+                  }`}
+                >
+                  <div className="flex items-start gap-3 min-w-0">
                     <button 
-                      onClick={() => handleToggleComplete(q.id)}
-                      className="shrink-0 mt-0.5 md:mt-0 focus:outline-none"
-                      aria-label={isCompleted ? "Mark incomplete" : "Mark completed"}
+                      onClick={(e) => { e.stopPropagation(); handleToggleComplete(q.id); }}
+                      className="mt-0.5 text-[var(--color-text-tertiary)] hover:text-emerald-600 transition-colors shrink-0"
+                      title={isCompleted ? "Mark Incomplete" : "Mark Completed"}
                     >
                       {isCompleted ? (
-                        <CheckCircle className="w-5 h-5 text-emerald-600" />
+                        <CheckCircle className="w-5 h-5 text-emerald-600 fill-emerald-50" />
                       ) : (
-                        <Circle className="w-5 h-5 text-gray-300 hover:text-emerald-500 transition-colors" />
+                        <Circle className="w-5 h-5" />
                       )}
                     </button>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className="text-[11px] font-bold text-[var(--color-brand-700)] bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-2 py-0.5 rounded-full">
-                          {getCategoryName(q.category_id)}
-                        </span>
-                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <h3 className={`text-sm font-bold group-hover:text-[var(--color-brand-600)] transition-colors leading-snug ${isCompleted ? 'text-[var(--color-text-secondary)] line-through' : 'text-[var(--color-text-primary)]'}`}>
+                          {q.title}
+                        </h3>
+                        <PremiumBadge minimumPlan={reqPlan} />
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--color-text-secondary)]">
+                        <span className={`px-2 py-0.2 rounded-full font-bold text-[10px] border ${
                           q.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                           q.difficulty === 'Medium' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                           'bg-red-50 text-red-700 border-red-200'
                         }`}>
                           {q.difficulty}
                         </span>
-                        {q.estimated_time && (
-                          <span className="flex items-center gap-1 text-[11px] text-[var(--color-text-tertiary)] bg-[var(--color-bg-subtle)] px-2 py-0.5 rounded-full">
-                            <Clock className="w-3 h-3" /> {q.estimated_time}
-                          </span>
-                        )}
-                      </div>
-                      <h3 className={`text-sm font-semibold leading-snug ${isCompleted ? 'text-[var(--color-text-tertiary)]' : 'text-[var(--color-text-primary)]'}`}>
-                        {q.title}
-                      </h3>
-                    </div>
 
-                    <div className="shrink-0 pt-2 md:pt-0 border-t border-[var(--color-border)] md:border-t-0">
-                      <Button variant="outline" size="sm" className="w-full md:w-auto text-xs" onClick={() => openQuestion(index)}>
-                        View Answer
-                      </Button>
+                        <span className="flex items-center gap-1 text-[var(--color-text-tertiary)]">
+                          <Clock className="w-3 h-3" /> {q.estimated_time || '5 mins'}
+                        </span>
+
+                        {q.technology_tags && q.technology_tags.slice(0, 2).map(tech => (
+                          <span key={tech} className="bg-[var(--color-brand-50)] text-[var(--color-brand-700)] px-1.5 py-0.2 rounded text-[10px] font-semibold border border-[var(--color-brand-200)]">
+                            {tech}
+                          </span>
+                        ))}
+
+                        {q.company_tags && q.company_tags.slice(0, 2).map(comp => (
+                          <span key={comp} className="bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] px-1.5 py-0.2 rounded text-[10px] font-semibold border border-[var(--color-border)]">
+                            {comp}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+
+                  <div className="shrink-0 self-end sm:self-center">
+                    {!isUnlocked ? (
+                      <Button variant="outline" size="sm" className="text-xs h-7.5 px-3 text-[var(--color-brand-600)] border-[var(--color-brand-200)] hover:bg-[var(--color-brand-50)]">
+                        <Lock className="w-3 h-3 mr-1 text-[var(--color-brand-600)]" /> {planMeta.name} Required
+                      </Button>
+                    ) : (
+                      <Button variant="outline" size="sm" className="text-xs h-7.5 px-3">
+                        View Answer
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
       </div>
 
-      {/* QUESTION DETAILS MODAL */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Question Details" className="max-w-2xl">
-        {currentQuestion && selectedQuestionIndex !== null && (
-          <div className="space-y-5">
+      {/* QUESTION MODAL */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Interview Question" className="max-w-2xl">
+        {selectedQuestion && (
+          <div className="space-y-4 text-xs text-[var(--color-text-secondary)]">
             
-            {/* Meta tags */}
-            <div className="flex flex-wrap items-center gap-2 pb-3 border-b border-[var(--color-border)]">
-              <span className="text-xs font-bold text-[var(--color-brand-700)] bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-2.5 py-0.5 rounded-full">
-                {getCategoryName(currentQuestion.category_id)}
-              </span>
-              <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
-                currentQuestion.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                currentQuestion.difficulty === 'Medium' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                'bg-red-50 text-red-700 border-red-200'
-              }`}>
-                {currentQuestion.difficulty}
-              </span>
-              {currentQuestion.estimated_time && (
-                <span className="flex items-center gap-1 text-xs text-[var(--color-text-tertiary)]">
-                  <Clock className="w-3.5 h-3.5" /> {currentQuestion.estimated_time}
-                </span>
-              )}
-            </div>
-
-            {/* Title */}
-            <div>
-              <h2 className="text-lg font-bold text-[var(--color-text-primary)] leading-snug">Q: {currentQuestion.title}</h2>
-              {currentQuestion.company_tags && currentQuestion.company_tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {currentQuestion.company_tags.map(c => (
-                    <span key={c} className="text-[11px] font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-2 py-0.5 rounded">
-                      {c}
-                    </span>
-                  ))}
+            {/* Header in Modal */}
+            <div className="flex items-start justify-between pb-3 border-b border-[var(--color-border)] gap-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`px-2 py-0.2 rounded-full font-bold text-[10px] border ${
+                    selectedQuestion.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                    selectedQuestion.difficulty === 'Medium' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                    'bg-red-50 text-red-700 border-red-200'
+                  }`}>
+                    {selectedQuestion.difficulty}
+                  </span>
+                  <PremiumBadge minimumPlan={selectedQuestion.minimum_plan || selectedQuestion.access_type} />
                 </div>
-              )}
+                <h2 className="text-base font-bold text-[var(--color-text-primary)] leading-snug">{selectedQuestion.title}</h2>
+              </div>
+
+              <button 
+                onClick={() => handleToggleComplete(selectedQuestion.id)}
+                className="p-2 rounded-full hover:bg-[var(--color-bg-muted)] text-[var(--color-text-tertiary)] hover:text-emerald-600 transition-colors shrink-0"
+                title={completedQuestionIds.has(selectedQuestion.id) ? "Mark Incomplete" : "Mark Completed"}
+              >
+                {completedQuestionIds.has(selectedQuestion.id) ? (
+                  <CheckCircle className="w-6 h-6 text-emerald-600 fill-emerald-50" />
+                ) : (
+                  <Circle className="w-6 h-6" />
+                )}
+              </button>
             </div>
 
-            {/* Answer */}
-            <div className="bg-[var(--color-bg-subtle)] border border-[var(--color-border)] rounded-[var(--radius-lg)] p-5">
-              <h3 className="text-xs font-bold text-[var(--color-brand-700)] mb-2 uppercase tracking-wider flex items-center gap-1.5">
-                <CheckCircle className="w-4 h-4 text-emerald-600" /> Ideal Answer
-              </h3>
-              <p className="text-[var(--color-text-secondary)] text-sm whitespace-pre-wrap leading-relaxed">
-                {currentQuestion.answer}
-              </p>
+            {/* Answer Section */}
+            <div className="bg-[var(--color-bg-subtle)] p-4 rounded-[var(--radius-lg)] border border-[var(--color-border)]">
+              <h4 className="font-bold text-[var(--color-brand-700)] mb-1.5 uppercase text-[11px] flex items-center gap-1.5">
+                <CheckCircle className="w-4 h-4 text-emerald-600" /> Ideal Answer Structure
+              </h4>
+              <p className="text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed">{selectedQuestion.answer}</p>
             </div>
 
-            {/* Tips & Mistakes */}
-            {(currentQuestion.tips || currentQuestion.common_mistakes) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {currentQuestion.tips && (
-                  <div className="border border-emerald-200 bg-emerald-50/60 rounded-[var(--radius-lg)] p-4">
-                    <h3 className="text-xs font-bold text-emerald-800 flex items-center gap-1.5 mb-1.5">
-                      <Target className="w-3.5 h-3.5" /> Pro Tips
-                    </h3>
-                    <p className="text-xs text-emerald-950 leading-relaxed">{currentQuestion.tips}</p>
-                  </div>
-                )}
-                {currentQuestion.common_mistakes && (
-                  <div className="border border-red-200 bg-red-50/60 rounded-[var(--radius-lg)] p-4">
-                    <h3 className="text-xs font-bold text-red-800 flex items-center gap-1.5 mb-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5" /> Common Pitfalls
-                    </h3>
-                    <p className="text-xs text-red-950 leading-relaxed">{currentQuestion.common_mistakes}</p>
-                  </div>
-                )}
+            {/* Tips & Pitfalls */}
+            {selectedQuestion.tips && (
+              <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-[var(--radius-lg)]">
+                <h4 className="font-bold text-emerald-950 mb-1 flex items-center gap-1.5 text-xs">
+                  <HelpCircle className="w-3.5 h-3.5 text-emerald-700" /> Interview Pro Tips
+                </h4>
+                <p className="text-emerald-900 leading-relaxed">{selectedQuestion.tips}</p>
               </div>
             )}
 
-            {/* Action Bar */}
-            <div className="pt-4 border-t border-[var(--color-border)] flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-2 w-full sm:w-auto">
+            {selectedQuestion.common_mistakes && (
+              <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-[var(--radius-lg)]">
+                <h4 className="font-bold text-amber-950 mb-1 flex items-center gap-1.5 text-xs">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-700" /> Common Pitfalls to Avoid
+                </h4>
+                <p className="text-amber-900 leading-relaxed">{selectedQuestion.common_mistakes}</p>
+              </div>
+            )}
+
+            {/* Modal Footer Controls */}
+            <div className="pt-3 border-t border-[var(--color-border)] flex items-center justify-between">
+              <div className="flex gap-2">
                 <Button 
                   variant="outline" 
-                  size="sm"
+                  size="sm" 
+                  onClick={handlePrevQuestion}
                   disabled={selectedQuestionIndex === 0}
-                  onClick={() => setSelectedQuestionIndex(selectedQuestionIndex - 1)}
+                  className="text-xs"
                 >
-                  <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+                  <ChevronLeft className="w-3.5 h-3.5 mr-1" /> Previous
                 </Button>
                 <Button 
                   variant="outline" 
-                  size="sm"
+                  size="sm" 
+                  onClick={handleNextQuestion}
                   disabled={selectedQuestionIndex === filteredQuestions.length - 1}
-                  onClick={() => setSelectedQuestionIndex(selectedQuestionIndex + 1)}
+                  className="text-xs"
                 >
-                  Next <ChevronRight className="w-4 h-4 ml-1" />
+                  Next <ChevronRight className="w-3.5 h-3.5 ml-1" />
                 </Button>
               </div>
 
-              <Button 
-                variant={completedQuestionIds.has(currentQuestion.id) ? "outline" : "primary"}
-                size="sm"
-                className={`w-full sm:w-auto ${completedQuestionIds.has(currentQuestion.id) ? 'border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : ''}`}
-                onClick={() => handleToggleComplete(currentQuestion.id)}
-              >
-                {completedQuestionIds.has(currentQuestion.id) ? (
-                  <><CheckCircle className="w-3.5 h-3.5 mr-1.5" /> Completed</>
-                ) : (
-                  <><Circle className="w-3.5 h-3.5 mr-1.5" /> Mark as Completed</>
-                )}
+              <Button variant="outline" size="sm" onClick={() => setIsModalOpen(false)}>
+                Close
               </Button>
             </div>
 
           </div>
         )}
       </Modal>
+
+      {/* UPGRADE PROMPT MODAL */}
+      <UpgradeModal 
+        isOpen={isUpgradeModalOpen} 
+        onClose={() => setIsUpgradeModalOpen(false)} 
+        requiredPlan={modalRequiredPlan}
+        featureTitle="exclusive interview questions and model answers"
+      />
 
     </StudentLayout>
   );

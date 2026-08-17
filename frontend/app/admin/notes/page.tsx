@@ -1,28 +1,31 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdminLayout } from '@/layouts/AdminLayout';
 import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
 import { EmptyState } from '@/components/EmptyState';
+import { PremiumBadge } from '@/components/PremiumBadge';
 import { 
   Search, 
   Filter, 
   Eye, 
-  Edit,
+  Edit, 
   Power, 
   Trash2, 
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
   Plus,
-  Upload,
   FileText,
   Download,
-  CheckCircle,
-  Calendar
+  Upload,
+  BookOpen,
+  Calendar,
+  Lock
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { normalizePlanId } from '@/config/plans';
 
 type Note = {
   id: string;
@@ -34,6 +37,8 @@ type Note = {
   file_size: string;
   tags: string[];
   status: string;
+  minimum_plan?: string;
+  access_type?: string;
   created_at: string;
   updated_at: string;
 };
@@ -43,17 +48,19 @@ const CATEGORIES = [
   'HR Interview',
   'Technical Interview',
   'Programming',
-  'Resume Tips',
   'Career Guidance'
 ];
 
 const initialForm: Partial<Note> = {
   title: '',
-  category: '',
+  category: 'Technical Interview',
   technology: '',
   description: '',
+  file_url: '',
+  file_size: '',
   tags: [],
-  status: 'Active'
+  status: 'Active',
+  minimum_plan: 'free'
 };
 
 export default function AdminNotesPage() {
@@ -64,6 +71,7 @@ export default function AdminNotesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [planFilter, setPlanFilter] = useState('');
 
   // Modals
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -77,10 +85,7 @@ export default function AdminNotesPage() {
   const [formData, setFormData] = useState<Partial<Note>>(initialForm);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [tagInput, setTagInput] = useState('');
-  
-  // File Upload State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -98,7 +103,7 @@ export default function AdminNotesPage() {
       const { data, error } = await supabase
         .from('notes')
         .select('*')
-        .order('updated_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       if (data) setNotes(data as Note[]);
@@ -114,15 +119,16 @@ export default function AdminNotesPage() {
     const query = searchQuery.toLowerCase();
     const matchesSearch = query === '' || 
       n.title.toLowerCase().includes(query) || 
-      n.category.toLowerCase().includes(query) || 
-      (n.technology || '').toLowerCase().includes(query) ||
-      (n.tags && n.tags.some(t => t.toLowerCase().includes(query))) ||
-      (n.description || '').toLowerCase().includes(query);
+      (n.technology && n.technology.toLowerCase().includes(query)) ||
+      (n.tags && n.tags.some(t => t.toLowerCase().includes(query)));
 
     const matchesStatus = statusFilter === '' || n.status === statusFilter;
     const matchesCat = categoryFilter === '' || n.category === categoryFilter;
+    
+    const itemPlan = normalizePlanId(n.minimum_plan || n.access_type);
+    const matchesPlan = planFilter === '' || itemPlan === planFilter;
 
-    return matchesSearch && matchesStatus && matchesCat;
+    return matchesSearch && matchesStatus && matchesCat && matchesPlan;
   });
 
   // Pagination Logic
@@ -133,25 +139,27 @@ export default function AdminNotesPage() {
     setSearchQuery('');
     setStatusFilter('');
     setCategoryFilter('');
+    setPlanFilter('');
     setCurrentPage(1);
   };
 
   // ---------------- FORM HANDLING ---------------- //
   const openAddForm = () => {
     setFormData(initialForm);
+    setSelectedFile(null);
     setFormErrors({});
     setSelectedNote(null);
-    setSelectedFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
     setIsFormModalOpen(true);
   };
 
   const openEditForm = (note: Note) => {
-    setFormData(note);
+    setFormData({
+      ...note,
+      minimum_plan: normalizePlanId(note.minimum_plan || note.access_type)
+    });
+    setSelectedFile(null);
     setFormErrors({});
     setSelectedNote(note);
-    setSelectedFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
     setIsFormModalOpen(true);
   };
 
@@ -163,7 +171,7 @@ export default function AdminNotesPage() {
     }
   };
 
-  const handleArrayAdd = (e: React.KeyboardEvent | React.MouseEvent) => {
+  const handleAddTag = (e: React.KeyboardEvent | React.MouseEvent) => {
     if ('key' in e && e.key !== 'Enter') return;
     e.preventDefault();
     if (tagInput.trim() && !(formData.tags || []).includes(tagInput.trim())) {
@@ -172,50 +180,32 @@ export default function AdminNotesPage() {
     }
   };
 
-  const handleArrayRemove = (val: string) => {
-    setFormData(prev => ({ ...prev, tags: (prev.tags || []).filter(item => item !== val) }));
+  const handleRemoveTag = (tag: string) => {
+    setFormData(prev => ({ ...prev, tags: (prev.tags || []).filter(t => t !== tag) }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const allowedTypes = ['application/pdf'];
-    if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.pdf')) {
-      setFormErrors(prev => ({ ...prev, file: 'Only PDF files are allowed.' }));
-      setSelectedFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.type !== 'application/pdf') {
+        setFormErrors(prev => ({ ...prev, file: "Only PDF files are supported." }));
+        return;
+      }
+      setSelectedFile(file);
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      setFormData(prev => ({ ...prev, file_size: `${sizeMb} MB` }));
+      if (formErrors.file) {
+        setFormErrors(prev => { const next = { ...prev }; delete next.file; return next; });
+      }
     }
-
-    if (file.size > 10 * 1024 * 1024) {
-      setFormErrors(prev => ({ ...prev, file: 'File size must be less than 10MB.' }));
-      setSelectedFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-
-    setFormErrors(prev => { const next = { ...prev }; delete next.file; return next; });
-    setSelectedFile(file);
-  };
-
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
     if (!formData.title?.trim()) errors.title = "Title is required.";
     if (!formData.category) errors.category = "Category is required.";
-    if (!formData.description?.trim()) errors.description = "Description is required.";
-    
-    if (!selectedNote && !selectedFile) {
-      errors.file = "Please upload a PDF document.";
-    }
+    if (!formData.description?.trim()) errors.description = "Summary is required.";
+    if (!selectedNote && !selectedFile && !formData.file_url) errors.file = "PDF file is required.";
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -226,26 +216,26 @@ export default function AdminNotesPage() {
     setIsProcessing(true);
     
     try {
-      let fileUrl = selectedNote ? selectedNote.file_url : '';
-      let fileSize = selectedNote ? selectedNote.file_size : '';
+      let finalFileUrl = formData.file_url || '';
+      let finalFileSize = formData.file_size || '1.0 MB';
 
+      // Handle PDF Upload if a new file is picked
       if (selectedFile) {
-        const fileExt = 'pdf';
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-        const filePath = `uploads/${fileName}`;
+        const fileExt = selectedFile.name.split('.').pop();
+        const cleanName = `${Date.now()}_${selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+        const filePath = `notes/${cleanName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('notes')
-          .upload(filePath, selectedFile, { cacheControl: '3600', upsert: false });
+          .upload(filePath, selectedFile, {
+            contentType: 'application/pdf',
+            upsert: true
+          });
 
         if (uploadError) throw uploadError;
 
-        fileUrl = filePath;
-        fileSize = formatBytes(selectedFile.size);
-
-        if (selectedNote && selectedNote.file_url) {
-          await supabase.storage.from('notes').remove([selectedNote.file_url]);
-        }
+        finalFileUrl = filePath;
+        finalFileSize = `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB`;
       }
 
       const payload = {
@@ -253,25 +243,29 @@ export default function AdminNotesPage() {
         category: formData.category,
         technology: formData.technology || null,
         description: formData.description,
+        file_url: finalFileUrl,
+        file_size: finalFileSize,
         tags: formData.tags || [],
-        status: formData.status,
-        file_url: fileUrl,
-        file_size: fileSize
+        status: formData.status || 'Active',
+        minimum_plan: formData.minimum_plan || 'free',
+        access_type: formData.minimum_plan === 'free' ? 'Free' : 'Premium'
       };
 
       if (selectedNote) {
+        // Update
         const { error } = await supabase.from('notes').update(payload).eq('id', selectedNote.id);
         if (error) throw error;
       } else {
+        // Insert
         const { error } = await supabase.from('notes').insert(payload);
         if (error) throw error;
       }
-      
+
       await fetchNotes();
       setIsFormModalOpen(false);
     } catch (err) {
       console.error("Error saving note:", err);
-      alert("Failed to save note.");
+      alert("Failed to save note. Please check Supabase Storage permissions.");
     } finally {
       setIsProcessing(false);
     }
@@ -298,38 +292,32 @@ export default function AdminNotesPage() {
     if (!selectedNote) return;
     setIsProcessing(true);
     try {
+      // 1. Delete from database
+      const { error } = await supabase.from('notes').delete().eq('id', selectedNote.id);
+      if (error) throw error;
+
+      // 2. Cleanup Storage file
       if (selectedNote.file_url) {
         await supabase.storage.from('notes').remove([selectedNote.file_url]);
       }
-      const { error } = await supabase.from('notes').delete().eq('id', selectedNote.id);
-      if (error) throw error;
-      
+
       setNotes(prev => prev.filter(n => n.id !== selectedNote.id));
       setIsDeleteModalOpen(false);
     } catch (err) {
       console.error("Error deleting note:", err);
-      alert("Failed to delete note.");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const downloadFile = async (note: Note) => {
+  const handleDownloadPreview = async (note: Note) => {
     try {
       const { data, error } = await supabase.storage.from('notes').createSignedUrl(note.file_url, 60);
       if (error) throw error;
-      if (data && data.signedUrl) {
-        const a = document.createElement('a');
-        a.href = data.signedUrl;
-        a.target = '_blank';
-        a.download = note.title + '.pdf';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }
+      if (data?.signedUrl) window.open(data.signedUrl, '_blank');
     } catch (err) {
-      console.error("Error generating download link:", err);
-      alert("Failed to download file.");
+      console.error("Error generating signed download URL:", err);
+      alert("Unable to open PDF.");
     }
   };
 
@@ -340,13 +328,13 @@ export default function AdminNotesPage() {
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Notes Management</h1>
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Study Notes Management</h1>
             <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 font-medium">
-              Upload revision guides, formula sheets, and study materials for students.
+              Upload, organize, and manage downloadable revision notes, formula sheets, and minimum plan requirements.
             </p>
           </div>
           <Button size="sm" onClick={openAddForm} className="shrink-0 text-xs">
-            <Upload className="w-4 h-4 mr-1.5" /> Upload Note
+            <Plus className="w-4 h-4 mr-1.5" /> Upload New Note
           </Button>
         </div>
 
@@ -356,14 +344,14 @@ export default function AdminNotesPage() {
             <Search className="w-4 h-4 text-[var(--color-text-tertiary)] absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
-              placeholder="Search by Title, Category, Technology or Keyword..." 
+              placeholder="Search by Note Title, Topic or Tags..." 
               value={searchQuery}
               onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
               className="w-full pl-9 pr-3 py-2 border border-[var(--color-border)] bg-white rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] shadow-xs transition-colors"
             />
           </div>
 
-          <div className="w-full lg:w-auto grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+          <div className="w-full lg:w-auto grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <select 
               value={categoryFilter} onChange={e => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
               className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
@@ -372,6 +360,17 @@ export default function AdminNotesPage() {
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             
+            <select 
+              value={planFilter} onChange={e => { setPlanFilter(e.target.value); setCurrentPage(1); }}
+              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
+            >
+              <option value="">All Tiers</option>
+              <option value="free">Free</option>
+              <option value="starter">Starter</option>
+              <option value="pro">Pro</option>
+              <option value="premium">Premium</option>
+            </select>
+
             <select 
               value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}
               className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
@@ -397,7 +396,7 @@ export default function AdminNotesPage() {
             <div className="p-8">
               <EmptyState 
                 title="No study notes found."
-                description="Upload revision sheets and study materials to support students."
+                description="Try clearing your search query or upload a new PDF note."
                 action={<Button size="sm" onClick={openAddForm}>Upload Note</Button>}
               />
             </div>
@@ -408,10 +407,11 @@ export default function AdminNotesPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-[var(--color-bg-subtle)] border-b border-[var(--color-border)] text-[11px] uppercase tracking-wider text-[var(--color-text-tertiary)] font-bold">
-                      <th className="px-5 py-3.5 w-2/5">Title & Category</th>
-                      <th className="px-5 py-3.5">File Details</th>
+                      <th className="px-5 py-3.5 w-1/3">Title & Summary</th>
+                      <th className="px-5 py-3.5">Required Plan</th>
+                      <th className="px-5 py-3.5">Category</th>
+                      <th className="px-5 py-3.5">File Size</th>
                       <th className="px-5 py-3.5">Status</th>
-                      <th className="px-5 py-3.5">Updated</th>
                       <th className="px-5 py-3.5 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -419,21 +419,14 @@ export default function AdminNotesPage() {
                     {paginatedNotes.map(n => (
                       <tr key={n.id} className="hover:bg-[var(--color-bg-subtle)]/70 transition-colors">
                         <td className="px-5 py-3.5">
-                          <div className="flex items-start gap-2.5">
-                            <div className="p-1.5 bg-red-50 text-red-600 border border-red-200 rounded-[var(--radius-md)] mt-0.5 shrink-0">
-                              <FileText className="w-4 h-4" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-bold text-[var(--color-text-primary)] line-clamp-1">{n.title}</p>
-                              <p className="text-[11px] text-[var(--color-text-secondary)] mt-0.5">{n.category}</p>
-                            </div>
-                          </div>
+                          <p className="font-bold text-[var(--color-text-primary)] leading-snug">{n.title}</p>
+                          <p className="text-[11px] text-[var(--color-text-tertiary)] truncate max-w-xs">{n.description}</p>
                         </td>
                         <td className="px-5 py-3.5">
-                          <span className="text-[11px] font-semibold text-[var(--color-text-secondary)] bg-[var(--color-bg-subtle)] border border-[var(--color-border)] px-2 py-0.5 rounded">
-                            PDF • {n.file_size}
-                          </span>
+                          <PremiumBadge minimumPlan={n.minimum_plan || n.access_type} showLockIfPaid={false} />
                         </td>
+                        <td className="px-5 py-3.5 font-medium text-[var(--color-text-secondary)]">{n.category}</td>
+                        <td className="px-5 py-3.5 font-semibold text-[var(--color-text-tertiary)]">{n.file_size}</td>
                         <td className="px-5 py-3.5">
                           <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                             n.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'
@@ -441,20 +434,20 @@ export default function AdminNotesPage() {
                             {n.status}
                           </span>
                         </td>
-                        <td className="px-5 py-3.5 text-[var(--color-text-tertiary)] font-medium">
-                          {new Date(n.updated_at).toLocaleDateString()}
-                        </td>
                         <td className="px-5 py-3.5 text-right space-x-1 whitespace-nowrap">
-                          <button onClick={() => { setSelectedNote(n); setIsViewModalOpen(true); }} className="p-1.5 text-[var(--color-brand-600)] hover:bg-[var(--color-brand-50)] rounded transition-colors" title="View">
+                          <button onClick={() => handleDownloadPreview(n)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors" title="Download / Preview PDF">
+                            <Download className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => { setSelectedNote(n); setIsViewModalOpen(true); }} className="p-1.5 text-[var(--color-brand-600)] hover:bg-[var(--color-brand-50)] rounded transition-colors" title="View Details">
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button onClick={() => openEditForm(n)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Edit">
+                          <button onClick={() => openEditForm(n)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Edit Note">
                             <Edit className="w-4 h-4" />
                           </button>
                           <button onClick={() => { setSelectedNote(n); setIsStatusModalOpen(true); }} className={`p-1.5 rounded transition-colors ${n.status === 'Active' ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`} title={n.status === 'Active' ? "Deactivate" : "Activate"}>
                             <Power className="w-4 h-4" />
                           </button>
-                          <button onClick={() => { setSelectedNote(n); setIsDeleteModalOpen(true); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">
+                          <button onClick={() => { setSelectedNote(n); setIsDeleteModalOpen(true); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete Note">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </td>
@@ -469,30 +462,26 @@ export default function AdminNotesPage() {
                 {paginatedNotes.map(n => (
                   <div key={n.id} className="p-4 space-y-2.5">
                     <div className="flex justify-between items-start gap-2">
-                      <div className="flex items-start gap-2">
-                        <div className="p-1.5 bg-red-50 text-red-600 border border-red-200 rounded-[var(--radius-md)] shrink-0">
-                          <FileText className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-[var(--color-text-primary)] leading-snug">{n.title}</p>
-                          <p className="text-[11px] text-[var(--color-text-secondary)]">{n.category}</p>
-                        </div>
+                      <p className="text-xs font-bold text-[var(--color-text-primary)] leading-snug">{n.title}</p>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <PremiumBadge minimumPlan={n.minimum_plan || n.access_type} showLockIfPaid={false} />
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${n.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+                          {n.status}
+                        </span>
                       </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 border ${n.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
-                        {n.status}
-                      </span>
                     </div>
                     
-                    <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
-                      <span className="font-semibold text-[11px]">Size: {n.file_size}</span>
-                      <span className="text-[11px] text-[var(--color-text-tertiary)]">{new Date(n.updated_at).toLocaleDateString()}</span>
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="bg-[var(--color-bg-subtle)] border border-[var(--color-border)] px-2 py-0.5 rounded text-[11px] font-medium text-[var(--color-text-secondary)]">{n.category}</span>
+                      <span className="text-[11px] text-[var(--color-text-tertiary)]">{n.file_size}</span>
                     </div>
 
                     <div className="flex justify-end gap-1.5 pt-2 border-t border-[var(--color-border)]">
-                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => { setSelectedNote(n); setIsViewModalOpen(true); }}>View</Button>
-                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => openEditForm(n)}>Edit</Button>
-                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => { setSelectedNote(n); setIsStatusModalOpen(true); }}>{n.status === 'Active' ? 'Deactivate' : 'Activate'}</Button>
-                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5 text-red-600 hover:bg-red-50" onClick={() => { setSelectedNote(n); setIsDeleteModalOpen(true); }}>Delete</Button>
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2" onClick={() => handleDownloadPreview(n)}>PDF</Button>
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2" onClick={() => { setSelectedNote(n); setIsViewModalOpen(true); }}>View</Button>
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2" onClick={() => openEditForm(n)}>Edit</Button>
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2" onClick={() => { setSelectedNote(n); setIsStatusModalOpen(true); }}>{n.status === 'Active' ? 'Deactivate' : 'Activate'}</Button>
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2 text-red-600 hover:bg-red-50" onClick={() => { setSelectedNote(n); setIsDeleteModalOpen(true); }}>Delete</Button>
                     </div>
                   </div>
                 ))}
@@ -515,92 +504,70 @@ export default function AdminNotesPage() {
       </div>
 
       {/* FORM MODAL (ADD / EDIT) */}
-      <Modal isOpen={isFormModalOpen} onClose={() => !isProcessing && setIsFormModalOpen(false)} title={selectedNote ? "Edit Note Details" : "Upload Study Note"} className="max-w-2xl">
+      <Modal isOpen={isFormModalOpen} onClose={() => !isProcessing && setIsFormModalOpen(false)} title={selectedNote ? "Edit Study Note" : "Upload Study Note"} className="max-w-2xl">
         <div className="space-y-4 text-xs">
           
           <div>
             <label className="block font-bold text-[var(--color-text-primary)] mb-1">Note Title *</label>
-            <input type="text" name="title" value={formData.title || ''} onChange={handleFormChange} placeholder="e.g. Master React in 10 Days" className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white" />
+            <input type="text" name="title" value={formData.title || ''} onChange={handleFormChange} placeholder="e.g. Complete SQL Joins & Window Functions Guide" className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white" />
             {formErrors.title && <p className="text-red-500 mt-1">{formErrors.title}</p>}
           </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block font-bold text-[var(--color-text-primary)] mb-1">Category *</label>
               <select name="category" value={formData.category} onChange={handleFormChange} className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white">
-                <option value="" disabled>Select Category</option>
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              {formErrors.category && <p className="text-red-500 mt-1">{formErrors.category}</p>}
+            </div>
+            <div>
+              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Minimum Required Plan</label>
+              <select name="minimum_plan" value={formData.minimum_plan || 'free'} onChange={handleFormChange} className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white font-semibold text-[var(--color-brand-700)]">
+                <option value="free">Free (All Students)</option>
+                <option value="starter">Starter Plan (₹49+)</option>
+                <option value="pro">Pro Plan (₹99+)</option>
+                <option value="premium">Premium Plan (₹149)</option>
+              </select>
             </div>
             <div>
               <label className="block font-bold text-[var(--color-text-primary)] mb-1">Technology (Optional)</label>
-              <input type="text" name="technology" value={formData.technology || ''} onChange={handleFormChange} placeholder="e.g. JavaScript, Python" className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white" />
+              <input type="text" name="technology" value={formData.technology || ''} onChange={handleFormChange} placeholder="e.g. Python, DBMS" className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white" />
             </div>
           </div>
 
+          {/* PDF File Upload */}
           <div>
-            <label className="block font-bold text-[var(--color-text-primary)] mb-1">Description *</label>
-            <textarea 
-              name="description" 
-              value={formData.description || ''} 
-              onChange={handleFormChange} 
-              rows={3}
-              placeholder="Summary of concepts covered in this study resource..."
-              className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white"
-            />
-            {formErrors.description && <p className="text-red-500 mt-1">{formErrors.description}</p>}
-          </div>
-
-          {/* File Upload Zone */}
-          <div>
-            <label className="block font-bold text-[var(--color-text-primary)] mb-1">PDF File *</label>
-            <div className={`flex justify-center px-4 py-5 border-2 border-dashed rounded-[var(--radius-lg)] transition-colors ${formErrors.file ? 'border-red-300 bg-red-50/50' : 'border-[var(--color-border)] bg-[var(--color-bg-subtle)] hover:bg-[var(--color-brand-50)]/50'}`}>
-              <div className="space-y-1.5 text-center">
-                <Upload className="mx-auto h-7 w-7 text-[var(--color-brand-500)]" />
-                <div className="flex text-xs font-semibold text-[var(--color-text-primary)] justify-center">
-                  <label className="relative cursor-pointer text-[var(--color-brand-600)] hover:underline">
-                    <span>Click to browse and upload</span>
-                    <input type="file" className="sr-only" accept="application/pdf" onChange={handleFileChange} ref={fileInputRef} />
-                  </label>
-                </div>
-                <p className="text-[11px] text-[var(--color-text-tertiary)]">PDF documents up to 10 MB</p>
-              </div>
+            <label className="block font-bold text-[var(--color-text-primary)] mb-1">PDF File Document *</label>
+            <div className="border-2 border-dashed border-[var(--color-border)] rounded-[var(--radius-lg)] p-4 text-center hover:bg-[var(--color-bg-subtle)] transition-colors">
+              <input type="file" accept="application/pdf" onChange={handleFileChange} className="hidden" id="pdfUploadInput" />
+              <label htmlFor="pdfUploadInput" className="cursor-pointer flex flex-col items-center justify-center">
+                <Upload className="w-6 h-6 text-[var(--color-brand-600)] mb-1" />
+                <span className="text-xs font-semibold text-[var(--color-brand-600)]">
+                  {selectedFile ? selectedFile.name : selectedNote?.file_url ? 'Replace existing PDF' : 'Click to select PDF document'}
+                </span>
+                <span className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">Maximum size: 10MB • Format: .pdf</span>
+              </label>
             </div>
-            
-            {selectedFile && (
-              <div className="mt-2 flex items-center justify-between p-2.5 bg-emerald-50 border border-emerald-200 rounded-[var(--radius-md)] text-xs text-emerald-800 font-semibold">
-                <div className="flex items-center gap-2 truncate">
-                  <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="truncate">{selectedFile.name}</span>
-                </div>
-                <span className="shrink-0">{formatBytes(selectedFile.size)}</span>
-              </div>
-            )}
-
-            {!selectedFile && selectedNote && (
-              <div className="mt-2 flex items-center justify-between p-2.5 bg-[var(--color-bg-subtle)] border border-[var(--color-border)] rounded-[var(--radius-md)] text-xs text-[var(--color-text-secondary)] font-medium">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-[var(--color-brand-600)]" />
-                  <span>Existing File Preserved</span>
-                </div>
-                <span>{selectedNote.file_size}</span>
-              </div>
-            )}
-
             {formErrors.file && <p className="text-red-500 mt-1">{formErrors.file}</p>}
           </div>
 
           <div>
-            <label className="block font-bold text-[var(--color-text-primary)] mb-1">Tags (Optional)</label>
+            <label className="block font-bold text-[var(--color-text-primary)] mb-1">Summary / Description *</label>
+            <textarea name="description" value={formData.description || ''} onChange={handleFormChange} rows={3} placeholder="Brief summary of the concepts covered in this study guide..." className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white" />
+            {formErrors.description && <p className="text-red-500 mt-1">{formErrors.description}</p>}
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="block font-bold text-[var(--color-text-primary)] mb-1">Topic Tags</label>
             <div className="flex gap-2 mb-1.5">
-              <input type="text" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={handleArrayAdd} placeholder="Type tag and press Enter" className="flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-1.5 text-xs outline-none" />
-              <Button type="button" size="sm" onClick={handleArrayAdd}>Add Tag</Button>
+              <input type="text" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={handleAddTag} placeholder="Type tag and press Enter..." className="flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-1.5 text-xs outline-none" />
+              <Button type="button" size="sm" onClick={handleAddTag}>Add Tag</Button>
             </div>
             <div className="flex flex-wrap gap-1">
               {(formData.tags || []).map(t => (
-                <span key={t} className="bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] border border-[var(--color-border)] px-2 py-0.5 rounded-full text-[11px] font-semibold flex items-center gap-1">
-                  #{t} <button type="button" onClick={() => handleArrayRemove(t)} className="hover:text-red-500">&times;</button>
+                <span key={t} className="bg-[var(--color-brand-50)] text-[var(--color-brand-700)] px-2 py-0.5 rounded text-[11px] font-semibold flex items-center gap-1 border border-[var(--color-brand-200)]">
+                  #{t} <button type="button" onClick={() => handleRemoveTag(t)} className="hover:text-red-500">&times;</button>
                 </span>
               ))}
             </div>
@@ -611,7 +578,7 @@ export default function AdminNotesPage() {
             <div className="flex gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="radio" name="status" value="Active" checked={formData.status === 'Active'} onChange={handleFormChange} />
-                <span>Active (Visible to Students)</span>
+                <span>Active (Downloadable by Students)</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="radio" name="status" value="Inactive" checked={formData.status === 'Inactive'} onChange={handleFormChange} />
@@ -623,59 +590,47 @@ export default function AdminNotesPage() {
           <div className="flex justify-end gap-2.5 pt-4 border-t border-[var(--color-border)]">
             <Button variant="outline" size="sm" onClick={() => setIsFormModalOpen(false)} disabled={isProcessing}>Cancel</Button>
             <Button variant="primary" size="sm" onClick={handleSave} disabled={isProcessing}>
-              {isProcessing ? 'Saving...' : 'Save Note'}
+              {isProcessing ? 'Uploading & Saving...' : 'Save Note'}
             </Button>
           </div>
         </div>
       </Modal>
 
-      {/* VIEW NOTE MODAL */}
-      <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Note Details" className="max-w-xl">
+      {/* VIEW MODAL */}
+      <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Study Guide Overview" className="max-w-xl">
         {selectedNote && (
           <div className="space-y-4 text-xs">
             <div className="flex items-start justify-between pb-3 border-b border-[var(--color-border)]">
               <div>
-                <h2 className="text-base font-bold text-[var(--color-text-primary)]">{selectedNote.title}</h2>
-                <div className="flex flex-wrap gap-1.5 mt-1">
-                  <span className="bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-200)] px-2 py-0.2 rounded-full text-[10px] font-bold uppercase">{selectedNote.category}</span>
-                  {selectedNote.technology && <span className="bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] border border-[var(--color-border)] px-2 py-0.2 rounded-full text-[10px] font-semibold">{selectedNote.technology}</span>}
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="text-base font-bold text-[var(--color-text-primary)]">{selectedNote.title}</h2>
+                  <PremiumBadge minimumPlan={selectedNote.minimum_plan || selectedNote.access_type} />
                 </div>
+                <span className="text-xs font-semibold text-[var(--color-brand-600)]">{selectedNote.category}</span>
               </div>
-              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 border ${selectedNote.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${selectedNote.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
                 {selectedNote.status}
               </span>
             </div>
 
             <div>
-              <h4 className="font-bold text-[var(--color-text-primary)] mb-1">Description</h4>
+              <h4 className="font-bold text-[var(--color-text-primary)] mb-1">Summary</h4>
               <p className="text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed">{selectedNote.description}</p>
             </div>
 
             {selectedNote.tags && selectedNote.tags.length > 0 && (
               <div>
-                <h4 className="font-bold text-[var(--color-text-primary)] mb-1">Tags</h4>
+                <h4 className="font-bold text-[var(--color-text-primary)] mb-1">Topic Tags</h4>
                 <div className="flex flex-wrap gap-1">
-                  {selectedNote.tags.map(t => <span key={t} className="bg-[var(--color-bg-subtle)] px-2 py-0.5 rounded text-[11px] text-[var(--color-text-secondary)] border border-[var(--color-border)]">#{t}</span>)}
+                  {selectedNote.tags.map(t => <span key={t} className="bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] border border-[var(--color-border)] px-2 py-0.5 rounded text-xs font-medium">#{t}</span>)}
                 </div>
               </div>
             )}
 
-            <div className="bg-[var(--color-bg-subtle)] border border-[var(--color-border)] rounded-[var(--radius-lg)] p-3.5 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-red-50 text-red-600 border border-red-200 rounded-[var(--radius-md)]">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="font-bold text-[var(--color-text-primary)]">PDF Document</p>
-                  <p className="text-[11px] text-[var(--color-text-tertiary)]">{selectedNote.file_size}</p>
-                </div>
-              </div>
-              <Button size="sm" variant="outline" onClick={() => downloadFile(selectedNote)} className="text-xs">
-                <Download className="w-3.5 h-3.5 mr-1" /> Download
+            <div className="pt-3 border-t border-[var(--color-border)] flex items-center justify-between">
+              <Button variant="outline" size="sm" onClick={() => handleDownloadPreview(selectedNote)}>
+                <Download className="w-3.5 h-3.5 mr-1" /> Open Signed PDF
               </Button>
-            </div>
-            
-            <div className="flex justify-end pt-4 border-t border-[var(--color-border)]">
               <Button variant="outline" size="sm" onClick={() => setIsViewModalOpen(false)}>Close</Button>
             </div>
           </div>
@@ -687,13 +642,8 @@ export default function AdminNotesPage() {
         {selectedNote && (
           <div className="space-y-4 text-xs">
             <p className="text-[var(--color-text-secondary)] leading-relaxed">
-              Are you sure you want to <strong>{selectedNote.status === 'Active' ? 'deactivate' : 'activate'}</strong> this note?
+              Are you sure you want to <strong>{selectedNote.status === 'Active' ? 'deactivate' : 'activate'}</strong> "{selectedNote.title}"?
             </p>
-            {selectedNote.status === 'Active' && (
-              <div className="bg-amber-50 border border-amber-200 p-3 rounded-[var(--radius-lg)] text-amber-900 font-medium">
-                Deactivating this note will instantly hide it from student study resource searches.
-              </div>
-            )}
             <div className="flex justify-end gap-2.5 pt-3 border-t border-[var(--color-border)]">
               <Button variant="outline" size="sm" onClick={() => setIsStatusModalOpen(false)} disabled={isProcessing}>Cancel</Button>
               <Button 
@@ -711,7 +661,7 @@ export default function AdminNotesPage() {
       </Modal>
 
       {/* DELETE MODAL */}
-      <Modal isOpen={isDeleteModalOpen} onClose={() => !isProcessing && setIsDeleteModalOpen(false)} title="Delete Study Note">
+      <Modal isOpen={isDeleteModalOpen} onClose={() => !isProcessing && setIsDeleteModalOpen(false)} title="Delete Note">
         {selectedNote && (
           <div className="space-y-4 text-xs">
             <div className="flex items-start gap-3 bg-red-50 text-red-900 p-4 rounded-[var(--radius-lg)] border border-red-200">
@@ -719,7 +669,7 @@ export default function AdminNotesPage() {
               <div>
                 <p className="font-bold text-red-950">Warning: This action cannot be undone.</p>
                 <p className="mt-1 leading-relaxed text-red-900">
-                  Are you sure you want to delete <strong>"{selectedNote.title}"</strong>? The PDF file will also be permanently purged from cloud storage.
+                  Are you sure you want to delete <strong>"{selectedNote.title}"</strong>? The PDF file in storage will also be deleted.
                 </p>
               </div>
             </div>

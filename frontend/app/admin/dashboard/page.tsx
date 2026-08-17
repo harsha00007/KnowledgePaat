@@ -68,16 +68,38 @@ export default function AdminDashboardPage() {
       const [
         { data: studentsData },
         { data: jobsData },
-        { data: premiumData }
+        { data: subRows }
       ] = await Promise.all([
         supabase.from('profiles').select('id, full_name, email, created_at').eq('role', 'student').order('created_at', { ascending: false }).limit(5),
         supabase.from('jobs').select('id, title, company_name, posted_at').order('posted_at', { ascending: false }).limit(5),
-        supabase.from('subscriptions').select('id, plan, start_date, profiles:student_id (full_name, email)').eq('plan', 'Premium').eq('status', 'Active').order('start_date', { ascending: false }).limit(5)
+        supabase.from('subscriptions').select('*').in('plan', ['premium', 'Premium', 'pro', 'Pro']).order('created_at', { ascending: false }).limit(5)
       ]);
 
       setRecentStudents(studentsData || []);
       setRecentJobs(jobsData || []);
-      setRecentPremium(premiumData || []);
+
+      if (subRows && subRows.length > 0) {
+        const studentIds = Array.from(new Set(subRows.map(s => s.student_id).filter(Boolean)));
+        let pMap: Record<string, { full_name: string; email: string }> = {};
+
+        if (studentIds.length > 0) {
+          const { data: profs } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .in('id', studentIds);
+
+          if (profs) {
+            profs.forEach(p => { pMap[p.id] = { full_name: p.full_name || 'Subscriber', email: p.email || '' }; });
+          }
+        }
+
+        setRecentPremium(subRows.map(s => ({
+          ...s,
+          profiles: pMap[s.student_id] || { full_name: 'Subscriber', email: '' }
+        })));
+      } else {
+        setRecentPremium([]);
+      }
 
     } catch (err) {
       console.error("Failed to fetch admin dashboard data:", err);

@@ -13,8 +13,11 @@ import {
   MessageSquare, 
   BookOpen, 
   CreditCard,
+  ShoppingBag,
+  Receipt,
   ShieldCheck,
-  Search
+  Search,
+  Bot
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
@@ -30,6 +33,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     { name: 'Jobs', href: '/admin/jobs', icon: Briefcase },
     { name: 'Interview Questions', href: '/admin/interview-questions', icon: MessageSquare },
     { name: 'Notes', href: '/admin/notes', icon: BookOpen },
+    { name: 'Mock Interviews', href: '/admin/mock-interviews', icon: Bot },
+    { name: 'Store Products', href: '/admin/store', icon: ShoppingBag },
+    { name: 'Orders', href: '/admin/orders', icon: Receipt },
     { name: 'Subscriptions', href: '/admin/subscriptions', icon: CreditCard },
   ];
 
@@ -101,61 +107,62 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* LOGOUT */}
-        <div className="p-3 border-t border-[var(--color-border)]">
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-red-50 hover:text-[var(--color-error)] rounded-[var(--radius-md)] transition-colors w-full"
-          >
-            <LogOut className="w-4 h-4 text-[var(--color-text-tertiary)]" />
-            <span>Sign Out</span>
-          </button>
+        {/* ADMIN USER FOOTER */}
+        <div className="p-3 border-t border-[var(--color-border)] bg-white">
+          <div className="flex items-center justify-between p-2 rounded-[var(--radius-md)] bg-[var(--color-bg-subtle)] border border-[var(--color-border)]">
+            <div className="flex items-center gap-2.5 min-w-0 pr-2">
+              <div className="h-7 w-7 rounded-full bg-[var(--color-brand-600)] text-white flex items-center justify-center font-bold text-[11px] shrink-0">
+                A
+              </div>
+              <div className="truncate">
+                <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">Admin Console</p>
+                <p className="text-[10px] text-[var(--color-text-tertiary)] truncate">System Administrator</p>
+              </div>
+            </div>
+            <button 
+              onClick={handleLogout} 
+              className="text-[var(--color-text-tertiary)] hover:text-red-600 p-1 rounded transition-colors"
+              title="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* MAIN CONTENT WRAPPER */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+      {/* MAIN CONTENT AREA */}
+      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[var(--color-bg-subtle)]">
         
-        {/* TOPBAR HEADER */}
-        <header className="h-16 border-b border-[var(--color-border)] bg-white flex items-center justify-between px-4 sm:px-6 shrink-0 z-10 sticky top-0">
-          
+        {/* TOP HEADER */}
+        <header className="h-16 shrink-0 border-b border-[var(--color-border)] bg-white flex items-center justify-between px-4 sm:px-8 z-10 sticky top-0">
           <div className="flex items-center gap-3">
             <button 
-              className="lg:hidden p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-subtle)] rounded-[var(--radius-md)]"
+              className="lg:hidden text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-subtle)] hover:text-[var(--color-text-primary)] p-2 rounded-[var(--radius-md)] transition-colors -ml-1.5"
               onClick={() => setIsMobileMenuOpen(true)}
               aria-label="Open menu"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div>
-              <h1 className="text-base font-bold text-[var(--color-text-primary)]">
-                {activeItem?.name || 'Admin Console'}
-              </h1>
-            </div>
+            <h1 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)] tracking-tight">
+              {activeItem ? activeItem.name : 'Internal Management'}
+            </h1>
           </div>
-
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="flex items-center gap-2.5 pl-3 border-l border-[var(--color-border)]">
-              <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold text-[var(--color-text-primary)] leading-tight">Admin Console</p>
-                <p className="text-[11px] text-[var(--color-text-tertiary)]">Super Admin</p>
-              </div>
-              <div className="h-8 w-8 rounded-full bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-200)] flex items-center justify-center text-xs font-bold shrink-0">
-                AD
-              </div>
-            </div>
+          
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-[var(--color-text-tertiary)] font-medium hidden sm:inline">
+              GradZenX Admin Portal v1.0
+            </span>
           </div>
-
         </header>
 
-        {/* MAIN BODY */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-[var(--color-bg-subtle)]">
-          <div className="mx-auto max-w-7xl">
+        {/* PAGE CONTENT CONTAINER */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto max-w-7xl animate-in fade-in duration-200">
             {children}
           </div>
-        </main>
-      </div>
+        </div>
 
+      </main>
     </div>
   );
 }

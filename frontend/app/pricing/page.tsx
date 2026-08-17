@@ -2,7 +2,8 @@ import React from 'react';
 import Link from 'next/link';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { Button } from '@/components/Button';
-import { Check, X, HelpCircle, ShieldCheck } from 'lucide-react';
+import { Check, X, Bot, ShieldCheck, Sparkles } from 'lucide-react';
+import { PLANS_LIST } from '@/config/plans';
 
 export default function PricingPage() {
   return (
@@ -11,124 +12,116 @@ export default function PricingPage() {
       <section className="bg-white border-b border-[var(--color-border)] pt-14 pb-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-3.5 py-1 text-xs font-semibold text-[var(--color-brand-600)] mb-4">
-            Transparent Pricing
+            Transparent Monthly Pricing
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text-primary)] sm:text-4xl">
-            Simple plans for every career stage
+            Flexible plans designed for fresher placement success
           </h1>
           <p className="mt-4 text-base text-[var(--color-text-secondary)] leading-relaxed">
-            Choose the plan that fits your career goals. Get started for free, upgrade when you need comprehensive interview prep and priority features.
+            Choose the subscription tier that fits your preparation goals. Upgrade anytime, cancel whenever you want.
           </p>
         </div>
       </section>
 
-      {/* ── PRICING CARDS ─────────────────────────────────────────────── */}
+      {/* ── 4-TIER PRICING CARDS ──────────────────────────────────────── */}
       <section className="bg-[var(--color-bg-subtle)] py-16 flex-1">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
-            
-            {/* Free Plan */}
-            <div className="rounded-[var(--radius-xl)] bg-white border border-[var(--color-border)] p-8 sm:p-10 shadow-[var(--shadow-sm)] flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-baseline mb-2">
-                  <h2 className="text-xl font-bold text-[var(--color-text-primary)]">Free Plan</h2>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+            {PLANS_LIST.map((plan) => {
+              const isPopular = plan.popular;
+
+              return (
+                <div 
+                  key={plan.id}
+                  className={`rounded-[var(--radius-xl)] bg-white p-6 sm:p-7 flex flex-col justify-between shadow-[var(--shadow-sm)] relative border transition-all ${
+                    isPopular 
+                      ? 'border-2 border-[var(--color-brand-500)] shadow-[var(--shadow-md)]' 
+                      : 'border-[var(--color-border)] hover:border-[var(--color-brand-300)]'
+                  }`}
+                >
+                  {isPopular && (
+                    <div className="absolute -top-3.5 right-6">
+                      <span className="inline-block rounded-full bg-[var(--color-brand-600)] px-3.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-xs">
+                        Most Popular
+                      </span>
+                    </div>
+                  )}
+
+                  <div>
+                    <div className="flex justify-between items-baseline mb-2">
+                      <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{plan.name} Plan</h2>
+                    </div>
+                    <p className="text-xs text-[var(--color-text-secondary)] mb-4 min-h-[36px] leading-relaxed">
+                      {plan.description}
+                    </p>
+                    
+                    <div className="mb-6 pb-4 border-b border-[var(--color-border)]">
+                      <span className="text-3xl font-extrabold text-[var(--color-text-primary)]">{plan.currency}{plan.price}</span>
+                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] ml-1">/{plan.interval}</span>
+
+                      {plan.mockInterviewsPerMonth > 0 && (
+                        <div className="mt-2.5 flex items-center gap-1.5 text-[11px] font-bold text-[var(--color-brand-700)] bg-[var(--color-brand-50)] px-2.5 py-1 rounded border border-[var(--color-brand-200)]">
+                          <Bot className="w-3.5 h-3.5" />
+                          <span>{plan.mockInterviewsPerMonth} Mock Interview credit{plan.mockInterviewsPerMonth > 1 ? 's' : ''}/mo</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2.5 text-xs">
+                      {plan.features.map((feat, idx) => (
+                        <div key={idx} className="flex items-start gap-2">
+                          <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                          <span className="text-[var(--color-text-secondary)] leading-tight">{feat}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-8 pt-4 border-t border-[var(--color-border)]">
+                    <Link href={plan.id === 'free' ? '/register' : `/student/payment?plan=${plan.id}`} className="block w-full">
+                      <Button 
+                        variant={isPopular ? 'primary' : 'outline'} 
+                        className="w-full h-10 text-xs justify-center shadow-xs"
+                      >
+                        {plan.id === 'free' ? 'Get Started Free' : `Upgrade to ${plan.name}`}
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
-                <p className="text-sm text-[var(--color-text-secondary)] mb-6">
-                  Essential tools to start discovering verified fresher job opportunities.
-                </p>
-                <div className="mb-8">
-                  <span className="text-4xl font-extrabold text-[var(--color-text-primary)]">₹0</span>
-                  <span className="text-sm font-medium text-[var(--color-text-secondary)] ml-2">/ forever</span>
-                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
-                <div className="border-t border-[var(--color-border)] pt-6 space-y-3.5">
-                  <Feature item="Browse all verified jobs" included={true} />
-                  <Feature item="Apply via direct company links" included={true} />
-                  <Feature item="Basic HR & Aptitude questions" included={true} />
-                  <Feature item="Standard study notes" included={true} />
-                  <Feature item="Company-specific questions" included={false} />
-                  <Feature item="Advanced technical notes" included={false} />
-                  <Feature item="Priority job alerts" included={false} />
-                </div>
-              </div>
-
-              <div className="mt-10">
-                <Link href="/register" className="block w-full">
-                  <Button variant="outline" className="w-full h-11 text-sm justify-center">
-                    Get Started Free
-                  </Button>
-                </Link>
-              </div>
-            </div>
-
-            {/* Premium Plan */}
-            <div className="rounded-[var(--radius-xl)] bg-white border-2 border-[var(--color-brand-500)] p-8 sm:p-10 shadow-[var(--shadow-md)] flex flex-col justify-between relative">
-              <div className="absolute -top-3.5 right-8">
-                <span className="inline-block rounded-full bg-[var(--color-brand-500)] px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-sm">
-                  Recommended
-                </span>
-              </div>
-
-              <div>
-                <div className="flex justify-between items-baseline mb-2">
-                  <h2 className="text-xl font-bold text-[var(--color-brand-600)]">Premium Plan</h2>
-                </div>
-                <p className="text-sm text-[var(--color-text-secondary)] mb-6">
-                  The complete toolkit to prepare for technical interviews and accelerate hiring.
-                </p>
-                <div className="mb-8 flex items-baseline">
-                  <span className="text-4xl font-extrabold text-[var(--color-text-primary)]">₹999</span>
-                  <span className="text-sm font-medium text-[var(--color-text-secondary)] ml-2">/ year</span>
-                </div>
-
-                <div className="border-t border-[var(--color-border)] pt-6 space-y-3.5">
-                  <Feature item="Everything in Free Plan" included={true} isHighlight={true} />
-                  <Feature item="Company-specific interview prep" included={true} />
-                  <Feature item="Advanced technical study materials" included={true} />
-                  <Feature item="Downloadable revision cheatsheets" included={true} />
-                  <Feature item="Priority job alerts & updates" included={true} />
-                  <Feature item="Comprehensive mock question bank" included={true} />
-                  <Feature item="Dedicated student email support" included={true} />
-                </div>
-              </div>
-
-              <div className="mt-10">
-                <Link href="/student/payment" className="block w-full">
-                  <Button variant="primary" className="w-full h-11 text-sm justify-center shadow-sm">
-                    Upgrade to Premium
-                  </Button>
-                </Link>
-              </div>
-            </div>
-
+      {/* ── FAQ SECTION ──────────────────────────────────────────────── */}
+      <section className="bg-white py-16 border-t border-[var(--color-border)]">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">Frequently Asked Questions</h2>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-1">Everything you need to know about GradZenX subscriptions.</p>
           </div>
 
-          {/* Guarantee / Trust notice */}
-          <div className="mt-12 text-center flex items-center justify-center gap-2 text-sm text-[var(--color-text-secondary)]">
-            <ShieldCheck className="w-4 h-4 text-[var(--color-success)]" />
-            <span>Secure payment • Upgrade or cancel your subscription anytime</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-[var(--color-text-secondary)]">
+            <div className="p-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] space-y-1.5">
+              <h3 className="font-bold text-[var(--color-text-primary)] text-sm">Can I switch plans anytime?</h3>
+              <p className="leading-relaxed">Yes, you can upgrade or adjust your subscription tier anytime directly from your student portal dashboard.</p>
+            </div>
+            <div className="p-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] space-y-1.5">
+              <h3 className="font-bold text-[var(--color-text-primary)] text-sm">How do Mock Interview credits work?</h3>
+              <p className="leading-relaxed">Depending on your plan, credits are replenished each billing cycle for upcoming AI & panel interview prep rounds.</p>
+            </div>
+            <div className="p-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] space-y-1.5">
+              <h3 className="font-bold text-[var(--color-text-primary)] text-sm">Are there any hidden fees?</h3>
+              <p className="leading-relaxed">None at all. You pay the exact monthly amount listed with zero placement commissions or unexpected fees.</p>
+            </div>
+            <div className="p-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] space-y-1.5">
+              <h3 className="font-bold text-[var(--color-text-primary)] text-sm">What happens when my plan expires?</h3>
+              <p className="leading-relaxed">Your account seamlessly reverts to the Free tier. Your saved jobs, resume, and profile progress remain completely intact.</p>
+            </div>
           </div>
         </div>
       </section>
     </PublicLayout>
-  );
-}
-
-function Feature({ item, included, isHighlight = false }: { item: string; included: boolean; isHighlight?: boolean }) {
-  return (
-    <div className="flex items-center gap-3 text-sm">
-      {included ? (
-        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-brand-50)] text-[var(--color-brand-600)] shrink-0">
-          <Check className="h-3.5 w-3.5 stroke-[2.5]" />
-        </span>
-      ) : (
-        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 text-gray-400 shrink-0">
-          <X className="h-3.5 w-3.5" />
-        </span>
-      )}
-      <span className={`${included ? (isHighlight ? 'text-[var(--color-brand-700)] font-semibold' : 'text-[var(--color-text-primary)] font-medium') : 'text-[var(--color-text-tertiary)] line-through'}`}>
-        {item}
-      </span>
-    </div>
   );
 }

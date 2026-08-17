@@ -72,17 +72,38 @@ export default function AdminStudentsPage() {
   const fetchStudents = async () => {
     setIsFetching(true);
     try {
-      const { data, error } = await supabase
+      const { data: studentProfiles, error: profErr } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          subscriptions(plan, status)
-        `)
+        .select('*')
         .eq('role', 'student')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      if (data) setStudents(data as Student[]);
+      if (profErr) throw profErr;
+
+      if (studentProfiles && studentProfiles.length > 0) {
+        const studentIds = studentProfiles.map(s => s.id);
+        const { data: subsData } = await supabase
+          .from('subscriptions')
+          .select('student_id, plan, status')
+          .in('student_id', studentIds);
+
+        const subMap: Record<string, { plan: string; status: string }[]> = {};
+        if (subsData) {
+          subsData.forEach(sub => {
+            if (!subMap[sub.student_id]) subMap[sub.student_id] = [];
+            subMap[sub.student_id].push({ plan: sub.plan, status: sub.status });
+          });
+        }
+
+        const merged = studentProfiles.map(s => ({
+          ...s,
+          subscriptions: subMap[s.id] || []
+        }));
+
+        setStudents(merged as Student[]);
+      } else {
+        setStudents([]);
+      }
     } catch (err) {
       console.error("Error fetching students:", err);
     } finally {
