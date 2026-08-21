@@ -45,7 +45,7 @@ export function Modal({ isOpen, onClose, title, children, className = 'max-w-lg'
         aria-labelledby={title ? 'modal-title' : undefined}
         className={`
           relative z-[101] w-full
-          rounded-[var(--radius-xl)] bg-white
+          rounded-[var(--radius-xl)] bg-[var(--color-surface)]
           border border-[var(--color-border)]
           shadow-[var(--shadow-xl)]
           overflow-y-auto max-h-[90vh]

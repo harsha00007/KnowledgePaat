@@ -449,7 +449,7 @@ export default function CareerIntelligencePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
               {skillGaps.map((gap, i) => (
                 <div 
-                  key={i} 
+                  key={`gap-${gap.skill}-${i}`} 
                   className={`p-4 rounded-[var(--radius-lg)] border flex flex-col justify-between space-y-3 ${
                     gap.studentLevel === 'strong' 
                       ? 'bg-emerald-50/30 border-emerald-200' 
@@ -554,7 +554,7 @@ export default function CareerIntelligencePage() {
 
               return (
                 <div 
-                  key={task.id || idx}
+                  key={task.id ? `task-${task.id}` : `task-${task.dayNumber}-${idx}-${task.title}`}
                   className={`p-4 rounded-[var(--radius-lg)] border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
                     isCompleted 
                       ? 'bg-slate-50 border-slate-200 opacity-75' 

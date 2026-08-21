@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { AdminLayout } from '@/layouts/AdminLayout';
 import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
@@ -10,7 +11,7 @@ import {
   Search, 
   Filter, 
   Eye, 
-  Edit,
+  Edit, 
   Power, 
   Trash2, 
   AlertTriangle,
@@ -23,7 +24,8 @@ import {
   Clock,
   IndianRupee,
   ExternalLink,
-  Lock
+  Lock,
+  UploadCloud
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { normalizePlanId } from '@/config/plans';
@@ -300,9 +302,16 @@ export default function AdminJobsPage() {
               Create, review, and maintain verified fresher job listings and minimum plan requirements.
             </p>
           </div>
-          <Button size="sm" onClick={openAddForm} className="shrink-0 text-xs">
-            <Plus className="w-4 h-4 mr-1.5" /> Post New Job
-          </Button>
+          <div className="flex items-center gap-2.5 shrink-0">
+            <Link href="/admin/jobs/import">
+              <Button variant="outline" size="sm" className="shrink-0 text-xs gap-1.5 border-[var(--color-border)]">
+                <UploadCloud className="w-4 h-4 text-[var(--color-brand-600)]" /> Bulk Import
+              </Button>
+            </Link>
+            <Button size="sm" onClick={openAddForm} className="shrink-0 text-xs">
+              <Plus className="w-4 h-4 mr-1.5" /> Post New Job
+            </Button>
+          </div>
         </div>
 
         {/* SEARCH & FILTERS BAR */}

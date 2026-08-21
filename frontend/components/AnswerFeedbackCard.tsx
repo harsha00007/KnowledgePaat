@@ -60,7 +60,7 @@ export function AnswerFeedbackCard({
   ];
 
   return (
-    <div className="bg-white rounded-[var(--radius-xl)] border border-[var(--color-brand-200)] shadow-[var(--shadow-sm)] p-6 sm:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
+    <div className="bg-[var(--color-surface)] rounded-[var(--radius-xl)] border border-[var(--color-brand-200)] shadow-[var(--shadow-sm)] p-6 sm:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
       
       {/* ── HEADER & OVERALL SCORE ───────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[var(--color-border)]">

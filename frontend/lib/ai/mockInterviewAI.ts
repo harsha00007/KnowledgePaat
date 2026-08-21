@@ -20,6 +20,7 @@ import {
   ROLE_TOPICS_MAP,
   TopicPerformance
 } from '@/lib/adaptiveInterview';
+import { callAIProvider } from '@/lib/ai/config';
 
 export interface SessionConfig {
   interviewType: InterviewType;
@@ -43,40 +44,12 @@ function parseJSONSafely<T>(text: string, fallback: T): T {
 }
 
 /**
- * Calls OpenAI / Gemini API if configured in server environment
+ * Calls the configured LLM provider.
+ * Provider resolution is handled by the centralized lib/ai/config.ts.
+ * Returns null if no provider is configured — callers use built-in fallback.
  */
 async function callLLMProvider(systemPrompt: string, userPrompt: string): Promise<string | null> {
-  const apiKey = process.env.AI_API_KEY || process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY;
-  const model = process.env.AI_MODEL || 'gpt-4o-mini';
-
-  if (!apiKey) return null;
-
-  try {
-    const endpoint = process.env.AI_ENDPOINT || 'https://api.openai.com/v1/chat/completions';
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.7,
-        response_format: { type: 'json_object' }
-      })
-    });
-
-    if (!response.ok) return null;
-    const data = await response.json();
-    return data.choices?.[0]?.message?.content || null;
-  } catch (err) {
-    console.error('AI provider call error:', err);
-    return null;
-  }
+  return callAIProvider(systemPrompt, userPrompt, { temperature: 0.7, responseFormat: 'json_object' });
 }
 
 /**

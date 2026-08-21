@@ -240,7 +240,7 @@ export function VoiceRecorder({
   };
 
   return (
-    <div className="rounded-[var(--radius-xl)] border border-[var(--color-brand-200)] bg-white p-6 sm:p-8 shadow-[var(--shadow-xs)] space-y-6">
+    <div className="rounded-[var(--radius-xl)] border border-[var(--color-brand-200)] bg-[var(--color-surface)] p-6 sm:p-8 shadow-[var(--shadow-xs)] space-y-6">
       
       {/* ── HEADER ─────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between pb-4 border-b border-[var(--color-border)]">

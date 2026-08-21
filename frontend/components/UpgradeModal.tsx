@@ -85,7 +85,7 @@ export function UpgradeModal({
         </div>
 
         {/* OPTION 2: ONE-TIME STORE PURCHASE */}
-        <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 space-y-3">
+        <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[var(--color-text-primary)] uppercase tracking-wider">
               Option 2: Buy from Digital Store

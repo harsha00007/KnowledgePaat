@@ -36,22 +36,38 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: name,
+          role: 'student',
         }
       }
     });
 
     if (signUpError) {
       setError(signUpError.message);
-    } else {
-      setSuccess(true);
+      setIsLoading(false);
+      return;
     }
-    
+
+    // Fallback: if trigger did not fire (e.g. email confirmation required),
+    // attempt to upsert the profile directly from the client.
+    // This is safe — the RLS policy enforces auth.uid() = id.
+    if (data?.user) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        user_id: data.user.id,
+        email: data.user.email!,
+        full_name: name,
+        role: 'student',
+        is_active: true,
+      }, { onConflict: 'id' });
+    }
+
+    setSuccess(true);
     setIsLoading(false);
   };
 

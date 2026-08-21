@@ -156,13 +156,23 @@ export default function ResumePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !resume.url) return;
 
+      // Step 1: Delete from storage. If this fails, DB record is NOT touched.
       const { error: deleteError } = await supabase
         .storage
         .from('resumes')
         .remove([resume.url]);
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        console.error("Storage delete error:", deleteError);
+        // Provide a meaningful message — storage 403 means missing RLS DELETE policy
+        throw new Error(
+          deleteError.message?.includes('403') || deleteError.message?.toLowerCase().includes('unauthorized')
+            ? "Permission denied. Please contact support if this persists."
+            : "Failed to delete resume file. Please try again."
+        );
+      }
 
+      // Step 2: Only clear the DB reference after confirmed storage deletion
       const { error: dbError } = await supabase
         .from('profiles')
         .update({
@@ -172,17 +182,22 @@ export default function ResumePage() {
         })
         .eq('id', user.id);
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        // File was deleted from storage but DB update failed — log for support
+        console.error("Profile update error after storage delete:", dbError);
+        throw new Error("Resume file was removed but profile could not be updated. Please refresh the page.");
+      }
 
       setResume({ url: null, filename: null, uploadedAt: null });
       showSuccess("Resume deleted successfully.");
     } catch (err: any) {
       console.error("Delete error:", err);
-      setError("Failed to delete resume.");
+      setError(err.message || "Failed to delete resume. Please try again.");
     } finally {
       setIsUploading(false);
     }
   };
+
 
   const handleView = async () => {
     if (!resume.url) return;

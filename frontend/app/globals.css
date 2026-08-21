@@ -1,11 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", "system-ui", "sans-serif";
+  /* ── FONT ────────────────────────────────────────────────────────────── */
+  --font-sans: var(--font-inter, "Inter"), "system-ui", "sans-serif";
 
-  /* ─────────────────────────────────────────────────────
-     BRAND — Purple / Indigo
-  ───────────────────────────────────────────────────── */
+  /* ── BRAND — Purple / Indigo (Stitch: Academic Precision) ──────────── */
   --color-brand-50:  #f5f3ff;
   --color-brand-100: #ede9fe;
   --color-brand-200: #ddd6fe;
@@ -17,108 +17,89 @@
   --color-brand-800: #4c1d95;
   --color-brand-900: #3b0d99;
 
-  /* ─────────────────────────────────────────────────────
-     PUBLIC PAGE BACKGROUNDS (Light)
-  ───────────────────────────────────────────────────── */
-  --color-bg:        #ffffff;       /* default page background */
-  --color-bg-subtle: #f8f9fb;       /* alternate section background */
-  --color-bg-muted:  #f1f3f7;       /* muted surface, tag backgrounds */
+  /* ── BACKGROUNDS (Light by default) ─────────────────────────────────── */
+  --color-bg:        #ffffff;
+  --color-bg-subtle: #f8fafc;
+  --color-bg-muted:  #f1f5f9;
 
-  /* ─────────────────────────────────────────────────────
-     SURFACES (for cards, inputs, modals — light)
-  ───────────────────────────────────────────────────── */
-  --color-surface:         #ffffff;
-  --color-surface-raised:  #f8f9fb;
-  --color-surface-overlay: #f1f3f7;
+  /* ── SURFACES ────────────────────────────────────────────────────────── */
+  --color-surface:          #ffffff;
+  --color-surface-raised:   #f8fafc;
+  --color-surface-overlay:  #f1f5f9;
 
-  /* ─────────────────────────────────────────────────────
-     DARK SURFACES (for app shells, hero sections, footer)
-  ───────────────────────────────────────────────────── */
-  --color-dark:           #0f0d1a;
-  --color-dark-secondary: #1a1730;
-  --color-dark-tertiary:  #241f38;
-  --color-dark-surface:   #1e1b2e;
-  --color-dark-surface-2: #2a2640;
-  --color-dark-surface-3: #302d4a;
+  /* ── DARK SURFACES (hero, footer, CTA bands) ─────────────────────────── */
+  --color-dark:           #0f172a;
+  --color-dark-secondary: #1e293b;
+  --color-dark-tertiary:  #334155;
+  --color-dark-surface:   #1e293b;
+  --color-dark-surface-2: #273548;
+  --color-dark-surface-3: #334155;
 
-  /* Legacy dark bg aliases (used by admin/student pages — keep for backward compat) */
-  --color-bg-darkest: #0f0d1a;
-  --color-bg-darker:  #1a1730;
-  --color-bg-dark:    #241f38;
-  --color-bg-base:    #1e1b2e;
-  --color-surface-base:    #1e1b2e;
-  --color-surface-light:   #2a2640;
-  --color-surface-lighter: #302d4a;
+  /* Legacy aliases — kept for backward compat */
+  --color-bg-darkest: #0f172a;
+  --color-bg-darker:  #1e293b;
+  --color-bg-dark:    #334155;
+  --color-bg-base:    #1e293b;
+  --color-surface-base:    #1e293b;
+  --color-surface-light:   #273548;
+  --color-surface-lighter: #334155;
 
-  /* ─────────────────────────────────────────────────────
-     TEXT
-  ───────────────────────────────────────────────────── */
-  --color-text-primary:   #0f0d1a;   /* near-black — default on light bg */
-  --color-text-secondary: #4b5563;   /* slate gray */
-  --color-text-tertiary:  #9ca3af;   /* muted */
-  --color-text-inverse:   #ffffff;   /* on dark surfaces */
-  --color-text-brand:     #6d28d9;   /* brand-colored text */
+  /* ── TEXT ────────────────────────────────────────────────────────────── */
+  --color-text-primary:   #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-tertiary:  #94a3b8;
+  --color-text-inverse:   #ffffff;
+  --color-text-brand:     #6d28d9;
 
-  /* ─────────────────────────────────────────────────────
-     BORDERS
-  ───────────────────────────────────────────────────── */
-  --color-border:          #e5e7eb;          /* default light border */
-  --color-border-strong:   #d1d5db;
-  --color-border-focus:    #7c3aed;          /* brand */
-  --color-border-subtle:   rgba(0,0,0,0.08); /* legacy alias */
+  /* ── BORDERS ─────────────────────────────────────────────────────────── */
+  --color-border:        #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-border-focus:  #7c3aed;
+  --color-border-subtle: rgba(0,0,0,0.06);
 
-  /* ─────────────────────────────────────────────────────
-     SEMANTIC
-  ───────────────────────────────────────────────────── */
+  /* ── SEMANTIC ────────────────────────────────────────────────────────── */
   --color-success: #059669;
   --color-warning: #d97706;
   --color-error:   #dc2626;
   --color-info:    #2563eb;
 
-  /* ─────────────────────────────────────────────────────
-     BORDER RADII
-  ───────────────────────────────────────────────────── */
-  --radius-xs:   4px;
-  --radius-sm:   6px;
-  --radius-md:   8px;
-  --radius-lg:   12px;
-  --radius-xl:   16px;
-  --radius-2xl:  20px;
+  /* ── BORDER RADII ─────────────────────────────────────────────────────── */
+  --radius-xs:   2px;
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   8px;
+  --radius-xl:   12px;
+  --radius-2xl:  16px;
   --radius-full: 9999px;
-  --radius-card: 12px;   /* legacy alias */
+  --radius-card: 8px;
 
-  /* ─────────────────────────────────────────────────────
-     SHADOWS
-  ───────────────────────────────────────────────────── */
-  --shadow-xs:    0 1px 2px 0 rgba(0,0,0,0.05);
-  --shadow-sm:    0 1px 3px 0 rgba(0,0,0,0.08), 0 1px 2px -1px rgba(0,0,0,0.06);
-  --shadow-md:    0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
-  --shadow-lg:    0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.05);
-  --shadow-xl:    0 20px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.05);
+  /* ── SHADOWS ─────────────────────────────────────────────────────────── */
+  --shadow-xs:  0 1px 2px 0 rgba(15,23,42,0.04);
+  --shadow-sm:  0 1px 3px 0 rgba(15,23,42,0.06), 0 1px 2px -1px rgba(15,23,42,0.04);
+  --shadow-md:  0 4px 12px rgba(30,41,59,0.06);
+  --shadow-lg:  0 8px 24px rgba(30,41,59,0.08);
+  --shadow-xl:  0 12px 24px rgba(30,41,59,0.10);
+
   /* Legacy aliases */
-  --shadow-minimal: 0 1px 3px 0 rgba(0,0,0,0.08), 0 1px 2px -1px rgba(0,0,0,0.06);
-  --shadow-hover:   0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.05);
-
-  /* Dark surface shadows (for app shells) */
+  --shadow-minimal: 0 1px 3px 0 rgba(15,23,42,0.06), 0 1px 2px -1px rgba(15,23,42,0.04);
+  --shadow-hover:   0 4px 12px rgba(30,41,59,0.06);
   --shadow-dark-sm: 0 1px 3px 0 rgba(0,0,0,0.4), 0 1px 2px -1px rgba(0,0,0,0.3);
   --shadow-dark-md: 0 4px 6px -1px rgba(0,0,0,0.5), 0 2px 4px -2px rgba(0,0,0,0.4);
 
-  /* ─────────────────────────────────────────────────────
-     ANIMATIONS
-  ───────────────────────────────────────────────────── */
-  --animate-fade-in:  fade-in 0.25s ease-out;
-  --animate-slide-up: slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  /* ── ANIMATIONS ──────────────────────────────────────────────────────── */
+  --animate-fade-in:  fade-in 0.2s ease-out;
+  --animate-slide-up: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 
   @keyframes fade-in {
     from { opacity: 0; }
     to   { opacity: 1; }
   }
   @keyframes slide-up {
-    from { opacity: 0; transform: translateY(8px); }
+    from { opacity: 0; transform: translateY(6px); }
     to   { opacity: 1; transform: translateY(0); }
   }
   @keyframes slide-down {
-    from { opacity: 0; transform: translateY(-8px); }
+    from { opacity: 0; transform: translateY(-6px); }
     to   { opacity: 1; transform: translateY(0); }
   }
   @keyframes shimmer {
@@ -127,9 +108,62 @@
   }
 }
 
-/* ─────────────────────────────────────────────────────────
-   BASE LAYER
-───────────────────────────────────────────────────────── */
+/* ── BASE & DYNAMIC THEME SYSTEM ─────────────────────────────────────────── */
+:root {
+  --color-bg:        #ffffff;
+  --color-bg-subtle: #f8fafc;
+  --color-bg-muted:  #f1f5f9;
+  --color-surface:          #ffffff;
+  --color-surface-raised:   #f8fafc;
+  --color-surface-overlay:  #f1f5f9;
+  --color-text-primary:   #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-tertiary:  #94a3b8;
+  --color-text-inverse:   #ffffff;
+  --color-text-brand:     #6d28d9;
+  --color-border:        #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-border-focus:  #7c3aed;
+  --color-border-subtle: rgba(0,0,0,0.06);
+}
+
+/* ── DARK THEME TOKEN OVERRIDES (Active ONLY when .dark is present) ──────── */
+.dark {
+  --color-bg:        #0b0f19;       /* Deep rich dark background */
+  --color-bg-subtle: #0f172a;       /* Slate-900 for sections / app wrapper */
+  --color-bg-muted:  #1e293b;       /* Slate-800 for tags, pill backgrounds */
+  --color-surface:          #131c2e; /* Elevated dark card surface */
+  --color-surface-raised:   #1e293b;
+  --color-surface-overlay:  #334155;
+  --color-dark:           #070a12;
+  --color-dark-secondary: #0f172a;
+  --color-dark-tertiary:  #1e293b;
+  --color-dark-surface:   #131c2e;
+  --color-dark-surface-2: #1e293b;
+  --color-dark-surface-3: #334155;
+  --color-text-primary:   #f8fafc;   /* Slate-50 — crisp readable text */
+  --color-text-secondary: #94a3b8;   /* Slate-400 */
+  --color-text-tertiary:  #64748b;   /* Slate-500 */
+  --color-text-inverse:   #0f172a;
+  --color-text-brand:     #a78bfa;   /* Brighter violet for dark mode contrast */
+  --color-border:        #1e293b;   /* Subtle dark borders */
+  --color-border-strong: #334155;
+  --color-border-focus:  #a78bfa;
+  --color-border-subtle: rgba(255,255,255,0.08);
+
+  /* Tinted brand backgrounds for dark mode */
+  --color-brand-50:  #1e1438;
+  --color-brand-100: #2d1a54;
+  --color-brand-200: #3d2172;
+
+  /* Shadows for dark mode */
+  --shadow-xs:  0 1px 2px 0 rgba(0,0,0,0.3);
+  --shadow-sm:  0 1px 3px 0 rgba(0,0,0,0.4), 0 1px 2px -1px rgba(0,0,0,0.3);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.5);
+  --shadow-lg:  0 8px 24px rgba(0,0,0,0.6);
+  --shadow-xl:  0 12px 24px rgba(0,0,0,0.7);
+}
+
 @layer base {
   *, ::after, ::before, ::backdrop, ::file-selector-button {
     border-color: var(--color-border);
@@ -146,30 +180,88 @@
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    transition: background-color 0.15s ease, color 0.15s ease;
   }
 
   ::selection {
     background-color: var(--color-brand-200);
     color: var(--color-brand-800);
   }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
 }
 
-/* ─────────────────────────────────────────────────────────
-   UTILITY LAYER
-───────────────────────────────────────────────────────── */
+/* ── DARK THEME COMPONENT OVERRIDES ───────────────────────────────────────── */
+.dark .bg-white {
+  background-color: var(--color-surface) !important;
+}
+
+.dark .bg-white\/95 {
+  background-color: rgba(19, 28, 46, 0.95) !important;
+}
+
+.dark .bg-white\/80 {
+  background-color: rgba(19, 28, 46, 0.85) !important;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--color-text-tertiary) !important;
+}
+
+.dark table th {
+  background-color: var(--color-bg-subtle) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.dark table tr:hover td {
+  background-color: rgba(30, 41, 59, 0.4) !important;
+}
+
+/* ── UTILITY LAYER ───────────────────────────────────────────────────────── */
 @layer utilities {
-  /* Focus ring — accessible, brand-colored */
   .focus-ring {
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c3aed] focus-visible:ring-offset-2 transition-shadow;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c3aed] focus-visible:ring-offset-1 transition-shadow;
   }
 
-  /* Glass panel — kept minimal, for dark surfaces only */
   .glass-panel {
-    background-color: rgba(30, 27, 46, 0.85);
+    background-color: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  /* Removed: btn-glow (pulsing animation) — no longer used by default */
-  /* Pages that want a subtle hover glow can use shadow utilities directly */
+  .skeleton {
+    background: linear-gradient(90deg, var(--color-bg-muted) 25%, var(--color-surface-raised) 50%, var(--color-bg-muted) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium;
+  }
+  .badge-free     { @apply bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300; }
+  .badge-starter  { @apply bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300; }
+  .badge-pro      { @apply bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-300; }
+  .badge-premium  { @apply bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300; }
+  .badge-active   { @apply bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300; }
+  .badge-inactive { @apply bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300; }
+  .badge-locked   { @apply bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300; }
+
+  .text-display { @apply text-5xl font-bold tracking-tight leading-tight; }
+  .text-heading { @apply text-3xl font-semibold tracking-tight; }
+  .text-subheading { @apply text-xl font-semibold; }
+  .text-overline { @apply text-xs font-semibold uppercase tracking-widest; }
 }

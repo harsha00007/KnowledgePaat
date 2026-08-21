@@ -53,7 +53,7 @@ export default function AdminDashboardPage() {
         supabase.from('jobs').select('*', { count: 'exact', head: true }),
         supabase.from('interview_questions').select('*', { count: 'exact', head: true }),
         supabase.from('notes').select('*', { count: 'exact', head: true }),
-        supabase.from('subscriptions').select('*', { count: 'exact', head: true }).eq('plan', 'Premium').eq('status', 'Active')
+        supabase.from('subscriptions').select('*', { count: 'exact', head: true }).in('plan', ['premium', 'Premium']).in('status', ['active', 'Active'])
       ]);
 
       setStats({

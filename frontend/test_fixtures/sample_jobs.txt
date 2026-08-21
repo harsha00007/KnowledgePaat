@@ -1,0 +1,29 @@
+Job 1:
+Company: NovaTech Solutions
+Job Title: Graduate Software Trainee
+Location: Pune, India
+Work Mode: Hybrid
+Experience: Fresher
+Plan: free
+Employment Type: Full-time
+Salary: ₹3.5–5 LPA
+Apply URL: https://novatech.example.com/careers/trainee-2026
+Skills: C++, Java, Data Structures, Algorithms, Problem Solving
+Responsibilities: Participate in bootcamp training; Implement core feature modules; Write automated tests.
+Description: NovaTech is recruiting ambitious graduates for our 2026 Software Development Trainee batch. Full mentorship provided.
+Status: Active
+
+Job 2:
+Company: HealthPulse Digital
+Job Title: QA Automation Tester
+Location: Chennai, India
+Work Mode: Remote
+Experience: 0-1 Years
+Plan: starter
+Employment Type: Full-time
+Salary: ₹4.5–6.5 LPA
+Apply URL: https://healthpulse.example.com/jobs/qa-automation
+Skills: Selenium, Python, PyTest, Cypress, REST API Testing, Postman
+Responsibilities: Develop end-to-end automation test suites; Perform regression testing; File clear Jira bug tickets.
+Description: Fast-growing health-tech startup seeking an enthusiastic QA automation tester to elevate our product quality.
+Status: Active

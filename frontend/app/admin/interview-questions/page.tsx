@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { AdminLayout } from '@/layouts/AdminLayout';
 import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
@@ -21,7 +22,8 @@ import {
   CheckCircle,
   HelpCircle,
   AlertCircle,
-  Lock
+  Lock,
+  UploadCloud
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { normalizePlanId } from '@/config/plans';
@@ -306,9 +308,16 @@ export default function AdminQuestionsPage() {
               Manage curated interview questions, difficulty ratings, and minimum plan requirements.
             </p>
           </div>
-          <Button size="sm" onClick={openAddForm} className="shrink-0 text-xs">
-            <Plus className="w-4 h-4 mr-1.5" /> Add Question
-          </Button>
+          <div className="flex items-center gap-2.5 shrink-0">
+            <Link href="/admin/interview-questions/import">
+              <Button variant="outline" size="sm" className="shrink-0 text-xs gap-1.5 border-[var(--color-border)]">
+                <UploadCloud className="w-4 h-4 text-[var(--color-brand-600)]" /> Bulk Import
+              </Button>
+            </Link>
+            <Button size="sm" onClick={openAddForm} className="shrink-0 text-xs">
+              <Plus className="w-4 h-4 mr-1.5" /> Add Question
+            </Button>
+          </div>
         </div>
 
         {/* SEARCH & FILTERS BAR */}

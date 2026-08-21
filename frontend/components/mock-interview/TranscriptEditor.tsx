@@ -38,7 +38,7 @@ export function TranscriptEditor({
   };
 
   return (
-    <div className="bg-white rounded-[var(--radius-xl)] border border-[var(--color-brand-200)] p-6 sm:p-8 shadow-[var(--shadow-xs)] space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="bg-[var(--color-surface)] rounded-[var(--radius-xl)] border border-[var(--color-brand-200)] p-6 sm:p-8 shadow-[var(--shadow-xs)] space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
       
       {/* ── HEADER ─────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[var(--color-border)]">

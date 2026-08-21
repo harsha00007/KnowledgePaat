@@ -45,9 +45,9 @@ export function StoreProductCard({
     : null;
 
   return (
-    <div className={`rounded-[var(--radius-xl)] bg-white border p-5 flex flex-col justify-between shadow-[var(--shadow-xs)] transition-all relative ${
+    <div className={`rounded-[var(--radius-xl)] bg-[var(--color-surface)] border p-5 flex flex-col justify-between shadow-[var(--shadow-xs)] transition-all relative ${
       isOwned 
-        ? 'border-emerald-200 bg-emerald-50/20' 
+        ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50/20 dark:bg-emerald-950/20' 
         : 'border-[var(--color-border)] hover:border-[var(--color-brand-300)] hover:shadow-[var(--shadow-sm)]'
     }`}>
       

@@ -1,0 +1,21 @@
+Question 1: What is Dependency Injection in software architecture?
+Category: Technical
+Difficulty: Medium
+Answer: Dependency Injection is a design pattern where an object receives its dependencies from an external source rather than creating them internally, increasing testability, decoupling, and maintainability.
+Pro Tips: Mention inversion of control (IoC) containers.
+Common Pitfalls: Over-engineering simple scripts with complex DI frameworks.
+Technology Tags: Architecture, Design Patterns, OOP
+Company Tags: Microsoft, Thoughtworks
+Minimum Plan: starter
+Status: Active
+
+Question 2: What is your greatest professional achievement?
+Category: HR & Behavioral
+Difficulty: Easy
+Answer: Leading a 4-person team in developing an automated attendance management system using OpenCV and Python, which reduced administrative logging time by 80% for our college department.
+Pro Tips: Quantify results with metrics and percentage improvements.
+Common Pitfalls: Being overly modest or taking sole credit for team efforts.
+Technology Tags: Leadership, Communication
+Company Tags: Infosys, Wipro
+Minimum Plan: free
+Status: Active

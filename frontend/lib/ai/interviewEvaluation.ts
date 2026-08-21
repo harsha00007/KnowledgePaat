@@ -5,43 +5,15 @@ import {
   getPerformanceLevel,
   SessionReportSummary
 } from '@/lib/ai/interviewTypes';
+import { callAIProvider } from '@/lib/ai/config';
 
 /**
- * Calls OpenAI/Gemini API if configured in environment,
- * or returns null to trigger the high-fidelity internal engine.
+ * Calls the configured LLM provider for answer evaluation.
+ * Provider resolution is handled by the centralized lib/ai/config.ts.
+ * Returns null if no provider is configured — triggers the high-fidelity internal engine.
  */
-async function callAIProvider(systemPrompt: string, userPrompt: string): Promise<string | null> {
-  const apiKey = process.env.AI_API_KEY || process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY;
-  const model = process.env.AI_MODEL || 'gpt-4o-mini';
-
-  if (!apiKey) return null;
-
-  try {
-    const endpoint = process.env.AI_ENDPOINT || 'https://api.openai.com/v1/chat/completions';
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.6,
-        response_format: { type: 'json_object' }
-      })
-    });
-
-    if (!response.ok) return null;
-    const data = await response.json();
-    return data.choices?.[0]?.message?.content || null;
-  } catch (err) {
-    console.error('Error calling AI provider:', err);
-    return null;
-  }
+async function callAIProviderLocal(systemPrompt: string, userPrompt: string): Promise<string | null> {
+  return callAIProvider(systemPrompt, userPrompt, { temperature: 0.6, responseFormat: 'json_object' });
 }
 
 /**
@@ -88,7 +60,7 @@ CANDIDATE'S ANSWER: "${answerText}"
 
 Please evaluate now and return strictly JSON.`;
 
-  const raw = await callAIProvider(systemPrompt, userPrompt);
+  const raw = await callAIProviderLocal(systemPrompt, userPrompt);
   if (raw) {
     try {
       const parsed = JSON.parse(raw.replace(/```json/gi, '').replace(/```/g, '').trim());

@@ -88,7 +88,43 @@ export default function AdminSubscriptionsPage() {
       if (subErr) throw subErr;
 
       if (subData && subData.length > 0) {
-        const studentIds = Array.from(new Set(subData.map(s => s.student_id).filter(Boolean)));
+        // Priority Deduplication Safety Net (Premium > Pro > Starter > Free, Active > other, latest date)
+        const getPlanPriority = (p: string) => {
+          const norm = normalizePlanId(p);
+          if (norm === 'premium') return 4;
+          if (norm === 'pro') return 3;
+          if (norm === 'starter') return 2;
+          return 1;
+        };
+
+        const sortedSubs = [...subData].sort((a, b) => {
+          const aActive = (a.status || '').toLowerCase() === 'active' ? 1 : 0;
+          const bActive = (b.status || '').toLowerCase() === 'active' ? 1 : 0;
+          if (aActive !== bActive) return bActive - aActive;
+
+          const aWeight = getPlanPriority(a.plan);
+          const bWeight = getPlanPriority(b.plan);
+          if (aWeight !== bWeight) return bWeight - aWeight;
+
+          const aEnd = a.end_date ? new Date(a.end_date).getTime() : 0;
+          const bEnd = b.end_date ? new Date(b.end_date).getTime() : 0;
+          if (aEnd !== bEnd) return bEnd - aEnd;
+
+          const aUp = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+          const bUp = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+          return bUp - aUp;
+        });
+
+        // Retain exactly 1 canonical subscription per student_id
+        const uniqueSubMap = new Map<string, typeof subData[0]>();
+        for (const sub of sortedSubs) {
+          if (sub.student_id && !uniqueSubMap.has(sub.student_id)) {
+            uniqueSubMap.set(sub.student_id, sub);
+          }
+        }
+        const deduplicatedSubData = Array.from(uniqueSubMap.values());
+
+        const studentIds = Array.from(uniqueSubMap.keys());
         const profilesMap: Record<string, { full_name: string; email: string }> = {};
 
         if (studentIds.length > 0) {
@@ -104,7 +140,7 @@ export default function AdminSubscriptionsPage() {
           }
         }
 
-        const merged = subData.map(sub => ({
+        const merged = deduplicatedSubData.map(sub => ({
           ...sub,
           profiles: profilesMap[sub.student_id] || { full_name: 'Subscriber', email: '' }
         }));

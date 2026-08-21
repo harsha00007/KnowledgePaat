@@ -113,8 +113,22 @@ export default function AdminStudentsPage() {
 
   const getSubPlan = (student: Student) => {
     const subs = student.subscriptions || [];
-    const activePremium = subs.find(s => s.plan === 'Premium' && s.status === 'Active');
-    return activePremium ? 'Premium' : 'Free';
+    // Support both Capitalized and lowercase plan/status values
+    const activePaid = subs.find(s =>
+      ['starter', 'pro', 'premium'].includes(s.plan?.toLowerCase()) &&
+      s.status?.toLowerCase() === 'active'
+    );
+    if (!activePaid) return 'Free';
+    const plan = activePaid.plan.toLowerCase();
+    if (plan === 'premium') return 'Premium';
+    if (plan === 'pro') return 'Pro';
+    if (plan === 'starter') return 'Starter';
+    return 'Free';
+  };
+
+  const isStudentActive = (student: Student) => {
+    // is_active may be missing in older DB rows — default to true
+    return student.is_active !== false;
   };
 
   // Filtering Logic
@@ -127,7 +141,7 @@ export default function AdminStudentsPage() {
     const matchesSearch = query === '' || nameMatch || emailMatch || collegeMatch || roleMatch;
 
     const matchesStatus = statusFilter === '' || 
-      (statusFilter === 'Active' ? student.is_active : !student.is_active);
+      (statusFilter === 'Active' ? isStudentActive(student) : !isStudentActive(student));
       
     const matchesSub = subFilter === '' || getSubPlan(student) === subFilter;
     
@@ -156,14 +170,15 @@ export default function AdminStudentsPage() {
     if (!selectedStudent) return;
     setIsProcessing(true);
     try {
+      const newActive = !isStudentActive(selectedStudent);
       const { error } = await supabase
         .from('profiles')
-        .update({ is_active: !selectedStudent.is_active })
+        .update({ is_active: newActive })
         .eq('id', selectedStudent.id);
         
       if (error) throw error;
       
-      setStudents(prev => prev.map(s => s.id === selectedStudent.id ? { ...s, is_active: !s.is_active } : s));
+      setStudents(prev => prev.map(s => s.id === selectedStudent.id ? { ...s, is_active: newActive } : s));
       setIsStatusModalOpen(false);
     } catch (err) {
       console.error("Error updating status:", err);
@@ -314,11 +329,11 @@ export default function AdminStudentsPage() {
                           </td>
                           <td className="px-5 py-3.5">
                             <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                              student.is_active 
+                              isStudentActive(student)
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                                 : 'bg-red-50 text-red-700 border-red-200'
                             }`}>
-                              {student.is_active ? 'Active' : 'Inactive'}
+                              {isStudentActive(student) ? 'Active' : 'Inactive'}
                             </span>
                           </td>
                           <td className="px-5 py-3.5 text-[var(--color-text-tertiary)] font-medium">
@@ -334,8 +349,8 @@ export default function AdminStudentsPage() {
                             </button>
                             <button 
                               onClick={() => { setSelectedStudent(student); setIsStatusModalOpen(true); }}
-                              className={`p-1.5 rounded transition-colors ${student.is_active ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`} 
-                              title={student.is_active ? "Deactivate" : "Activate"}
+                              className={`p-1.5 rounded transition-colors ${isStudentActive(student) ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`} 
+                              title={isStudentActive(student) ? "Deactivate" : "Activate"}
                             >
                               <Power className="w-4 h-4" />
                             </button>
@@ -368,8 +383,8 @@ export default function AdminStudentsPage() {
                           <p className="text-[11px] text-[var(--color-text-tertiary)]">{student.email}</p>
                         </div>
                       </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${student.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                        {student.is_active ? 'Active' : 'Inactive'}
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${isStudentActive(student) ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                        {isStudentActive(student) ? 'Active' : 'Inactive'}
                       </span>
                     </div>
                     
@@ -389,7 +404,7 @@ export default function AdminStudentsPage() {
                         View
                       </Button>
                       <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => { setSelectedStudent(student); setIsStatusModalOpen(true); }}>
-                        {student.is_active ? 'Deactivate' : 'Activate'}
+                        {isStudentActive(student) ? 'Deactivate' : 'Activate'}
                       </Button>
                       <Button variant="outline" size="sm" className="text-xs py-1 px-2.5 text-red-600 hover:bg-red-50" onClick={() => { setSelectedStudent(student); setIsDeleteModalOpen(true); }}>
                         Delete
@@ -445,8 +460,8 @@ export default function AdminStudentsPage() {
                 <h3 className="text-base font-bold text-[var(--color-text-primary)]">{selectedStudent.full_name || 'Anonymous Student'}</h3>
                 <p className="text-xs text-[var(--color-text-secondary)]">{selectedStudent.email}</p>
                 <div className="flex gap-2 mt-1.5">
-                  <span className={`px-2 py-0.2 rounded-full text-[10px] font-bold border ${selectedStudent.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                    {selectedStudent.is_active ? 'Active Account' : 'Inactive Account'}
+                  <span className={`px-2 py-0.2 rounded-full text-[10px] font-bold border ${isStudentActive(selectedStudent) ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                    {isStudentActive(selectedStudent) ? 'Active Account' : 'Inactive Account'}
                   </span>
                   <span className={`px-2 py-0.2 rounded-full text-[10px] font-bold border ${getSubPlan(selectedStudent) === 'Premium' ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border-[var(--color-brand-200)]' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
                     {getSubPlan(selectedStudent)} Plan
@@ -537,9 +552,9 @@ export default function AdminStudentsPage() {
         {selectedStudent && (
           <div className="space-y-4 text-xs">
             <p className="text-[var(--color-text-secondary)] leading-relaxed">
-              Are you sure you want to <strong>{selectedStudent.is_active ? 'deactivate' : 'activate'}</strong> the account for <span className="font-bold text-[var(--color-text-primary)]">{selectedStudent.full_name || selectedStudent.email}</span>?
+              Are you sure you want to <strong>{isStudentActive(selectedStudent) ? 'deactivate' : 'activate'}</strong> the account for <span className="font-bold text-[var(--color-text-primary)]">{selectedStudent.full_name || selectedStudent.email}</span>?
             </p>
-            {selectedStudent.is_active && (
+            {isStudentActive(selectedStudent) && (
               <div className="bg-amber-50 border border-amber-200 rounded-[var(--radius-lg)] p-3 text-amber-900 font-medium leading-relaxed">
                 Deactivating this account will prevent the student from logging in and accessing platform features until reactivated.
               </div>
@@ -549,11 +564,11 @@ export default function AdminStudentsPage() {
               <Button 
                 variant="primary" 
                 size="sm"
-                className={selectedStudent.is_active ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}
+                className={isStudentActive(selectedStudent) ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}
                 onClick={handleToggleStatus} 
                 disabled={isProcessing}
               >
-                {isProcessing ? 'Processing...' : selectedStudent.is_active ? 'Yes, Deactivate' : 'Yes, Activate'}
+                {isProcessing ? 'Processing...' : isStudentActive(selectedStudent) ? 'Yes, Deactivate' : 'Yes, Activate'}
               </Button>
             </div>
           </div>

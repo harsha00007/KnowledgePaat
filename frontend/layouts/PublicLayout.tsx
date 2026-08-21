@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { createClient } from '@/utils/supabase/client';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const NAV_LINKS = [
   { href: '/',                      label: 'Home'           },
@@ -145,6 +146,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
             {/* Desktop auth buttons */}
             <div className="hidden lg:flex items-center gap-2">
+              <ThemeToggle size="sm" />
               {user ? (
                 <>
                   <Link href={dashboardHref}>
@@ -167,14 +169,17 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Mobile menu toggle */}
-            <button
-              className="lg:hidden rounded-[var(--radius-md)] p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)] hover:text-[var(--color-text-primary)] transition-colors focus-ring"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              aria-label="Toggle navigation menu"
-              aria-expanded={isMobileMenuOpen}
-            >
-              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+            <div className="lg:hidden flex items-center gap-1.5">
+              <ThemeToggle size="sm" />
+              <button
+                className="rounded-[var(--radius-md)] p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)] hover:text-[var(--color-text-primary)] transition-colors focus-ring"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Toggle navigation menu"
+                aria-expanded={isMobileMenuOpen}
+              >
+                {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+            </div>
           </div>
         </div>
 
