@@ -25,17 +25,22 @@ import {
   Calendar,
   Play,
   Zap,
-  Target
+  Target,
+  Lock
 } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
-import { calculateUserAccess, UserAccess } from '@/lib/subscription';
-import { PLANS } from '@/config/plans';
+import { calculateUserAccess, isContentAccessible, UserAccess } from '@/lib/subscription';
+import { PLANS, normalizePlanId } from '@/config/plans';
 import { calculateMockCreditStatus, getConsumedSessionsCount, MockCreditStatus } from '@/lib/mockInterview';
+import { CompanyNameGate } from '@/components/CompanyNameGate';
+import { UpgradeModal } from '@/components/UpgradeModal';
 
 export default function StudentDashboard() {
   const [profile, setProfile] = useState<any>(null);
   const [access, setAccess] = useState<UserAccess>(calculateUserAccess(null));
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [modalRequiredPlan, setModalRequiredPlan] = useState<string>('pro');
   const [creditStatus, setCreditStatus] = useState<MockCreditStatus>({
     planName: 'Free',
     monthlyLimit: 0,
@@ -300,35 +305,65 @@ export default function StudentDashboard() {
             </div>
 
             <div className="space-y-3">
-              {recentJobs.map((job) => (
-                <div 
-                  key={job.id} 
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-[var(--radius-lg)] border border-[var(--color-border)] hover:border-[var(--color-brand-300)] hover:bg-[var(--color-bg-subtle)] transition-all gap-3"
-                >
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="h-10 w-10 rounded-[var(--radius-md)] bg-[var(--color-bg-muted)] border border-[var(--color-border)] flex items-center justify-center shrink-0">
-                      <Building2 className="h-5 w-5 text-[var(--color-text-tertiary)]" />
-                    </div>
-                    <div className="min-w-0 truncate">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-semibold text-[var(--color-text-primary)] truncate">{job.title}</h3>
-                        <PremiumBadge minimumPlan={job.minimum_plan || job.access_type || 'free'} />
-                      </div>
-                      <p className="text-xs text-[var(--color-text-secondary)] truncate">{job.company_name}</p>
-                      <div className="flex items-center gap-3 mt-1.5 text-[11px] text-[var(--color-text-tertiary)]">
-                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.location}</span>
-                        <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" /> {job.employment_type}</span>
-                      </div>
-                    </div>
-                  </div>
+              {recentJobs.map((job) => {
+                const reqPlan = job.minimum_plan || job.access_type || 'free';
+                const isUnlocked = isContentAccessible(reqPlan, access);
+                const planMeta = PLANS[normalizePlanId(reqPlan)];
 
-                  <Link href={`/student/jobs`} className="self-end sm:self-center shrink-0">
-                    <Button variant="outline" size="sm" className="text-xs">
-                      View Job
-                    </Button>
-                  </Link>
-                </div>
-              ))}
+                return (
+                  <div 
+                    key={job.id} 
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-[var(--radius-lg)] border border-[var(--color-border)] hover:border-[var(--color-brand-300)] hover:bg-[var(--color-bg-subtle)] transition-all gap-3"
+                  >
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="h-10 w-10 rounded-[var(--radius-md)] bg-[var(--color-bg-muted)] border border-[var(--color-border)] flex items-center justify-center shrink-0">
+                        <Building2 className="h-5 w-5 text-[var(--color-text-tertiary)]" />
+                      </div>
+                      <div className="min-w-0 truncate">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-semibold text-[var(--color-text-primary)] truncate">{job.title}</h3>
+                          <PremiumBadge minimumPlan={reqPlan} />
+                        </div>
+                        <div className="mt-0.5">
+                          <CompanyNameGate
+                            companyName={job.company_name}
+                            minimumPlan={reqPlan}
+                            userAccess={access}
+                            onUpgradeClick={(req) => {
+                              setModalRequiredPlan(req);
+                              setIsUpgradeModalOpen(true);
+                            }}
+                          />
+                        </div>
+                        <div className="flex items-center gap-3 mt-1.5 text-[11px] text-[var(--color-text-tertiary)]">
+                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.location}</span>
+                          <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" /> {job.employment_type}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {!isUnlocked ? (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => {
+                          setModalRequiredPlan(reqPlan);
+                          setIsUpgradeModalOpen(true);
+                        }}
+                        className="self-end sm:self-center shrink-0 text-xs text-[var(--color-brand-600)] border-[var(--color-brand-200)] hover:bg-[var(--color-brand-50)]"
+                      >
+                        <Lock className="w-3 h-3 mr-1 text-[var(--color-brand-600)]" /> {planMeta.name} Required
+                      </Button>
+                    ) : (
+                      <Link href={`/student/jobs`} className="self-end sm:self-center shrink-0">
+                        <Button variant="outline" size="sm" className="text-xs">
+                          View Job
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                );
+              })}
 
               {recentJobs.length === 0 && !isFetching && (
                 <div className="text-center py-8 text-xs text-[var(--color-text-tertiary)]">
@@ -425,6 +460,15 @@ export default function StudentDashboard() {
         </div>
 
       </div>
+
+      {/* UPGRADE PROMPT MODAL */}
+      <UpgradeModal 
+        isOpen={isUpgradeModalOpen} 
+        onClose={() => setIsUpgradeModalOpen(false)} 
+        requiredPlan={modalRequiredPlan}
+        featureTitle="this verified job opening"
+      />
+
     </StudentLayout>
   );
 }

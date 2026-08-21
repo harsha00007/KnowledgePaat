@@ -124,3 +124,24 @@ export async function getUserAccess(supabase: SupabaseClient, userId: string): P
 export function isContentAccessible(requiredPlan: string | null | undefined, userAccess: UserAccess): boolean {
   return userAccess.hasAccess(requiredPlan);
 }
+
+/**
+ * Determines whether a student can view the real company name for a job.
+ * Uses the student's effective plan level compared against the job's minimum required plan.
+ * Returns true if student's effective plan level >= job's minimum required plan level.
+ */
+export function canViewCompanyName(
+  studentAccessOrPlan: UserAccess | PlanId | string | null | undefined,
+  jobMinimumPlan: string | null | undefined
+): boolean {
+  if (!studentAccessOrPlan) {
+    return satisfiesPlanRequirement('free', jobMinimumPlan);
+  }
+
+  const effectivePlan: PlanId = typeof studentAccessOrPlan === 'object' && 'effectivePlan' in studentAccessOrPlan
+    ? studentAccessOrPlan.effectivePlan
+    : normalizePlanId(studentAccessOrPlan as string);
+
+  return satisfiesPlanRequirement(effectivePlan, jobMinimumPlan);
+}
+

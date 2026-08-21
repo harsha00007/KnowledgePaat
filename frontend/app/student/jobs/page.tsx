@@ -24,8 +24,9 @@ import {
   Sparkles
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
-import { calculateUserAccess, isContentAccessible, UserAccess } from '@/lib/subscription';
+import { calculateUserAccess, isContentAccessible, canViewCompanyName, UserAccess } from '@/lib/subscription';
 import { PLANS, normalizePlanId, PlanId } from '@/config/plans';
+import { CompanyNameGate } from '@/components/CompanyNameGate';
 
 type Job = {
   id: string;
@@ -166,13 +167,6 @@ export default function JobsPage() {
   };
 
   const handleJobClick = (job: Job) => {
-    const reqPlan = job.minimum_plan || job.access_type || 'free';
-    const isUnlocked = isContentAccessible(reqPlan, userAccess);
-    if (!isUnlocked) {
-      setModalRequiredPlan(reqPlan);
-      setIsUpgradeModalOpen(true);
-      return;
-    }
     setSelectedJob(job);
     setIsModalOpen(true);
   };
@@ -180,9 +174,11 @@ export default function JobsPage() {
   // Filter Jobs
   const filteredJobs = jobs.filter(job => {
     const query = searchQuery.toLowerCase();
+    const canSeeCompany = canViewCompanyName(userAccess, job.minimum_plan || job.access_type);
+    
     const matchesSearch = query === '' || 
       job.title.toLowerCase().includes(query) || 
-      job.company_name.toLowerCase().includes(query) ||
+      (canSeeCompany && job.company_name.toLowerCase().includes(query)) ||
       (job.required_skills && job.required_skills.some(s => s.toLowerCase().includes(query))) ||
       job.location.toLowerCase().includes(query);
 
@@ -330,8 +326,18 @@ export default function JobsPage() {
                         <div className="h-10 w-10 rounded-[var(--radius-md)] bg-[var(--color-bg-subtle)] border border-[var(--color-border)] flex items-center justify-center shrink-0">
                           <Building2 className="h-5 w-5 text-[var(--color-text-tertiary)]" />
                         </div>
-                        <div>
-                          <p className="text-xs font-semibold text-[var(--color-text-secondary)]">{job.company_name}</p>
+                        <div className="min-w-0">
+                          <div className="mb-0.5">
+                            <CompanyNameGate
+                              companyName={job.company_name}
+                              minimumPlan={reqPlan}
+                              userAccess={userAccess}
+                              onUpgradeClick={(req) => {
+                                setModalRequiredPlan(req);
+                                setIsUpgradeModalOpen(true);
+                              }}
+                            />
+                          </div>
                           <h3 className="text-sm font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-600)] transition-colors leading-snug">
                             {job.title}
                           </h3>
@@ -434,7 +440,19 @@ export default function JobsPage() {
                     <h2 className="text-base font-bold text-[var(--color-text-primary)]">{selectedJob.title}</h2>
                     <PremiumBadge minimumPlan={selectedJob.minimum_plan || selectedJob.access_type} />
                   </div>
-                  <p className="text-xs font-semibold text-[var(--color-brand-600)] mt-0.5">{selectedJob.company_name}</p>
+                  <div className="mt-1">
+                    <CompanyNameGate
+                      companyName={selectedJob.company_name}
+                      minimumPlan={selectedJob.minimum_plan || selectedJob.access_type}
+                      userAccess={userAccess}
+                      className="text-xs font-semibold text-[var(--color-brand-600)]"
+                      onUpgradeClick={(req) => {
+                        setIsModalOpen(false);
+                        setModalRequiredPlan(req);
+                        setIsUpgradeModalOpen(true);
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -515,13 +533,28 @@ export default function JobsPage() {
                 <Button variant="outline" size="sm" onClick={() => setIsModalOpen(false)} className="flex-1 sm:flex-initial">
                   Close
                 </Button>
-                <Button 
-                  size="sm" 
-                  onClick={() => window.open(selectedJob.apply_url, '_blank')}
-                  className="flex-1 sm:flex-initial"
-                >
-                  Apply on Company Site <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
-                </Button>
+                {isContentAccessible(selectedJob.minimum_plan || selectedJob.access_type, userAccess) ? (
+                  <Button 
+                    size="sm" 
+                    onClick={() => window.open(selectedJob.apply_url, '_blank')}
+                    className="flex-1 sm:flex-initial"
+                  >
+                    Apply on Company Site <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
+                  </Button>
+                ) : (
+                  <Button 
+                    size="sm" 
+                    onClick={() => {
+                      const req = selectedJob.minimum_plan || selectedJob.access_type || 'pro';
+                      setIsModalOpen(false);
+                      setModalRequiredPlan(req);
+                      setIsUpgradeModalOpen(true);
+                    }}
+                    className="flex-1 sm:flex-initial shadow-xs"
+                  >
+                    <Lock className="w-3.5 h-3.5 mr-1.5" /> Unlock {PLANS[normalizePlanId(selectedJob.minimum_plan || selectedJob.access_type)].name} to Apply
+                  </Button>
+                )}
               </div>
             </div>
 
