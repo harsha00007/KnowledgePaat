@@ -27,7 +27,9 @@ import {
   ExternalLink,
   BookOpen,
   Check,
-  Sparkles
+  Sparkles,
+  RefreshCw,
+  Info
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { StoreProduct, ProductType, PRODUCT_TYPE_LABELS } from '@/lib/store';
@@ -40,6 +42,9 @@ type NoteOption = {
   file_size?: string;
   technology?: string | null;
   status: string;
+  description?: string;
+  minimum_plan?: string;
+  access_type?: string;
 };
 
 const NOTE_CATEGORIES = [
@@ -86,6 +91,7 @@ export default function AdminStorePage() {
   const [noteCategory, setNoteCategory] = useState<string>('Technical Interview');
   const [noteMinimumPlan, setNoteMinimumPlan] = useState<string>('free');
   const [attachedNoteForEdit, setAttachedNoteForEdit] = useState<NoteOption | null>(null);
+  const [editSignedUrl, setEditSignedUrl] = useState<string | null>(null);
   const [isReplacingPdf, setIsReplacingPdf] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
 
@@ -94,6 +100,8 @@ export default function AdminStorePage() {
   const [bundleSearchTerm, setBundleSearchTerm] = useState('');
   const [bundleCategoryFilter, setBundleCategoryFilter] = useState('all');
   const [bundleNewPdfFiles, setBundleNewPdfFiles] = useState<File[]>([]);
+  const [bundleSignedUrls, setBundleSignedUrls] = useState<Record<string, string>>({});
+  const [isAddingExistingNoteOpen, setIsAddingExistingNoteOpen] = useState(false);
 
   // Attached Notes Details for View Modal
   const [viewAttachedNotes, setViewAttachedNotes] = useState<NoteOption[]>([]);
@@ -131,7 +139,7 @@ export default function AdminStorePage() {
     try {
       const { data, error } = await supabase
         .from('notes')
-        .select('id, title, category, file_url, file_size, technology, status')
+        .select('id, title, category, description, file_url, file_size, technology, status, minimum_plan, access_type')
         .order('title', { ascending: true });
 
       if (error) throw error;
@@ -174,9 +182,12 @@ export default function AdminStorePage() {
     setNoteCategory('Technical Interview');
     setNoteMinimumPlan('free');
     setAttachedNoteForEdit(null);
+    setEditSignedUrl(null);
     setIsReplacingPdf(false);
     setSelectedBundleNoteIds(new Set());
     setBundleNewPdfFiles([]);
+    setBundleSignedUrls({});
+    setIsAddingExistingNoteOpen(false);
     setUploadProgress(0);
     setIsFormModalOpen(true);
   };
@@ -189,6 +200,7 @@ export default function AdminStorePage() {
     setIsReplacingPdf(false);
     setBundleNewPdfFiles([]);
     setUploadProgress(0);
+    setIsAddingExistingNoteOpen(false);
 
     // Fetch attached notes for this product
     const attachedIds = new Set<string>();
@@ -220,8 +232,33 @@ export default function AdminStorePage() {
     setSelectedBundleNoteIds(attachedIds);
     setAttachedNoteForEdit(primaryNote);
     if (primaryNote) {
-      setNoteCategory((primaryNote as any).category || 'Technical Interview');
+      setNoteCategory(primaryNote.category || 'Technical Interview');
+      setNoteMinimumPlan(primaryNote.minimum_plan || 'free');
+
+      // Generate signed URL for instant viewing
+      if (primaryNote.file_url) {
+        const { data: urlData } = await supabase.storage.from('notes').createSignedUrl(primaryNote.file_url, 300);
+        if (urlData?.signedUrl) {
+          setEditSignedUrl(urlData.signedUrl);
+        }
+      }
+    } else {
+      setEditSignedUrl(null);
     }
+
+    // Generate signed URLs for all bundle notes
+    const bUrls: Record<string, string> = {};
+    for (const noteId of Array.from(attachedIds)) {
+      const match = availableNotes.find(n => n.id === noteId);
+      if (match?.file_url) {
+        const { data: urlData } = await supabase.storage.from('notes').createSignedUrl(match.file_url, 300);
+        if (urlData?.signedUrl) {
+          bUrls[noteId] = urlData.signedUrl;
+        }
+      }
+    }
+    setBundleSignedUrls(bUrls);
+
     setIsFormModalOpen(true);
   };
 
@@ -262,6 +299,14 @@ export default function AdminStorePage() {
 
   const removeBundlePdf = (index: number) => {
     setBundleNewPdfFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeAttachedBundleNote = (noteId: string) => {
+    setSelectedBundleNoteIds(prev => {
+      const next = new Set(prev);
+      next.delete(noteId);
+      return next;
+    });
   };
 
   const toggleBundleNoteSelection = (noteId: string) => {
@@ -309,6 +354,7 @@ export default function AdminStorePage() {
     
     let createdNoteId: string | null = null;
     let uploadedStoragePath: string | null = null;
+    let oldStoragePathToDelete: string | null = null;
 
     try {
       const pType = formData.product_type || 'note';
@@ -322,6 +368,7 @@ export default function AdminStorePage() {
           const cleanName = `${Date.now()}_${uploadedPdf.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
           const filePath = `notes/store_${cleanName}`;
 
+          // Step 1: Upload new file first
           const { error: uploadError } = await supabase.storage
             .from('notes')
             .upload(filePath, uploadedPdf, {
@@ -334,11 +381,10 @@ export default function AdminStorePage() {
           }
 
           uploadedStoragePath = filePath;
-          setUploadProgress(65);
+          setUploadProgress(60);
 
           const formattedSize = `${(uploadedPdf.size / (1024 * 1024)).toFixed(1)} MB`;
 
-          // Create/update public.notes record
           const notePayload = {
             title: formData.title,
             category: noteCategory,
@@ -347,10 +393,14 @@ export default function AdminStorePage() {
             file_size: formattedSize,
             status: formData.status === 'inactive' ? 'Inactive' : 'Active',
             minimum_plan: noteMinimumPlan,
-            access_type: noteMinimumPlan === 'free' ? 'Free' : 'Premium'
+            access_type: noteMinimumPlan === 'free' ? 'Free' : 'Premium',
+            updated_at: new Date().toISOString()
           };
 
-          if (selectedProduct && attachedNoteForEdit && !isReplacingPdf) {
+          if (selectedProduct && attachedNoteForEdit) {
+            // Safe Replace: keep same Note ID to preserve student purchases
+            oldStoragePathToDelete = attachedNoteForEdit.file_url || null;
+
             const { error: updateNoteErr } = await supabase
               .from('notes')
               .update(notePayload)
@@ -358,6 +408,7 @@ export default function AdminStorePage() {
             if (updateNoteErr) throw updateNoteErr;
             createdNoteId = attachedNoteForEdit.id;
           } else {
+            // New Note
             const { data: newNote, error: createNoteErr } = await supabase
               .from('notes')
               .insert(notePayload)
@@ -372,7 +423,24 @@ export default function AdminStorePage() {
           if (createdNoteId) {
             allLinkedNoteIds.add(createdNoteId);
           }
-        } else if (attachedNoteForEdit) {
+        } else if (selectedProduct && attachedNoteForEdit) {
+          // Admin updated metadata without replacing PDF
+          const notePayload = {
+            title: formData.title,
+            category: noteCategory,
+            description: formData.description || `Study Note for ${formData.title}`,
+            status: formData.status === 'inactive' ? 'Inactive' : 'Active',
+            minimum_plan: noteMinimumPlan,
+            access_type: noteMinimumPlan === 'free' ? 'Free' : 'Premium',
+            updated_at: new Date().toISOString()
+          };
+
+          const { error: updateNoteErr } = await supabase
+            .from('notes')
+            .update(notePayload)
+            .eq('id', attachedNoteForEdit.id);
+          if (updateNoteErr) throw updateNoteErr;
+
           primaryItemRefId = attachedNoteForEdit.id;
           allLinkedNoteIds.add(attachedNoteForEdit.id);
         }
@@ -448,12 +516,11 @@ export default function AdminStorePage() {
         finalProductId = newProd.id;
       }
 
-      setUploadProgress(90);
+      setUploadProgress(85);
 
       // --- 4. LINK NOTES IN JUNCTION TABLE (store_product_notes) ---
       if (finalProductId && allLinkedNoteIds.size > 0) {
         try {
-          // Remove old relationships if updating
           if (selectedProduct) {
             await supabase
               .from('store_product_notes')
@@ -474,13 +541,21 @@ export default function AdminStorePage() {
         }
       }
 
+      // --- 5. SAFE CLEANUP OF OLD REPLACED PDF ---
+      // Only delete old file after all database writes succeed!
+      if (oldStoragePathToDelete && uploadedStoragePath && oldStoragePathToDelete !== uploadedStoragePath) {
+        supabase.storage.from('notes').remove([oldStoragePathToDelete]).catch(cleanupErr => {
+          console.warn("Non-fatal: could not delete old replaced PDF:", cleanupErr);
+        });
+      }
+
       setUploadProgress(100);
       await fetchProducts();
       await fetchAvailableNotes();
       setIsFormModalOpen(false);
     } catch (err: any) {
       console.error("Error saving store product:", err);
-      // Safe cleanup of orphan file if product failed
+      // Safe cleanup of newly uploaded orphan file if product save failed
       if (uploadedStoragePath && !selectedProduct) {
         await supabase.storage.from('notes').remove([uploadedStoragePath]).catch(() => {});
       }
@@ -530,7 +605,7 @@ export default function AdminStorePage() {
     const urls: Record<string, string> = {};
     for (const n of notesList) {
       if (n.file_url) {
-        const { data } = await supabase.storage.from('notes').createSignedUrl(n.file_url, 120);
+        const { data } = await supabase.storage.from('notes').createSignedUrl(n.file_url, 180);
         if (data?.signedUrl) {
           urls[n.id] = data.signedUrl;
         }
@@ -588,6 +663,11 @@ export default function AdminStorePage() {
     const matchesCat = bundleCategoryFilter === 'all' || n.category === bundleCategoryFilter;
     return matchesSearch && matchesCat;
   });
+
+  // Selected bundle notes list resolved with full metadata
+  const includedBundleNotes = Array.from(selectedBundleNoteIds)
+    .map(id => availableNotes.find(n => n.id === id))
+    .filter(Boolean) as NoteOption[];
 
   return (
     <AdminLayout>
@@ -728,7 +808,7 @@ export default function AdminStorePage() {
                             <button onClick={() => openViewModal(p)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="View Overview & Content">
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button onClick={() => openEditForm(p)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded transition-colors" title="Edit">
+                            <button onClick={() => openEditForm(p)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded transition-colors" title="Edit Product & Content">
                               <Edit className="w-4 h-4" />
                             </button>
                             <button onClick={() => { setSelectedProduct(p); setIsStatusModalOpen(true); }} className="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition-colors" title="Toggle Status">
@@ -792,13 +872,19 @@ export default function AdminStorePage() {
                   name="product_type" 
                   value={formData.product_type} 
                   onChange={handleFormChange} 
-                  className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white font-medium"
+                  disabled={Boolean(selectedProduct && (attachedNoteForEdit || selectedBundleNoteIds.size > 0))}
+                  className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white font-medium disabled:bg-[var(--color-bg-muted)] disabled:opacity-75"
                 >
                   <option value="note">Study Note (PDF)</option>
                   <option value="note_bundle">Notes Bundle</option>
                   <option value="question_pack">Question Pack</option>
                   <option value="interview_bundle">Interview Master Bundle</option>
                 </select>
+                {selectedProduct && (attachedNoteForEdit || selectedBundleNoteIds.size > 0) && (
+                  <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5 flex items-center gap-1">
+                    <Info className="w-3 h-3 text-amber-600" /> Type locked (content attached)
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block font-bold text-[var(--color-text-primary)] mb-1">Selling Price (₹) *</label>
@@ -847,35 +933,78 @@ export default function AdminStorePage() {
           {/* --- CASE A: STUDY NOTE (PDF) --- */}
           {formData.product_type === 'note' && (
             <div className="rounded-[var(--radius-lg)] border border-emerald-200 bg-emerald-50/30 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs">
+              <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2">
+                <div className="flex items-center gap-2 text-emerald-950 font-bold text-xs uppercase tracking-wide">
                   <FileText className="w-4 h-4 text-emerald-600" />
-                  <span>Study Note PDF Content *</span>
+                  <span>Study Note Content</span>
                 </div>
                 <span className="text-[10px] text-emerald-700 font-medium">Supported: PDF only (Max 50 MB)</span>
               </div>
 
-              {/* If editing and has existing note attached */}
+              {/* Current Attached PDF Display in Edit Mode */}
               {selectedProduct && attachedNoteForEdit && !isReplacingPdf && (
-                <div className="bg-white border border-emerald-200 rounded-[var(--radius-md)] p-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
-                      <FileText className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-[var(--color-text-primary)]">{attachedNoteForEdit.title}</p>
-                      <p className="text-[10px] text-[var(--color-text-tertiary)]">Category: {attachedNoteForEdit.category} • Size: {attachedNoteForEdit.file_size || 'PDF'}</p>
+                <div className="bg-white border border-emerald-200 rounded-[var(--radius-md)] p-3.5 space-y-2.5 shadow-xs">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0 mt-0.5">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                            Current Attached PDF
+                          </span>
+                        </div>
+                        <p className="font-bold text-sm text-[var(--color-text-primary)] mt-1">{attachedNoteForEdit.title}</p>
+                        <p className="text-[11px] text-[var(--color-text-secondary)] mt-0.5">
+                          Category: <strong>{attachedNoteForEdit.category}</strong> • Size: <strong>{attachedNoteForEdit.file_size || 'PDF'}</strong>
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setIsReplacingPdf(true)} className="text-xs">
-                    Replace PDF
-                  </Button>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--color-border)]">
+                    {editSignedUrl && (
+                      <a 
+                        href={editSignedUrl} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-[var(--radius-md)] bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold hover:bg-emerald-100 transition-colors"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> View PDF
+                      </a>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setIsReplacingPdf(true)} 
+                      className="text-xs border-amber-300 text-amber-800 hover:bg-amber-50"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 mr-1" /> Replace PDF
+                    </Button>
+                  </div>
                 </div>
               )}
 
-              {/* Upload Dropzone */}
+              {/* Upload or Replacement Dropzone */}
               {(!selectedProduct || !attachedNoteForEdit || isReplacingPdf) && (
-                <div>
+                <div className="space-y-2">
+                  {isReplacingPdf && (
+                    <div className="flex items-center justify-between bg-amber-50 border border-amber-200 p-2.5 rounded-[var(--radius-md)] text-amber-900 text-xs">
+                      <div className="flex items-center gap-2">
+                        <RefreshCw className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>Select a new PDF file to replace <strong>{attachedNoteForEdit?.title}</strong></span>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => { setIsReplacingPdf(false); setUploadedPdf(null); }} 
+                        className="font-bold text-amber-800 hover:underline shrink-0 ml-2"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+
                   {!uploadedPdf ? (
                     <label className="flex flex-col items-center justify-center p-5 border-2 border-dashed border-emerald-300 rounded-[var(--radius-lg)] bg-white hover:bg-emerald-50/50 cursor-pointer transition-colors text-center">
                       <Upload className="w-6 h-6 text-emerald-600 mb-1.5" />
@@ -907,21 +1036,11 @@ export default function AdminStorePage() {
                         type="button" 
                         onClick={() => setUploadedPdf(null)} 
                         className="p-1.5 text-red-500 hover:bg-red-50 rounded"
-                        title="Remove file"
+                        title="Remove selected file"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </div>
-                  )}
-
-                  {isReplacingPdf && (
-                    <button 
-                      type="button" 
-                      onClick={() => { setIsReplacingPdf(false); setUploadedPdf(null); }} 
-                      className="text-[11px] text-emerald-700 underline mt-1.5 block text-right"
-                    >
-                      Keep existing attached PDF
-                    </button>
                   )}
                 </div>
               )}
@@ -960,64 +1079,153 @@ export default function AdminStorePage() {
           {/* --- CASE B: NOTES BUNDLE --- */}
           {formData.product_type === 'note_bundle' && (
             <div className="rounded-[var(--radius-lg)] border border-blue-200 bg-blue-50/30 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-blue-950 font-bold text-xs">
+              <div className="flex items-center justify-between border-b border-blue-200/60 pb-2">
+                <div className="flex items-center gap-2 text-blue-950 font-bold text-xs uppercase tracking-wide">
                   <Layers className="w-4 h-4 text-blue-600" />
-                  <span>Bundle Notes Selection & Upload *</span>
+                  <span>Bundle Contents</span>
                 </div>
-                <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  {selectedBundleNoteIds.size + bundleNewPdfFiles.length} Notes Included
+                <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                  Included Notes: {includedBundleNotes.length + bundleNewPdfFiles.length}
                 </span>
               </div>
 
               {formErrors.bundle && <p className="text-red-500 text-xs font-semibold">{formErrors.bundle}</p>}
 
-              {/* 1. Select Existing Notes from Library */}
+              {/* 1. Included Notes List with View and Remove Buttons */}
               <div className="bg-white border border-blue-200 rounded-[var(--radius-md)] p-3 space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-bold text-[var(--color-text-primary)]">Select from Existing Notes ({availableNotes.length} available)</span>
-                  <input 
-                    type="text" 
-                    placeholder="Search notes..." 
-                    value={bundleSearchTerm} 
-                    onChange={e => setBundleSearchTerm(e.target.value)} 
-                    className="px-2 py-1 border border-[var(--color-border)] rounded text-[11px] w-36 outline-none" 
-                  />
-                </div>
+                <span className="font-bold text-xs text-[var(--color-text-primary)] block">
+                  Currently Attached Notes ({includedBundleNotes.length + bundleNewPdfFiles.length})
+                </span>
 
-                <div className="max-h-40 overflow-y-auto space-y-1 divide-y divide-[var(--color-border)] pr-1">
-                  {filteredAvailableNotes.length === 0 ? (
-                    <p className="text-[11px] text-[var(--color-text-tertiary)] py-2 text-center">No notes found matching your search.</p>
-                  ) : (
-                    filteredAvailableNotes.map(n => {
-                      const isSelected = selectedBundleNoteIds.has(n.id);
-                      return (
-                        <label 
-                          key={n.id} 
-                          className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
-                            isSelected ? 'bg-blue-50/80 font-semibold' : 'hover:bg-[var(--color-bg-subtle)]'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <input 
-                              type="checkbox" 
-                              checked={isSelected} 
-                              onChange={() => toggleBundleNoteSelection(n.id)} 
-                              className="h-3.5 w-3.5 rounded border-[var(--color-border)] text-blue-600 focus:ring-blue-500" 
-                            />
-                            <span className="text-xs text-[var(--color-text-primary)]">{n.title}</span>
+                {includedBundleNotes.length === 0 && bundleNewPdfFiles.length === 0 ? (
+                  <p className="text-[11px] text-[var(--color-text-tertiary)] italic py-2 text-center">
+                    No notes currently included. Use the options below to add notes.
+                  </p>
+                ) : (
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                    {includedBundleNotes.map((note, index) => (
+                      <div key={note.id} className="flex items-center justify-between p-2 rounded bg-[var(--color-bg-subtle)] border border-[var(--color-border)] text-xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-mono text-[10px] text-[var(--color-text-tertiary)]">{index + 1}.</span>
+                          <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                          <div className="truncate">
+                            <span className="font-bold text-[var(--color-text-primary)] truncate">{note.title}</span>
+                            <span className="text-[10px] text-[var(--color-text-tertiary)] ml-1.5">({note.category} • {note.file_size || 'PDF'})</span>
                           </div>
-                          <span className="text-[10px] text-[var(--color-text-tertiary)]">{n.category}</span>
-                        </label>
-                      );
-                    })
-                  )}
-                </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {bundleSignedUrls[note.id] && (
+                            <a 
+                              href={bundleSignedUrls[note.id]} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 text-[10px] font-bold inline-flex items-center gap-1"
+                            >
+                              <Eye className="w-3 h-3" /> View
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeAttachedBundleNote(note.id)}
+                            className="px-2 py-0.5 rounded bg-red-50 text-red-600 hover:bg-red-100 text-[10px] font-bold"
+                            title="Remove from bundle"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* New Uploaded PDFs not yet saved */}
+                    {bundleNewPdfFiles.map((file, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2 rounded bg-emerald-50/60 border border-emerald-200 text-xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Plus className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span className="font-bold text-emerald-950 truncate">{file.name}</span>
+                          <span className="text-[10px] text-emerald-700">({(file.size / (1024 * 1024)).toFixed(1)} MB • New)</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeBundlePdf(idx)}
+                          className="text-red-500 hover:text-red-700 text-[10px] font-bold px-2 py-0.5"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* 2. Upload Additional PDFs to Bundle */}
+              {/* 2. Add Existing Note Toggle / Searchable Selector */}
               <div className="bg-white border border-blue-200 rounded-[var(--radius-md)] p-3 space-y-2">
-                <span className="font-bold text-[var(--color-text-primary)] block">Or Upload New Note PDFs to Bundle</span>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-[var(--color-text-primary)]">Add Existing Notes from Library</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsAddingExistingNoteOpen(!isAddingExistingNoteOpen)} 
+                    className="text-[11px] h-7"
+                  >
+                    {isAddingExistingNoteOpen ? 'Hide Library' : '+ Browse Notes Library'}
+                  </Button>
+                </div>
+
+                {isAddingExistingNoteOpen && (
+                  <div className="space-y-2 pt-2 border-t border-[var(--color-border)]">
+                    <div className="flex items-center justify-between gap-2">
+                      <input 
+                        type="text" 
+                        placeholder="Search notes by title..." 
+                        value={bundleSearchTerm} 
+                        onChange={e => setBundleSearchTerm(e.target.value)} 
+                        className="px-2.5 py-1 border border-[var(--color-border)] rounded text-xs flex-1 outline-none" 
+                      />
+                      <select 
+                        value={bundleCategoryFilter} 
+                        onChange={e => setBundleCategoryFilter(e.target.value)}
+                        className="px-2 py-1 border border-[var(--color-border)] rounded text-xs bg-white outline-none"
+                      >
+                        <option value="all">All Categories</option>
+                        {NOTE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+
+                    <div className="max-h-36 overflow-y-auto space-y-1 divide-y divide-[var(--color-border)] pr-1">
+                      {filteredAvailableNotes.length === 0 ? (
+                        <p className="text-[11px] text-[var(--color-text-tertiary)] py-2 text-center">No matching notes found.</p>
+                      ) : (
+                        filteredAvailableNotes.map(n => {
+                          const isSelected = selectedBundleNoteIds.has(n.id);
+                          return (
+                            <label 
+                              key={n.id} 
+                              className={`flex items-center justify-between p-1.5 rounded cursor-pointer transition-colors ${
+                                isSelected ? 'bg-blue-50/80 font-semibold' : 'hover:bg-[var(--color-bg-subtle)]'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <input 
+                                  type="checkbox" 
+                                  checked={isSelected} 
+                                  onChange={() => toggleBundleNoteSelection(n.id)} 
+                                  className="h-3.5 w-3.5 rounded border-[var(--color-border)] text-blue-600 focus:ring-blue-500" 
+                                />
+                                <span className="text-xs text-[var(--color-text-primary)]">{n.title}</span>
+                              </div>
+                              <span className="text-[10px] text-[var(--color-text-tertiary)]">{n.category}</span>
+                            </label>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 3. Upload Additional PDF Notes into Bundle */}
+              <div className="bg-white border border-blue-200 rounded-[var(--radius-md)] p-3 space-y-2">
+                <span className="font-bold text-[var(--color-text-primary)] block">Upload New Note PDFs to Bundle</span>
                 <label className="flex items-center justify-center p-3 border border-dashed border-blue-300 rounded bg-blue-50/20 hover:bg-blue-50/50 cursor-pointer text-center">
                   <Upload className="w-4 h-4 text-blue-600 mr-2" />
                   <span className="font-semibold text-blue-900 text-xs">Choose PDF files to add to bundle</span>
@@ -1029,19 +1237,6 @@ export default function AdminStorePage() {
                     onChange={e => handleBundlePdfsSelected(e.target.files)} 
                   />
                 </label>
-
-                {bundleNewPdfFiles.length > 0 && (
-                  <div className="space-y-1 pt-1">
-                    {bundleNewPdfFiles.map((file, idx) => (
-                      <div key={idx} className="flex items-center justify-between bg-blue-50/40 px-2 py-1 rounded text-[11px]">
-                        <span className="truncate font-medium text-blue-950">{file.name} ({(file.size / (1024 * 1024)).toFixed(1)} MB)</span>
-                        <button type="button" onClick={() => removeBundlePdf(idx)} className="text-red-500 hover:text-red-700 ml-2">
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
             </div>
@@ -1066,7 +1261,7 @@ export default function AdminStorePage() {
           {isProcessing && uploadProgress > 0 && (
             <div className="space-y-1.5 pt-2">
               <div className="flex justify-between text-[11px] font-bold text-emerald-800">
-                <span>Uploading & Securing Content...</span>
+                <span>Saving & Securing Content...</span>
                 <span>{uploadProgress}%</span>
               </div>
               <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
@@ -1096,10 +1291,10 @@ export default function AdminStorePage() {
               <span className="capitalize">{formData.product_type?.replace('_', ' ')}</span>
               <span>•</span>
               <span>Status: <strong className="capitalize">{formData.status}</strong></span>
-              {formData.product_type === 'note' && uploadedPdf && (
+              {formData.product_type === 'note' && (uploadedPdf || attachedNoteForEdit) && (
                 <>
                   <span>•</span>
-                  <span className="text-emerald-700 font-semibold">{uploadedPdf.name}</span>
+                  <span className="text-emerald-700 font-semibold">{uploadedPdf ? uploadedPdf.name : attachedNoteForEdit?.title}</span>
                 </>
               )}
             </div>
