@@ -808,15 +808,25 @@ CREATE TABLE IF NOT EXISTS public.interview_questions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     category_id UUID NOT NULL REFERENCES public.interview_categories(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
-    answer TEXT NOT NULL,
+    question_type TEXT NOT NULL DEFAULT 'mcq' CHECK (question_type IN ('mcq', 'descriptive')),
+    option_a TEXT,
+    option_b TEXT,
+    option_c TEXT,
+    option_d TEXT,
+    correct_option TEXT CHECK (correct_option IN ('A', 'B', 'C', 'D')),
+    answer TEXT NOT NULL DEFAULT '',
+    explanation TEXT,
     tips TEXT,
     common_mistakes TEXT,
+    options JSONB DEFAULT '[]'::JSONB,
+    correct_option_index INTEGER,
     difficulty TEXT NOT NULL DEFAULT 'Medium' CHECK (difficulty IN ('Easy', 'Medium', 'Hard')),
     estimated_time TEXT NOT NULL DEFAULT '5 mins',
     company_tags TEXT[] DEFAULT '{}'::TEXT[],
     technology_tags TEXT[] DEFAULT '{}'::TEXT[],
     tags TEXT[] DEFAULT '{}'::TEXT[],
     status TEXT NOT NULL DEFAULT 'Active',
+    is_active BOOLEAN NOT NULL DEFAULT true,
     minimum_plan TEXT NOT NULL DEFAULT 'free',
     access_type TEXT NOT NULL DEFAULT 'Free',
     import_batch_id UUID,
@@ -878,4 +888,124 @@ CREATE POLICY "Admins manage imports" ON public.interview_question_imports FOR A
 DROP POLICY IF EXISTS "Students manage their own progress" ON public.student_question_progress;
 CREATE POLICY "Students manage their own progress" ON public.student_question_progress
 FOR ALL TO authenticated USING (auth.uid() = student_id) WITH CHECK (auth.uid() = student_id);
+
+-- ==============================================================================
+-- 15. ADMIN-CONTROLLED INTERVIEW PREPARATION & TEST SYSTEM
+-- ==============================================================================
+ALTER TABLE public.interview_categories
+ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'Active',
+ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN IF NOT EXISTS icon TEXT DEFAULT 'BookOpen',
+ADD COLUMN IF NOT EXISTS minimum_plan TEXT NOT NULL DEFAULT 'free',
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
+ALTER TABLE public.interview_questions
+ADD COLUMN IF NOT EXISTS question_type TEXT NOT NULL DEFAULT 'mcq' CHECK (question_type IN ('mcq', 'descriptive')),
+ADD COLUMN IF NOT EXISTS option_a TEXT,
+ADD COLUMN IF NOT EXISTS option_b TEXT,
+ADD COLUMN IF NOT EXISTS option_c TEXT,
+ADD COLUMN IF NOT EXISTS option_d TEXT,
+ADD COLUMN IF NOT EXISTS correct_option TEXT CHECK (correct_option IN ('A', 'B', 'C', 'D')),
+ADD COLUMN IF NOT EXISTS explanation TEXT,
+ADD COLUMN IF NOT EXISTS options JSONB DEFAULT '[]'::JSONB,
+ADD COLUMN IF NOT EXISTS correct_option_index INTEGER,
+ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true;
+
+CREATE TABLE IF NOT EXISTS public.interview_prep_settings (
+    id TEXT PRIMARY KEY DEFAULT 'global',
+    practice_mode_enabled BOOLEAN NOT NULL DEFAULT true,
+    timed_test_mode_enabled BOOLEAN NOT NULL DEFAULT true,
+    ai_adaptive_mode_enabled BOOLEAN NOT NULL DEFAULT true,
+    practice_minimum_plan TEXT NOT NULL DEFAULT 'free',
+    timed_test_minimum_plan TEXT NOT NULL DEFAULT 'free',
+    ai_adaptive_minimum_plan TEXT NOT NULL DEFAULT 'premium',
+    allowed_question_counts INTEGER[] DEFAULT '{10, 20, 30, 40, 50}'::INTEGER[],
+    allowed_time_limits INTEGER[] DEFAULT '{30, 45, 60, 90, 120}'::INTEGER[],
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+INSERT INTO public.interview_prep_settings (
+    id, practice_mode_enabled, timed_test_mode_enabled, ai_adaptive_mode_enabled,
+    practice_minimum_plan, timed_test_minimum_plan, ai_adaptive_minimum_plan,
+    allowed_question_counts, allowed_time_limits
+)
+VALUES (
+    'global', true, true, true, 'free', 'free', 'premium',
+    '{10, 20, 30, 40, 50}', '{30, 45, 60, 90, 120}'
+)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS public.interview_test_configs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    description TEXT,
+    category_id UUID REFERENCES public.interview_categories(id) ON DELETE SET NULL,
+    mode TEXT NOT NULL DEFAULT 'timed_test',
+    difficulty TEXT NOT NULL DEFAULT 'Medium',
+    question_count INTEGER NOT NULL DEFAULT 10,
+    time_per_question INTEGER NOT NULL DEFAULT 60,
+    minimum_plan TEXT NOT NULL DEFAULT 'free',
+    is_recommended BOOLEAN NOT NULL DEFAULT false,
+    status TEXT NOT NULL DEFAULT 'Active',
+    allowed_question_counts INTEGER[] DEFAULT '{10, 20}'::INTEGER[],
+    allowed_time_limits INTEGER[] DEFAULT '{45, 60, 90}'::INTEGER[],
+    created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_interview_test_configs_cat ON public.interview_test_configs(category_id);
+CREATE INDEX IF NOT EXISTS idx_interview_test_configs_status ON public.interview_test_configs(status);
+CREATE INDEX IF NOT EXISTS idx_interview_test_configs_rec ON public.interview_test_configs(is_recommended);
+
+CREATE TABLE IF NOT EXISTS public.student_test_attempts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    test_config_id UUID REFERENCES public.interview_test_configs(id) ON DELETE SET NULL,
+    category_id UUID REFERENCES public.interview_categories(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    mode TEXT NOT NULL DEFAULT 'timed_test',
+    difficulty TEXT NOT NULL DEFAULT 'Medium',
+    total_questions INTEGER NOT NULL DEFAULT 0,
+    correct_answers INTEGER NOT NULL DEFAULT 0,
+    score_percentage NUMERIC NOT NULL DEFAULT 0,
+    time_spent_seconds INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'completed',
+    answers_payload JSONB DEFAULT '[]'::JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_student_test_attempts_student ON public.student_test_attempts(student_id);
+CREATE INDEX IF NOT EXISTS idx_student_test_attempts_test ON public.student_test_attempts(test_config_id);
+CREATE INDEX IF NOT EXISTS idx_student_test_attempts_created ON public.student_test_attempts(created_at);
+
+ALTER TABLE public.interview_prep_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.interview_test_configs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.student_test_attempts ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can view prep settings" ON public.interview_prep_settings;
+CREATE POLICY "Anyone can view prep settings" ON public.interview_prep_settings FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins manage prep settings" ON public.interview_prep_settings;
+CREATE POLICY "Admins manage prep settings" ON public.interview_prep_settings FOR ALL USING (public.is_admin());
+
+DROP POLICY IF EXISTS "Anyone can view active test configs" ON public.interview_test_configs;
+CREATE POLICY "Anyone can view active test configs" ON public.interview_test_configs FOR SELECT USING (COALESCE(status, 'Active') = 'Active' OR public.is_admin());
+
+DROP POLICY IF EXISTS "Admins manage test configs" ON public.interview_test_configs;
+CREATE POLICY "Admins manage test configs" ON public.interview_test_configs FOR ALL USING (public.is_admin());
+
+DROP POLICY IF EXISTS "Students view own test attempts" ON public.student_test_attempts;
+CREATE POLICY "Students view own test attempts" ON public.student_test_attempts FOR SELECT USING (auth.uid() = student_id OR public.is_admin());
+
+DROP POLICY IF EXISTS "Students insert own test attempts" ON public.student_test_attempts;
+CREATE POLICY "Students insert own test attempts" ON public.student_test_attempts FOR INSERT WITH CHECK (auth.uid() = student_id);
+
+DROP POLICY IF EXISTS "Admins manage test attempts" ON public.student_test_attempts;
+CREATE POLICY "Admins manage test attempts" ON public.student_test_attempts FOR ALL USING (public.is_admin());
+
+GRANT ALL ON TABLE public.interview_prep_settings TO authenticated, service_role, anon;
+GRANT ALL ON TABLE public.interview_test_configs TO authenticated, service_role, anon;
+GRANT ALL ON TABLE public.student_test_attempts TO authenticated, service_role, anon;
+
 

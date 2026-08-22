@@ -11,12 +11,13 @@ export async function transcribeAudio(input: TranscribeAudioInput): Promise<Tran
 
   if (!apiKey) {
     // If external STT API key is not configured in server environment,
-    // return an informative response allowing student to edit transcript or use browser speech
+    // return an informative fallback allowing student to edit transcript or use browser speech
     return {
       transcript: "I implemented a scalable solution by designing modular components, handling edge cases gracefully, and optimizing database queries to achieve low latency and reliable performance.",
       language: input.language || 'en',
       duration_seconds: 15,
-      confidence: 0.95
+      confidence: 0.95,
+      isFallback: true
     };
   }
 
@@ -52,7 +53,8 @@ export async function transcribeAudio(input: TranscribeAudioInput): Promise<Tran
       transcript: transcriptText,
       language: data.language || input.language || 'en',
       duration_seconds: data.duration ? Math.round(Number(data.duration)) : undefined,
-      confidence: 0.94
+      confidence: 0.94,
+      isFallback: false
     };
   } catch (err: any) {
     console.error('Transcription error in speechToText module:', err);

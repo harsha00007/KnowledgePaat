@@ -82,22 +82,27 @@ export async function POST(req: NextRequest) {
 
       const categories = (categoriesData || []).map(c => ({ id: c.id, name: c.name }));
 
-      // Fetch existing question titles for duplicate detection
+      // Fetch existing questions for signature duplicate detection
       const { data: existingQuestions } = await supabase
         .from('interview_questions')
-        .select('title');
+        .select('title, question_type, category_id');
 
-      const existingDbTitles = new Set<string>();
+      const existingDbSignatures = new Set<string>();
       (existingQuestions || []).forEach(q => {
         const norm = normalizeQuestionTitle(q.title);
-        if (norm) existingDbTitles.add(norm);
+        const qType = q.question_type === 'mcq' ? 'mcq' : 'normal';
+        if (norm) {
+          existingDbSignatures.add(`${qType}:::${q.category_id || ''}:::${norm}`);
+          existingDbSignatures.add(`${qType}:::*:::${norm}`);
+          existingDbSignatures.add(norm); // backwards compatibility
+        }
       });
 
       // Run validation & duplicate detection
       const validationSummary = validateImportRows(
         parseResult.rows,
         categories,
-        existingDbTitles,
+        existingDbSignatures,
         defaults,
         categoryMappings
       );
@@ -147,27 +152,60 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < questionsToImport.length; i += CHUNK_SIZE) {
       const chunk = questionsToImport.slice(i, i + CHUNK_SIZE);
       
-      const insertPayloads = chunk.map(q => ({
-        category_id: q.categoryId,
-        title: q.title,
-        answer: q.answer,
-        tips: q.tips || null,
-        common_mistakes: q.common_mistakes || null,
-        difficulty: q.difficulty,
-        estimated_time: q.estimated_time || '5 mins',
-        company_tags: q.company_tags || [],
-        technology_tags: q.technology_tags || [],
-        tags: q.tags || [],
-        status: q.status || 'Active',
-        minimum_plan: q.minimum_plan || 'free',
-        access_type: q.access_type || (q.minimum_plan === 'free' ? 'Free' : 'Premium'),
-        import_batch_id: currentBatchId,
-      }));
+      const insertPayloads = chunk.map(q => {
+        const isMcq = q.question_type === 'mcq';
+        const optA = isMcq ? (q.option_a || null) : null;
+        const optB = isMcq ? (q.option_b || null) : null;
+        const optC = isMcq ? (q.option_c || null) : null;
+        const optD = isMcq ? (q.option_d || null) : null;
+        const correctOpt = isMcq && q.correct_option ? q.correct_option.toUpperCase() : null;
+        const correctIndex = correctOpt === 'A' ? 0 : correctOpt === 'B' ? 1 : correctOpt === 'C' ? 2 : correctOpt === 'D' ? 3 : null;
+        const optionsList = isMcq && optA && optB ? [optA, optB, optC || '', optD || ''] : [];
+        const ansType = !isMcq ? (q.answer_type || (q.answer && q.answer.length > 200 ? 'long' : 'short')) : null;
 
-      const { data, error: insertError } = await supabase
+        return {
+          category_id: q.categoryId,
+          title: q.title,
+          question_type: isMcq ? 'mcq' : 'normal',
+          answer_type: ansType,
+          option_a: optA,
+          option_b: optB,
+          option_c: optC,
+          option_d: optD,
+          correct_option: correctOpt,
+          explanation: q.explanation || null,
+          options: optionsList,
+          correct_option_index: correctIndex,
+          answer: q.answer,
+          tips: q.tips || null,
+          common_mistakes: q.common_mistakes || null,
+          difficulty: q.difficulty,
+          estimated_time: q.estimated_time || '5 mins',
+          company_tags: q.company_tags || [],
+          technology_tags: q.technology_tags || [],
+          tags: q.tags || [],
+          status: q.status || 'Active',
+          minimum_plan: q.minimum_plan || 'free',
+          access_type: q.access_type || (q.minimum_plan === 'free' ? 'Free' : 'Premium'),
+          import_batch_id: currentBatchId,
+        };
+      });
+
+      let { data, error: insertError } = await supabase
         .from('interview_questions')
         .insert(insertPayloads)
         .select('id');
+
+      // Fallback: If DB schema does not have 'answer_type' column yet, strip it and retry seamlessly
+      if (insertError && (insertError.message?.includes('answer_type') || insertError.code === 'PGRST204')) {
+        const sanitizedPayloads = insertPayloads.map(({ answer_type, ...rest }: any) => rest);
+        const retryResult = await supabase
+          .from('interview_questions')
+          .insert(sanitizedPayloads)
+          .select('id');
+        data = retryResult.data;
+        insertError = retryResult.error;
+      }
 
       if (insertError) {
         console.error(`Batch insert failed for chunk ${i / CHUNK_SIZE}:`, insertError);

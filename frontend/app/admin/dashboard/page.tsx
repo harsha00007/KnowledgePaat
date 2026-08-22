@@ -26,12 +26,15 @@ export default function AdminDashboardPage() {
     jobs: 0,
     questions: 0,
     notes: 0,
-    premium: 0
+    paidSubscribers: 0,
+    starterCount: 0,
+    proCount: 0,
+    premiumCount: 0,
   });
 
   const [recentStudents, setRecentStudents] = useState<any[]>([]);
   const [recentJobs, setRecentJobs] = useState<any[]>([]);
-  const [recentPremium, setRecentPremium] = useState<any[]>([]);
+  const [recentPaidSubscribers, setRecentPaidSubscribers] = useState<any[]>([]);
   const [isFetching, setIsFetching] = useState(true);
 
   useEffect(() => {
@@ -47,21 +50,39 @@ export default function AdminDashboardPage() {
         { count: jobsCount },
         { count: questionsCount },
         { count: notesCount },
-        { count: premiumCount }
+        { data: activeSubsData }
       ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
         supabase.from('jobs').select('*', { count: 'exact', head: true }),
         supabase.from('interview_questions').select('*', { count: 'exact', head: true }),
         supabase.from('notes').select('*', { count: 'exact', head: true }),
-        supabase.from('subscriptions').select('*', { count: 'exact', head: true }).in('plan', ['premium', 'Premium']).in('status', ['active', 'Active'])
+        supabase.from('subscriptions').select('plan, status').in('status', ['active', 'Active'])
       ]);
+
+      let starter = 0;
+      let pro = 0;
+      let premium = 0;
+
+      if (activeSubsData) {
+        activeSubsData.forEach(sub => {
+          const p = (sub.plan || '').toLowerCase();
+          if (p === 'starter') starter++;
+          else if (p === 'pro') pro++;
+          else if (p === 'premium') premium++;
+        });
+      }
+
+      const totalPaid = starter + pro + premium;
 
       setStats({
         students: studentsCount || 0,
         jobs: jobsCount || 0,
         questions: questionsCount || 0,
         notes: notesCount || 0,
-        premium: premiumCount || 0
+        paidSubscribers: totalPaid,
+        starterCount: starter,
+        proCount: pro,
+        premiumCount: premium,
       });
 
       // Fetch Recent Activity in parallel
@@ -72,7 +93,7 @@ export default function AdminDashboardPage() {
       ] = await Promise.all([
         supabase.from('profiles').select('id, full_name, email, created_at').eq('role', 'student').order('created_at', { ascending: false }).limit(5),
         supabase.from('jobs').select('id, title, company_name, posted_at').order('posted_at', { ascending: false }).limit(5),
-        supabase.from('subscriptions').select('*').in('plan', ['premium', 'Premium', 'pro', 'Pro']).order('created_at', { ascending: false }).limit(5)
+        supabase.from('subscriptions').select('*').in('plan', ['starter', 'Starter', 'pro', 'Pro', 'premium', 'Premium']).in('status', ['active', 'Active']).order('created_at', { ascending: false }).limit(5)
       ]);
 
       setRecentStudents(studentsData || []);
@@ -93,12 +114,12 @@ export default function AdminDashboardPage() {
           }
         }
 
-        setRecentPremium(subRows.map(s => ({
+        setRecentPaidSubscribers(subRows.map(s => ({
           ...s,
           profiles: pMap[s.student_id] || { full_name: 'Subscriber', email: '' }
         })));
       } else {
-        setRecentPremium([]);
+        setRecentPaidSubscribers([]);
       }
 
     } catch (err) {
@@ -113,7 +134,13 @@ export default function AdminDashboardPage() {
     { title: 'Active Jobs', value: stats.jobs, icon: Briefcase, color: 'text-indigo-600 bg-indigo-50 border-indigo-200' },
     { title: 'Interview Questions', value: stats.questions, icon: MessageSquare, color: 'text-purple-600 bg-purple-50 border-purple-200' },
     { title: 'Study Notes', value: stats.notes, icon: BookOpen, color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
-    { title: 'Premium Subscribers', value: stats.premium, icon: CreditCard, color: 'text-amber-600 bg-amber-50 border-amber-200' },
+    { 
+      title: 'Paid Subscribers', 
+      value: stats.paidSubscribers, 
+      icon: CreditCard, 
+      color: 'text-amber-600 bg-amber-50 border-amber-200',
+      subtitle: `Starter: ${stats.starterCount} · Pro: ${stats.proCount} · Prem: ${stats.premiumCount}`
+    },
   ];
 
   return (
@@ -142,7 +169,12 @@ export default function AdminDashboardPage() {
                   {isFetching ? (
                     <div className="h-6 w-12 bg-gray-100 animate-pulse rounded mt-1"></div>
                   ) : (
-                    <h3 className="text-xl font-bold text-[var(--color-text-primary)] mt-0.5">{stat.value}</h3>
+                    <>
+                      <h3 className="text-xl font-bold text-[var(--color-text-primary)] mt-0.5">{stat.value}</h3>
+                      {stat.subtitle && (
+                        <p className="text-[10px] text-[var(--color-text-tertiary)] font-medium mt-0.5">{stat.subtitle}</p>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -247,11 +279,11 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* Recent Premium */}
+          {/* Recent Paid Subscribers */}
           <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white shadow-[var(--shadow-xs)] overflow-hidden flex flex-col">
             <div className="px-5 py-3.5 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-bg-subtle)]">
               <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-primary)] flex items-center gap-1.5">
-                <CreditCard className="w-4 h-4 text-emerald-600" /> Active Premium
+                <CreditCard className="w-4 h-4 text-emerald-600" /> Paid Subscribers
               </h3>
               <button onClick={() => router.push('/admin/subscriptions')} className="text-xs font-semibold text-[var(--color-brand-600)] hover:underline flex items-center">
                 View All <ArrowRight className="w-3 h-3 ml-0.5" />
@@ -262,26 +294,34 @@ export default function AdminDashboardPage() {
                 <div className="p-4 space-y-3">
                   {[1, 2, 3].map(i => <div key={i} className="h-10 bg-gray-100 animate-pulse rounded"></div>)}
                 </div>
-              ) : recentPremium.length === 0 ? (
-                <div className="p-6 text-center text-xs text-[var(--color-text-tertiary)] font-medium">No premium subscribers yet.</div>
+              ) : recentPaidSubscribers.length === 0 ? (
+                <div className="p-6 text-center text-xs text-[var(--color-text-tertiary)] font-medium">No active paid subscribers yet.</div>
               ) : (
                 <ul className="divide-y divide-[var(--color-border)]">
-                  {recentPremium.map(sub => (
-                    <li key={sub.id} className="p-3.5 hover:bg-[var(--color-bg-subtle)] transition-colors">
-                      <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">
-                        {sub.profiles?.full_name || sub.profiles?.email || 'Anonymous Student'}
-                      </p>
-                      <div className="flex items-center justify-between mt-1 text-[11px]">
-                        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.2 rounded font-bold uppercase text-[10px]">
-                          Active Premium
-                        </span>
-                        <p className="text-[var(--color-text-tertiary)] shrink-0 flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {new Date(sub.start_date).toLocaleDateString()}
+                  {recentPaidSubscribers.map(sub => {
+                    const planName = (sub.plan || 'Paid').toLowerCase();
+                    const badgeClass = 
+                      planName === 'premium' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                      planName === 'pro' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                      'bg-blue-50 text-blue-700 border-blue-200';
+
+                    return (
+                      <li key={sub.id} className="p-3.5 hover:bg-[var(--color-bg-subtle)] transition-colors">
+                        <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">
+                          {sub.profiles?.full_name || sub.profiles?.email || 'Anonymous Student'}
                         </p>
-                      </div>
-                    </li>
-                  ))}
+                        <div className="flex items-center justify-between mt-1 text-[11px]">
+                          <span className={`px-1.5 py-0.2 rounded font-bold uppercase text-[10px] border ${badgeClass}`}>
+                            {sub.plan || 'Paid'}
+                          </span>
+                          <p className="text-[var(--color-text-tertiary)] shrink-0 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(sub.created_at || sub.start_date).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>

@@ -698,6 +698,7 @@ export default function BulkImportPage() {
                     <tr>
                       <th className="py-2.5 px-3 font-bold text-[var(--color-text-secondary)] w-12 text-center">#</th>
                       <th className="py-2.5 px-3 font-bold text-[var(--color-text-secondary)] w-28">Status</th>
+                      <th className="py-2.5 px-3 font-bold text-[var(--color-text-secondary)] w-20">Type</th>
                       <th className="py-2.5 px-4 font-bold text-[var(--color-text-secondary)]">Question Title</th>
                       <th className="py-2.5 px-3 font-bold text-[var(--color-text-secondary)] w-32">Category</th>
                       <th className="py-2.5 px-3 font-bold text-[var(--color-text-secondary)] w-24">Difficulty</th>
@@ -708,7 +709,7 @@ export default function BulkImportPage() {
                   <tbody className="divide-y divide-[var(--color-border)]">
                     {filteredPreviewRows.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="py-8 text-center text-xs text-[var(--color-text-tertiary)]">
+                        <td colSpan={8} className="py-8 text-center text-xs text-[var(--color-text-tertiary)]">
                           No questions matching the selected filter.
                         </td>
                       </tr>
@@ -732,6 +733,15 @@ export default function BulkImportPage() {
                                 <XCircle className="w-3 h-3" /> Invalid
                               </span>
                             )}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase border ${
+                              row.question_type === 'mcq'
+                                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300'
+                                : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                            }`}>
+                              {row.question_type === 'mcq' ? 'MCQ' : 'Normal'}
+                            </span>
                           </td>
                           <td className="py-2.5 px-4 font-semibold text-[var(--color-text-primary)] max-w-sm truncate" title={row.title}>
                             {row.title || <span className="text-red-500 italic">Empty Question</span>}

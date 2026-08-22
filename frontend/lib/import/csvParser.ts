@@ -16,7 +16,31 @@ function canonicalizeHeader(header: string): string {
   if (['difficulty', 'difficulty_level', 'level', 'complexity'].includes(clean)) {
     return 'difficulty';
   }
-  if (['answer', 'detailed_answer', 'ideal_answer', 'solution', 'explanation'].includes(clean)) {
+  if (['question_type', 'type', 'format'].includes(clean)) {
+    return 'question_type';
+  }
+  if (['answer_type', 'answertype', 'response_type', 'length_type'].includes(clean)) {
+    return 'answer_type';
+  }
+  if (['option_a', 'optiona', 'choice_a', 'choicea', 'option_1'].includes(clean)) {
+    return 'option_a';
+  }
+  if (['option_b', 'optionb', 'choice_b', 'choiceb', 'option_2'].includes(clean)) {
+    return 'option_b';
+  }
+  if (['option_c', 'optionc', 'choice_c', 'choicec', 'option_3'].includes(clean)) {
+    return 'option_c';
+  }
+  if (['option_d', 'optiond', 'choice_d', 'choiced', 'option_4'].includes(clean)) {
+    return 'option_d';
+  }
+  if (['correct_option', 'correct_answer', 'correct_choice', 'correct', 'correctoption', 'answer_key'].includes(clean)) {
+    return 'correct_option';
+  }
+  if (['explanation', 'rationale', 'explanation_text', 'solution_explanation'].includes(clean)) {
+    return 'explanation';
+  }
+  if (['answer', 'detailed_answer', 'ideal_answer', 'solution'].includes(clean)) {
     return 'answer';
   }
   if (['pro_tips', 'tips', 'tip', 'advice', 'pro_tip'].includes(clean)) {
@@ -79,6 +103,13 @@ export async function parseCSV(content: string, fileName: string, fileSizeBytes:
             if (canonicalKey === 'title') canonicalRow.title = strVal;
             else if (canonicalKey === 'category') canonicalRow.category = strVal;
             else if (canonicalKey === 'difficulty') canonicalRow.difficulty = strVal;
+            else if (canonicalKey === 'question_type') canonicalRow.question_type = strVal.toLowerCase() === 'descriptive' ? 'descriptive' : 'mcq';
+            else if (canonicalKey === 'option_a') canonicalRow.option_a = strVal;
+            else if (canonicalKey === 'option_b') canonicalRow.option_b = strVal;
+            else if (canonicalKey === 'option_c') canonicalRow.option_c = strVal;
+            else if (canonicalKey === 'option_d') canonicalRow.option_d = strVal;
+            else if (canonicalKey === 'correct_option') canonicalRow.correct_option = strVal;
+            else if (canonicalKey === 'explanation') canonicalRow.explanation = strVal;
             else if (canonicalKey === 'answer') canonicalRow.answer = strVal;
             else if (canonicalKey === 'tips') canonicalRow.tips = strVal;
             else if (canonicalKey === 'common_mistakes') canonicalRow.common_mistakes = strVal;
@@ -90,7 +121,7 @@ export async function parseCSV(content: string, fileName: string, fileSizeBytes:
             else if (canonicalKey === 'estimated_time') canonicalRow.estimated_time = strVal;
           });
 
-          if (canonicalRow.title || canonicalRow.answer) {
+          if (canonicalRow.title || canonicalRow.answer || canonicalRow.option_a) {
             rows.push(canonicalRow);
           }
         });

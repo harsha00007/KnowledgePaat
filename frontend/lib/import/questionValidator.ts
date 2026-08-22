@@ -52,10 +52,25 @@ export function validateImportRows(
     let duplicateReason: string | undefined;
 
     const title = cleanText(raw.title);
-    const answer = cleanText(raw.answer);
+    const rawOptA = cleanText(raw.option_a);
+    const rawOptB = cleanText(raw.option_b);
+    const rawOptC = cleanText(raw.option_c);
+    const rawOptD = cleanText(raw.option_d);
+    const rawCorrect = (cleanText(raw.correct_option) || '').toUpperCase().trim();
+    const explanation = cleanText(raw.explanation);
+    let answer = cleanText(raw.answer);
     const tips = raw.tips ? cleanText(raw.tips) : null;
     const commonMistakes = raw.common_mistakes ? cleanText(raw.common_mistakes) : null;
     const estimatedTime = cleanText(raw.estimated_time) || defaults.defaultEstimatedTime || '5 mins';
+
+    // Determine question type (support 'normal', 'mcq', and legacy 'descriptive')
+    const rawType = (raw.question_type || '').toLowerCase().trim();
+    const isExplicitNormal = rawType === 'normal' || rawType === 'descriptive';
+    const isExplicitMcq = rawType === 'mcq';
+    const hasMcqFields = !!(rawOptA || rawOptB || rawOptC || rawOptD || rawCorrect);
+    
+    const isMcq = isExplicitMcq || (!isExplicitNormal && hasMcqFields);
+    const questionType: 'normal' | 'mcq' = isMcq ? 'mcq' : 'normal';
 
     // 1. Validate Question Title
     if (!title) {
@@ -64,26 +79,74 @@ export function validateImportRows(
       warnings.push('Question title is very short (under 5 characters).');
     }
 
-    // 2. Validate Answer
-    if (!answer) {
-      errors.push('Answer content is required.');
-    } else if (answer.length < 10) {
-      warnings.push('Answer is very brief (under 10 characters).');
+    // 2. Validate MCQ or Normal Question
+    let validCorrectOption: 'A' | 'B' | 'C' | 'D' | undefined = undefined;
+    let answerType: 'short' | 'long' = raw.answer_type === 'long' || raw.answer_type === 'short' 
+      ? raw.answer_type 
+      : (answer && answer.length > 200 ? 'long' : 'short');
+
+    if (isMcq) {
+      if (!rawOptA) errors.push('Option A is required for MCQ.');
+      if (!rawOptB) errors.push('Option B is required for MCQ.');
+      if (!rawOptC) errors.push('Option C is required for MCQ.');
+      if (!rawOptD) errors.push('Option D is required for MCQ.');
+
+      // Check for identical options
+      const optSet = new Set([rawOptA, rawOptB, rawOptC, rawOptD].filter(Boolean));
+      if (optSet.size > 0 && optSet.size < 4 && rawOptA && rawOptB && rawOptC && rawOptD) {
+        errors.push('All 4 MCQ options must be distinct. Some options are identical.');
+      }
+
+      // Check correct option
+      if (!rawCorrect) {
+        errors.push('Correct option (A, B, C, or D) is required for MCQ.');
+      } else {
+        const firstLetter = rawCorrect.charAt(0);
+        if (['A', 'B', 'C', 'D'].includes(firstLetter)) {
+          validCorrectOption = firstLetter as 'A' | 'B' | 'C' | 'D';
+        } else if (rawCorrect === '1') validCorrectOption = 'A';
+        else if (rawCorrect === '2') validCorrectOption = 'B';
+        else if (rawCorrect === '3') validCorrectOption = 'C';
+        else if (rawCorrect === '4') validCorrectOption = 'D';
+        else {
+          errors.push(`Invalid correct option "${rawCorrect}". Must be A, B, C, or D.`);
+        }
+      }
+
+      // If answer is empty for MCQ, generate from correct option or explanation
+      if (!answer) {
+        if (validCorrectOption === 'A') answer = rawOptA;
+        else if (validCorrectOption === 'B') answer = rawOptB;
+        else if (validCorrectOption === 'C') answer = rawOptC;
+        else if (validCorrectOption === 'D') answer = rawOptD;
+        else answer = explanation || 'Multiple choice question';
+      }
+    } else {
+      // Normal / Written-Answer Question
+      if (!answer) {
+        errors.push('Ideal Model Answer is required for normal questions.');
+      } else if (answer.length < 10) {
+        warnings.push('Ideal answer is very brief (under 10 characters).');
+      }
     }
 
-    // 3. Duplicate Detection
+    // 3. Duplicate Detection (Signature: question_type + category + normalizedTitle)
     const normTitle = normalizeQuestionTitle(title);
+    const normalizedCat = (raw.category || '').toLowerCase().trim();
+    const dupSignature = `${questionType}:::${normalizedCat}:::${normTitle}`;
+    const legacyDupSignature = `${normTitle}`;
+
     if (normTitle) {
-      if (seenInFileTitles.has(normTitle)) {
+      if (seenInFileTitles.has(dupSignature)) {
         isDuplicate = true;
-        duplicateReason = `Duplicate question within this file (matches Row ${seenInFileTitles.get(normTitle)})`;
+        duplicateReason = `Duplicate ${questionType.toUpperCase()} question within this file (matches Row ${seenInFileTitles.get(dupSignature)})`;
         duplicateCount++;
-      } else if (existingDbTitles.has(normTitle)) {
+      } else if (existingDbTitles.has(dupSignature) || existingDbTitles.has(legacyDupSignature)) {
         isDuplicate = true;
-        duplicateReason = 'Question already exists in the database.';
+        duplicateReason = `A ${questionType.toUpperCase()} question with this title already exists in the database.`;
         duplicateCount++;
       } else {
-        seenInFileTitles.set(normTitle, raw.rowNumber);
+        seenInFileTitles.set(dupSignature, raw.rowNumber);
       }
     }
 
@@ -153,6 +216,14 @@ export function validateImportRows(
       categoryName,
       categoryId,
       difficulty,
+      question_type: questionType,
+      answer_type: answerType,
+      option_a: rawOptA || undefined,
+      option_b: rawOptB || undefined,
+      option_c: rawOptC || undefined,
+      option_d: rawOptD || undefined,
+      correct_option: validCorrectOption,
+      explanation: explanation || undefined,
       answer,
       tips,
       common_mistakes: commonMistakes,

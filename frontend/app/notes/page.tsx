@@ -13,28 +13,28 @@ const CATEGORIES = [
     description: 'Formulas, shortcuts, and practice sets for quantitative aptitude and logical reasoning.',
     icon: Calculator,
     count: '80+ topics',
-    href: '#',
+    href: '/student/notes',
   },
   {
     title: 'HR & Soft Skills',
     description: 'Answer templates for common HR questions, resume writing guides, and email drafts.',
     icon: Users,
     count: '40+ guides',
-    href: '#',
+    href: '/student/notes',
   },
   {
     title: 'Technical Concepts',
     description: 'Core CS fundamentals — OS, DBMS, Computer Networks, and Data Structures.',
     icon: Terminal,
     count: '120+ topics',
-    href: '#',
+    href: '/student/notes',
   },
   {
     title: 'Programming',
     description: 'Cheatsheets and reference guides for Java, Python, C++, SQL, and Web Development.',
     icon: Code2,
     count: '60+ cheatsheets',
-    href: '#',
+    href: '/student/notes',
   },
 ];
 

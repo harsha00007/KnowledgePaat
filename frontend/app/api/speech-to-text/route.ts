@@ -37,7 +37,8 @@ export async function POST(req: NextRequest) {
       transcript: result.transcript,
       language: result.language,
       duration_seconds: result.duration_seconds,
-      confidence: result.confidence
+      confidence: result.confidence,
+      isFallback: result.isFallback || false
     });
 
   } catch (err: any) {

@@ -10,6 +10,7 @@ export interface TranscriptionResult {
   language: string;
   duration_seconds?: number;
   confidence: number;
+  isFallback?: boolean;
 }
 
 export interface SpeechToTextError {

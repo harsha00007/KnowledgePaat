@@ -27,7 +27,7 @@ const NAV_ITEMS = [
   { name: 'Dashboard',           href: '/admin/dashboard',            icon: LayoutDashboard },
   { name: 'Students',            href: '/admin/students',             icon: Users },
   { name: 'Jobs',                href: '/admin/jobs',                 icon: Briefcase },
-  { name: 'Interview Questions', href: '/admin/interview-questions',  icon: MessageSquare },
+  { name: 'Interview Prep',      href: '/admin/interview-questions',  icon: MessageSquare, matchPrefix: '/admin/interview' },
   { name: 'Notes',               href: '/admin/notes',                icon: BookOpen },
   { name: 'Mock Interviews',     href: '/admin/mock-interviews',      icon: Bot },
   { name: 'Store Products',      href: '/admin/store',                icon: ShoppingBag },
@@ -48,7 +48,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     router.refresh();
   };
 
-  const activeItem = NAV_ITEMS.find(item => item.href === pathname);
+  const activeItem = NAV_ITEMS.find(item => item.href === pathname || (item.matchPrefix && pathname.startsWith(item.matchPrefix)));
 
   return (
     <div className="min-h-screen flex bg-[var(--color-bg-subtle)] text-[var(--color-text-primary)] font-sans antialiased">
@@ -102,7 +102,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           <ul className="space-y-0.5">
             {NAV_ITEMS.map(item => {
               const Icon     = item.icon;
-              const isActive = pathname === item.href;
+              const isActive = pathname === item.href || (item.matchPrefix && pathname.startsWith(item.matchPrefix));
               return (
                 <li key={item.name}>
                   <Link

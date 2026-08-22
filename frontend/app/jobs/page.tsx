@@ -40,7 +40,9 @@ export default function JobsPage() {
                 className="w-full pl-10 pr-4 h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:border-[var(--color-brand-500)] shadow-[var(--shadow-xs)] transition-colors"
               />
             </div>
-            <Button className="h-10 px-6 shrink-0">Search Jobs</Button>
+            <Link href="/student/jobs" className="shrink-0">
+              <Button className="h-10 px-6 shrink-0">Search Jobs</Button>
+            </Link>
           </div>
         </div>
       </section>
@@ -130,7 +132,9 @@ export default function JobsPage() {
             />
 
             <div className="flex justify-center pt-4">
-              <Button variant="outline" size="lg">Load More Jobs</Button>
+              <Link href="/student/jobs">
+                <Button variant="outline" size="lg">Browse All Verified Jobs</Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -188,7 +192,7 @@ function JobCard({
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div>
               <h3 className="text-base font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-500)] transition-colors leading-snug">
-                <Link href="#" className="focus-ring rounded-sm">{role}</Link>
+                <Link href="/student/jobs" className="focus-ring rounded-sm">{role}</Link>
               </h3>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-sm font-medium text-[var(--color-text-secondary)]">{company}</span>
@@ -199,9 +203,11 @@ function JobCard({
               </div>
             </div>
 
-            <Button variant="primary" size="sm" className="shrink-0 self-start">
-              Apply Now
-            </Button>
+            <Link href="/student/jobs" className="shrink-0 self-start">
+              <Button variant="primary" size="sm">
+                Apply Now
+              </Button>
+            </Link>
           </div>
 
           {/* Meta */}

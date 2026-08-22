@@ -14,7 +14,7 @@ const CATEGORIES = [
     description: 'Behavioral questions, self-introduction, strengths and weaknesses, cultural fit — with sample answers and tips.',
     icon: Users,
     count: '120+ questions',
-    href: '#',
+    href: '/student/interview-preparation',
     color: 'blue',
   },
   {
@@ -22,7 +22,7 @@ const CATEGORIES = [
     description: 'Data structures, algorithms, OS, DBMS, networking, and programming fundamentals for software roles.',
     icon: Code,
     count: '400+ questions',
-    href: '#',
+    href: '/student/interview-preparation',
     color: 'purple',
   },
   {
@@ -30,7 +30,7 @@ const CATEGORIES = [
     description: 'Quantitative aptitude, logical reasoning, and verbal ability — the essential shortlisting round.',
     icon: Brain,
     count: '300+ questions',
-    href: '#',
+    href: '/student/interview-preparation',
     color: 'emerald',
   },
   {
@@ -38,7 +38,7 @@ const CATEGORIES = [
     description: 'Previously asked interview questions from TCS, Infosys, Wipro, Accenture, Amazon, and more.',
     icon: Building,
     count: '50+ companies',
-    href: '#',
+    href: '/student/interview-preparation',
     color: 'amber',
   },
 ];

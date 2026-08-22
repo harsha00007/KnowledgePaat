@@ -84,6 +84,12 @@ export default function AdminJobsPage() {
   const [modeFilter, setModeFilter] = useState('');
   const [planFilter, setPlanFilter] = useState('');
 
+  // Bulk Selection & Deletion State
+  const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [bulkSuccessMsg, setBulkSuccessMsg] = useState<string | null>(null);
+  const [bulkErrorMsg, setBulkErrorMsg] = useState<string | null>(null);
+
   // Modals
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -282,6 +288,7 @@ export default function AdminJobsPage() {
       const { error } = await supabase.from('jobs').delete().eq('id', selectedJob.id);
       if (error) throw error;
       setJobs(prev => prev.filter(j => j.id !== selectedJob.id));
+      setSelectedJobIds(prev => prev.filter(id => id !== selectedJob.id));
       setIsDeleteModalOpen(false);
     } catch (err) {
       console.error("Error deleting job:", err);
@@ -289,6 +296,56 @@ export default function AdminJobsPage() {
       setIsProcessing(false);
     }
   };
+
+  // Bulk Selection & Deletion Helpers
+  const isAllVisibleJobsSelected = paginatedJobs.length > 0 && paginatedJobs.every(j => selectedJobIds.includes(j.id));
+
+  const handleToggleSelectAllJobs = () => {
+    if (isAllVisibleJobsSelected) {
+      const visibleIds = new Set(paginatedJobs.map(j => j.id));
+      setSelectedJobIds(prev => prev.filter(id => !visibleIds.has(id)));
+    } else {
+      const newIds = new Set([...selectedJobIds, ...paginatedJobs.map(j => j.id)]);
+      setSelectedJobIds(Array.from(newIds));
+    }
+  };
+
+  const handleToggleSelectJob = (id: string) => {
+    setSelectedJobIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDeleteJobs = async () => {
+    if (selectedJobIds.length === 0) return;
+    setIsProcessing(true);
+    setBulkErrorMsg(null);
+    try {
+      const { error } = await supabase
+        .from('jobs')
+        .delete()
+        .in('id', selectedJobIds);
+
+      if (error) throw error;
+
+      const deletedCount = selectedJobIds.length;
+      setJobs(prev => prev.filter(j => !selectedJobIds.includes(j.id)));
+      setSelectedJobIds([]);
+      setIsBulkDeleteModalOpen(false);
+      setBulkSuccessMsg(`✓ ${deletedCount} job posting${deletedCount > 1 ? 's' : ''} deleted successfully.`);
+      setTimeout(() => setBulkSuccessMsg(null), 4000);
+    } catch (err: any) {
+      console.error("Error bulk deleting jobs:", err);
+      setBulkErrorMsg("Unable to delete the selected jobs. No changes were made.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Reset bulk selection when page, search, or filters change
+  useEffect(() => {
+    setSelectedJobIds([]);
+  }, [searchQuery, statusFilter, expFilter, modeFilter, planFilter, currentPage]);
 
   return (
     <AdminLayout>
@@ -374,6 +431,42 @@ export default function AdminJobsPage() {
           </div>
         </div>
 
+        {/* Bulk Action Bar & Feedback Notifications */}
+        {bulkSuccessMsg && (
+          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-[var(--radius-lg)] text-xs font-semibold flex items-center justify-between animate-in fade-in">
+            <span>{bulkSuccessMsg}</span>
+            <button onClick={() => setBulkSuccessMsg(null)} className="text-emerald-600 hover:text-emerald-900 font-bold ml-2 cursor-pointer">✕</button>
+          </div>
+        )}
+
+        {selectedJobIds.length > 0 && (
+          <div className="bg-indigo-50/90 border border-indigo-200 rounded-[var(--radius-xl)] p-3 px-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs animate-in fade-in slide-in-from-top-1">
+            <div className="flex items-center gap-2 text-xs font-semibold text-indigo-900">
+              <span className="flex h-5 w-5 rounded-full bg-indigo-600 text-white items-center justify-center font-bold text-[11px]">
+                {selectedJobIds.length}
+              </span>
+              <span>job{selectedJobIds.length > 1 ? 's' : ''} selected</span>
+              <button 
+                onClick={() => setSelectedJobIds([])}
+                className="text-[11px] text-indigo-600 hover:text-indigo-800 underline ml-2 cursor-pointer"
+              >
+                Clear selection
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setIsBulkDeleteModalOpen(true)}
+                disabled={isProcessing}
+                className="text-xs shadow-xs"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete Selected ({selectedJobIds.length})
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* DATA TABLE CONTAINER */}
         <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white shadow-[var(--shadow-xs)] overflow-hidden">
           {isFetching ? (
@@ -395,6 +488,15 @@ export default function AdminJobsPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-[var(--color-bg-subtle)] border-b border-[var(--color-border)] text-[11px] uppercase tracking-wider text-[var(--color-text-tertiary)] font-bold">
+                      <th className="px-5 py-3.5 w-10">
+                        <input
+                          type="checkbox"
+                          checked={isAllVisibleJobsSelected}
+                          onChange={handleToggleSelectAllJobs}
+                          className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-brand-600)] focus:ring-[var(--color-brand-500)] cursor-pointer"
+                          title="Select all visible jobs on this page"
+                        />
+                      </th>
                       <th className="px-5 py-3.5">Company & Role</th>
                       <th className="px-5 py-3.5">Required Plan</th>
                       <th className="px-5 py-3.5">Location & Mode</th>
@@ -404,77 +506,99 @@ export default function AdminJobsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--color-border)] text-xs">
-                    {paginatedJobs.map(job => (
-                      <tr key={job.id} className="hover:bg-[var(--color-bg-subtle)]/70 transition-colors">
-                        <td className="px-5 py-3.5">
-                          <p className="font-bold text-[var(--color-text-primary)]">{job.title}</p>
-                          <p className="text-[11px] text-[var(--color-text-secondary)]">{job.company_name}</p>
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <PremiumBadge minimumPlan={job.minimum_plan || job.access_type} showLockIfPaid={false} />
-                        </td>
-                        <td className="px-5 py-3.5 font-medium text-[var(--color-text-secondary)]">
-                          {job.location} • <span className="text-[var(--color-text-tertiary)]">{job.work_mode}</span>
-                        </td>
-                        <td className="px-5 py-3.5 font-medium text-[var(--color-text-secondary)]">{job.experience}</td>
-                        <td className="px-5 py-3.5">
-                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                            job.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'
-                          }`}>
-                            {job.status}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3.5 text-right space-x-1 whitespace-nowrap">
-                          <button onClick={() => { setSelectedJob(job); setIsViewModalOpen(true); }} className="p-1.5 text-[var(--color-brand-600)] hover:bg-[var(--color-brand-50)] rounded transition-colors" title="View Details">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => openEditForm(job)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Edit Job">
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => { setSelectedJob(job); setIsStatusModalOpen(true); }} className={`p-1.5 rounded transition-colors ${job.status === 'Active' ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`} title={job.status === 'Active' ? "Deactivate" : "Activate"}>
-                            <Power className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => { setSelectedJob(job); setIsDeleteModalOpen(true); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete Job">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {paginatedJobs.map(job => {
+                      const isSelected = selectedJobIds.includes(job.id);
+                      return (
+                        <tr key={job.id} className={`hover:bg-[var(--color-bg-subtle)]/70 transition-colors ${isSelected ? 'bg-indigo-50/40' : ''}`}>
+                          <td className="px-5 py-3.5">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleToggleSelectJob(job.id)}
+                              className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-brand-600)] focus:ring-[var(--color-brand-500)] cursor-pointer"
+                            />
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <p className="font-bold text-[var(--color-text-primary)]">{job.title}</p>
+                            <p className="text-[11px] text-[var(--color-text-secondary)]">{job.company_name}</p>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <PremiumBadge minimumPlan={job.minimum_plan || job.access_type} showLockIfPaid={false} />
+                          </td>
+                          <td className="px-5 py-3.5 font-medium text-[var(--color-text-secondary)]">
+                            {job.location} • <span className="text-[var(--color-text-tertiary)]">{job.work_mode}</span>
+                          </td>
+                          <td className="px-5 py-3.5 font-medium text-[var(--color-text-secondary)]">{job.experience}</td>
+                          <td className="px-5 py-3.5">
+                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                              job.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'
+                            }`}>
+                              {job.status}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3.5 text-right space-x-1 whitespace-nowrap">
+                            <button onClick={() => { setSelectedJob(job); setIsViewModalOpen(true); }} className="p-1.5 text-[var(--color-brand-600)] hover:bg-[var(--color-brand-50)] rounded transition-colors" title="View Details">
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => openEditForm(job)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Edit Job">
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => { setSelectedJob(job); setIsStatusModalOpen(true); }} className={`p-1.5 rounded transition-colors ${job.status === 'Active' ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`} title={job.status === 'Active' ? "Deactivate" : "Activate"}>
+                              <Power className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => { setSelectedJob(job); setIsDeleteModalOpen(true); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete Job">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
 
               {/* Mobile Card List */}
               <div className="lg:hidden divide-y divide-[var(--color-border)]">
-                {paginatedJobs.map(job => (
-                  <div key={job.id} className="p-4 space-y-2.5">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="text-xs font-bold text-[var(--color-text-primary)]">{job.title}</p>
-                        <p className="text-[11px] text-[var(--color-text-secondary)]">{job.company_name}</p>
+                {paginatedJobs.map(job => {
+                  const isSelected = selectedJobIds.includes(job.id);
+                  return (
+                    <div key={job.id} className={`p-4 space-y-2.5 transition-colors ${isSelected ? 'bg-indigo-50/40' : ''}`}>
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-start gap-2.5">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleSelectJob(job.id)}
+                            className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-brand-600)] focus:ring-[var(--color-brand-500)] cursor-pointer mt-0.5"
+                          />
+                          <div>
+                            <p className="text-xs font-bold text-[var(--color-text-primary)]">{job.title}</p>
+                            <p className="text-[11px] text-[var(--color-text-secondary)]">{job.company_name}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <PremiumBadge minimumPlan={job.minimum_plan || job.access_type} showLockIfPaid={false} />
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${job.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+                            {job.status}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <PremiumBadge minimumPlan={job.minimum_plan || job.access_type} showLockIfPaid={false} />
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${job.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
-                          {job.status}
-                        </span>
+                      
+                      <div className="flex items-center gap-3 text-xs text-[var(--color-text-secondary)]">
+                        <span>{job.location} ({job.work_mode})</span>
+                        <span>•</span>
+                        <span>{job.experience}</span>
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-3 text-xs text-[var(--color-text-secondary)]">
-                      <span>{job.location} ({job.work_mode})</span>
-                      <span>•</span>
-                      <span>{job.experience}</span>
-                    </div>
 
-                    <div className="flex justify-end gap-1.5 pt-2 border-t border-[var(--color-border)]">
-                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => { setSelectedJob(job); setIsViewModalOpen(true); }}>View</Button>
-                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => openEditForm(job)}>Edit</Button>
-                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => { setSelectedJob(job); setIsStatusModalOpen(true); }}>{job.status === 'Active' ? 'Deactivate' : 'Activate'}</Button>
-                      <Button variant="outline" size="sm" className="text-xs py-1 px-2.5 text-red-600 hover:bg-red-50" onClick={() => { setSelectedJob(job); setIsDeleteModalOpen(true); }}>Delete</Button>
+                      <div className="flex justify-end gap-1.5 pt-2 border-t border-[var(--color-border)]">
+                        <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => { setSelectedJob(job); setIsViewModalOpen(true); }}>View</Button>
+                        <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => openEditForm(job)}>Edit</Button>
+                        <Button variant="outline" size="sm" className="text-xs py-1 px-2.5" onClick={() => { setSelectedJob(job); setIsStatusModalOpen(true); }}>{job.status === 'Active' ? 'Deactivate' : 'Activate'}</Button>
+                        <Button variant="outline" size="sm" className="text-xs py-1 px-2.5 text-red-600 hover:bg-red-50" onClick={() => { setSelectedJob(job); setIsDeleteModalOpen(true); }}>Delete</Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Pagination Bar */}
@@ -707,6 +831,52 @@ export default function AdminJobsPage() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* BULK DELETE MODAL */}
+      <Modal 
+        isOpen={isBulkDeleteModalOpen} 
+        onClose={() => !isProcessing && setIsBulkDeleteModalOpen(false)} 
+        title={`Delete ${selectedJobIds.length} Job Posting${selectedJobIds.length > 1 ? 's' : ''}?`}
+        className="max-w-md"
+      >
+        <div className="space-y-4 text-xs text-[var(--color-text-secondary)]">
+          <div className="flex items-start gap-3 bg-red-50 text-red-900 p-4 rounded-[var(--radius-lg)] border border-red-200">
+            <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-red-950">Permanent Bulk Deletion Warning</p>
+              <p className="mt-1 leading-relaxed text-red-900">
+                This action will permanently remove <strong>{selectedJobIds.length}</strong> selected job posting{selectedJobIds.length > 1 ? 's' : ''} from the database. This action cannot be undone.
+              </p>
+            </div>
+          </div>
+
+          {bulkErrorMsg && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
+              {bulkErrorMsg}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2.5 pt-3 border-t border-[var(--color-border)]">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setIsBulkDeleteModalOpen(false)} 
+              disabled={isProcessing}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="primary" 
+              size="sm"
+              className="bg-red-600 hover:bg-red-700 border-transparent text-white"
+              onClick={handleBulkDeleteJobs} 
+              disabled={isProcessing}
+            >
+              {isProcessing ? 'Deleting...' : `Delete ${selectedJobIds.length} Job${selectedJobIds.length > 1 ? 's' : ''}`}
+            </Button>
+          </div>
+        </div>
       </Modal>
 
     </AdminLayout>
