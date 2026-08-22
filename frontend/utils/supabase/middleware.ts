@@ -30,7 +30,12 @@ export async function updateSession(request: NextRequest) {
   // Fetch the user session
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/register')
+  const isRootRoute = request.nextUrl.pathname === '/'
+  const isAuthRoute = 
+    request.nextUrl.pathname.startsWith('/login') || 
+    request.nextUrl.pathname.startsWith('/register') ||
+    request.nextUrl.pathname.startsWith('/forgot-password') ||
+    request.nextUrl.pathname.startsWith('/reset-password')
   const isStudentRoute = request.nextUrl.pathname.startsWith('/student')
   const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
 
@@ -49,12 +54,12 @@ export async function updateSession(request: NextRequest) {
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   const role = profile?.role || 'student'
 
-  // Authenticated user trying to access login/register
-  if (isAuthRoute) {
+  // Authenticated user trying to access root landing or login/register/auth routes
+  if (isRootRoute || isAuthRoute) {
     const url = request.nextUrl.clone()
     url.pathname = role === 'admin' ? '/admin/dashboard' : '/student/dashboard'
     return NextResponse.redirect(url)

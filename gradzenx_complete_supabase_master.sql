@@ -212,6 +212,17 @@ BEGIN
     END IF;
 END $$;
 
+CREATE TABLE IF NOT EXISTS public.store_product_notes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id UUID NOT NULL REFERENCES public.store_products(id) ON DELETE CASCADE,
+    note_id UUID NOT NULL REFERENCES public.notes(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT unique_store_product_note UNIQUE(product_id, note_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_store_product_notes_product ON public.store_product_notes(product_id);
+CREATE INDEX IF NOT EXISTS idx_store_product_notes_note ON public.store_product_notes(note_id);
+
 -- ==============================================================================
 -- 5. JOBS, NOTES & INTERVIEW PREPARATION TABLES
 -- ==============================================================================
@@ -584,6 +595,12 @@ CREATE POLICY "Anyone can view active products" ON public.store_products FOR SEL
 
 DROP POLICY IF EXISTS "Admins manage products" ON public.store_products;
 CREATE POLICY "Admins manage products" ON public.store_products FOR ALL USING (public.is_admin());
+
+ALTER TABLE public.store_product_notes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can view store product notes" ON public.store_product_notes;
+CREATE POLICY "Anyone can view store product notes" ON public.store_product_notes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admins manage store product notes" ON public.store_product_notes;
+CREATE POLICY "Admins manage store product notes" ON public.store_product_notes FOR ALL USING (public.is_admin());
 
 
 DROP POLICY IF EXISTS "Users manage own cart" ON public.cart_items;

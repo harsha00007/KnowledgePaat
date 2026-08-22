@@ -109,6 +109,7 @@ export default function JobsPage() {
       const { data: jobsData, error: jobsError } = await supabase
         .from('jobs')
         .select('*')
+        .eq('status', 'Active')
         .order('posted_at', { ascending: false });
 
       if (jobsError) throw jobsError;

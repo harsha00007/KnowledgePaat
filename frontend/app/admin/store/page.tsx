@@ -19,15 +19,41 @@ import {
   ShoppingBag,
   Tag,
   DollarSign,
-  Layers
+  Layers,
+  FileText,
+  Upload,
+  CheckCircle2,
+  X,
+  ExternalLink,
+  BookOpen,
+  Check,
+  Sparkles
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { StoreProduct, ProductType, PRODUCT_TYPE_LABELS } from '@/lib/store';
 
+type NoteOption = {
+  id: string;
+  title: string;
+  category: string;
+  file_url: string;
+  file_size?: string;
+  technology?: string | null;
+  status: string;
+};
+
+const NOTE_CATEGORIES = [
+  'Technical Interview',
+  'Aptitude',
+  'HR Interview',
+  'Programming',
+  'Career Guidance'
+];
+
 const initialForm: Partial<StoreProduct> = {
   title: '',
   description: '',
-  product_type: 'question_pack',
+  product_type: 'note',
   price: 29.00,
   original_price: 49.00,
   status: 'active'
@@ -35,6 +61,7 @@ const initialForm: Partial<StoreProduct> = {
 
 export default function AdminStorePage() {
   const [products, setProducts] = useState<StoreProduct[]>([]);
+  const [availableNotes, setAvailableNotes] = useState<NoteOption[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   
   // Search & Filters
@@ -53,6 +80,24 @@ export default function AdminStorePage() {
   // Form State
   const [formData, setFormData] = useState<Partial<StoreProduct>>(initialForm);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  
+  // Study Note (PDF) State
+  const [uploadedPdf, setUploadedPdf] = useState<File | null>(null);
+  const [noteCategory, setNoteCategory] = useState<string>('Technical Interview');
+  const [noteMinimumPlan, setNoteMinimumPlan] = useState<string>('free');
+  const [attachedNoteForEdit, setAttachedNoteForEdit] = useState<NoteOption | null>(null);
+  const [isReplacingPdf, setIsReplacingPdf] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+
+  // Notes Bundle State
+  const [selectedBundleNoteIds, setSelectedBundleNoteIds] = useState<Set<string>>(new Set());
+  const [bundleSearchTerm, setBundleSearchTerm] = useState('');
+  const [bundleCategoryFilter, setBundleCategoryFilter] = useState('all');
+  const [bundleNewPdfFiles, setBundleNewPdfFiles] = useState<File[]>([]);
+
+  // Attached Notes Details for View Modal
+  const [viewAttachedNotes, setViewAttachedNotes] = useState<NoteOption[]>([]);
+  const [viewSignedUrls, setViewSignedUrls] = useState<Record<string, string>>({});
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,6 +107,7 @@ export default function AdminStorePage() {
 
   useEffect(() => {
     fetchProducts();
+    fetchAvailableNotes();
   }, []);
 
   const fetchProducts = async () => {
@@ -78,6 +124,20 @@ export default function AdminStorePage() {
       console.error("Error fetching store products:", err);
     } finally {
       setIsFetching(false);
+    }
+  };
+
+  const fetchAvailableNotes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .select('id, title, category, file_url, file_size, technology, status')
+        .order('title', { ascending: true });
+
+      if (error) throw error;
+      if (data) setAvailableNotes(data as NoteOption[]);
+    } catch (err) {
+      console.error("Error fetching available notes for store:", err);
     }
   };
 
@@ -110,13 +170,58 @@ export default function AdminStorePage() {
     setFormData(initialForm);
     setFormErrors({});
     setSelectedProduct(null);
+    setUploadedPdf(null);
+    setNoteCategory('Technical Interview');
+    setNoteMinimumPlan('free');
+    setAttachedNoteForEdit(null);
+    setIsReplacingPdf(false);
+    setSelectedBundleNoteIds(new Set());
+    setBundleNewPdfFiles([]);
+    setUploadProgress(0);
     setIsFormModalOpen(true);
   };
 
-  const openEditForm = (p: StoreProduct) => {
+  const openEditForm = async (p: StoreProduct) => {
     setFormData(p);
     setFormErrors({});
     setSelectedProduct(p);
+    setUploadedPdf(null);
+    setIsReplacingPdf(false);
+    setBundleNewPdfFiles([]);
+    setUploadProgress(0);
+
+    // Fetch attached notes for this product
+    const attachedIds = new Set<string>();
+    let primaryNote: NoteOption | null = null;
+
+    if (p.item_reference_id) {
+      attachedIds.add(p.item_reference_id);
+      primaryNote = availableNotes.find(n => n.id === p.item_reference_id) || null;
+    }
+
+    try {
+      const { data: junctionData } = await supabase
+        .from('store_product_notes')
+        .select('note_id, notes (*)')
+        .eq('product_id', p.id);
+
+      if (junctionData && junctionData.length > 0) {
+        junctionData.forEach((row: any) => {
+          if (row.note_id) attachedIds.add(row.note_id);
+          if (!primaryNote && row.notes) {
+            primaryNote = row.notes;
+          }
+        });
+      }
+    } catch (err) {
+      console.warn("Could not query store_product_notes:", err);
+    }
+
+    setSelectedBundleNoteIds(attachedIds);
+    setAttachedNoteForEdit(primaryNote);
+    if (primaryNote) {
+      setNoteCategory((primaryNote as any).category || 'Technical Interview');
+    }
     setIsFormModalOpen(true);
   };
 
@@ -128,12 +233,69 @@ export default function AdminStorePage() {
     }
   };
 
+  // PDF File Selection for Single Note
+  const handlePdfSelected = (file: File) => {
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      setFormErrors(prev => ({ ...prev, pdf: "Only PDF (.pdf) files are supported." }));
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      setFormErrors(prev => ({ ...prev, pdf: "File size exceeds maximum allowed 50 MB." }));
+      return;
+    }
+    setUploadedPdf(file);
+    setFormErrors(prev => { const next = { ...prev }; delete next.pdf; return next; });
+  };
+
+  // Multiple PDF Selection for Bundle
+  const handleBundlePdfsSelected = (files: FileList | null) => {
+    if (!files) return;
+    const valid: File[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.name.toLowerCase().endsWith('.pdf') && file.size <= 50 * 1024 * 1024) {
+        valid.push(file);
+      }
+    }
+    setBundleNewPdfFiles(prev => [...prev, ...valid]);
+  };
+
+  const removeBundlePdf = (index: number) => {
+    setBundleNewPdfFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const toggleBundleNoteSelection = (noteId: string) => {
+    setSelectedBundleNoteIds(prev => {
+      const next = new Set(prev);
+      if (next.has(noteId)) next.delete(noteId);
+      else next.add(noteId);
+      return next;
+    });
+  };
+
   const validateForm = () => {
     const errors: Record<string, string> = {};
     if (!formData.title?.trim()) errors.title = "Product Title is required.";
     if (!formData.product_type) errors.product_type = "Product Type is required.";
     if (formData.price === undefined || formData.price === null || Number(formData.price) < 0) {
       errors.price = "Valid price is required.";
+    }
+
+    if (formData.product_type === 'note') {
+      // Must have PDF file if new product OR if replacing
+      if (!selectedProduct && !uploadedPdf) {
+        errors.pdf = "Please upload a Note PDF file.";
+      }
+      if (selectedProduct && isReplacingPdf && !uploadedPdf) {
+        errors.pdf = "Please choose a replacement Note PDF file.";
+      }
+    }
+
+    if (formData.product_type === 'note_bundle') {
+      const totalNotes = selectedBundleNoteIds.size + bundleNewPdfFiles.length;
+      if (totalNotes === 0) {
+        errors.bundle = "Add at least one note to create a Notes Bundle.";
+      }
     }
     
     setFormErrors(errors);
@@ -143,41 +305,238 @@ export default function AdminStorePage() {
   const handleSave = async () => {
     if (!validateForm()) return;
     setIsProcessing(true);
+    setUploadProgress(10);
     
+    let createdNoteId: string | null = null;
+    let uploadedStoragePath: string | null = null;
+
     try {
-      const payload = {
+      const pType = formData.product_type || 'note';
+      let primaryItemRefId = formData.item_reference_id || null;
+      const allLinkedNoteIds = new Set<string>(selectedBundleNoteIds);
+
+      // --- 1. SINGLE STUDY NOTE PDF HANDLING ---
+      if (pType === 'note') {
+        if (uploadedPdf) {
+          setUploadProgress(35);
+          const cleanName = `${Date.now()}_${uploadedPdf.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+          const filePath = `notes/store_${cleanName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('notes')
+            .upload(filePath, uploadedPdf, {
+              contentType: 'application/pdf',
+              upsert: true
+            });
+
+          if (uploadError) {
+            throw new Error(`Unable to upload the note PDF. ${uploadError.message}`);
+          }
+
+          uploadedStoragePath = filePath;
+          setUploadProgress(65);
+
+          const formattedSize = `${(uploadedPdf.size / (1024 * 1024)).toFixed(1)} MB`;
+
+          // Create/update public.notes record
+          const notePayload = {
+            title: formData.title,
+            category: noteCategory,
+            description: formData.description || `Study Note for ${formData.title}`,
+            file_url: filePath,
+            file_size: formattedSize,
+            status: formData.status === 'inactive' ? 'Inactive' : 'Active',
+            minimum_plan: noteMinimumPlan,
+            access_type: noteMinimumPlan === 'free' ? 'Free' : 'Premium'
+          };
+
+          if (selectedProduct && attachedNoteForEdit && !isReplacingPdf) {
+            const { error: updateNoteErr } = await supabase
+              .from('notes')
+              .update(notePayload)
+              .eq('id', attachedNoteForEdit.id);
+            if (updateNoteErr) throw updateNoteErr;
+            createdNoteId = attachedNoteForEdit.id;
+          } else {
+            const { data: newNote, error: createNoteErr } = await supabase
+              .from('notes')
+              .insert(notePayload)
+              .select('id')
+              .single();
+
+            if (createNoteErr || !newNote) throw createNoteErr || new Error("Failed to create note record.");
+            createdNoteId = newNote.id;
+          }
+
+          primaryItemRefId = createdNoteId;
+          if (createdNoteId) {
+            allLinkedNoteIds.add(createdNoteId);
+          }
+        } else if (attachedNoteForEdit) {
+          primaryItemRefId = attachedNoteForEdit.id;
+          allLinkedNoteIds.add(attachedNoteForEdit.id);
+        }
+      }
+
+      // --- 2. NOTES BUNDLE MULTI-PDF UPLOAD HANDLING ---
+      if (pType === 'note_bundle' && bundleNewPdfFiles.length > 0) {
+        setUploadProgress(30);
+        for (let i = 0; i < bundleNewPdfFiles.length; i++) {
+          const file = bundleNewPdfFiles[i];
+          const cleanName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+          const filePath = `notes/store_bundle_${cleanName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('notes')
+            .upload(filePath, file, { contentType: 'application/pdf', upsert: true });
+
+          if (uploadError) throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`);
+
+          const formattedSize = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+          const cleanTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[_]/g, ' ');
+
+          const { data: newNote, error: createNoteErr } = await supabase
+            .from('notes')
+            .insert({
+              title: cleanTitle,
+              category: 'Technical Interview',
+              description: `Included in ${formData.title}`,
+              file_url: filePath,
+              file_size: formattedSize,
+              status: 'Active',
+              minimum_plan: 'pro',
+              access_type: 'Premium'
+            })
+            .select('id')
+            .single();
+
+          if (createNoteErr || !newNote) throw createNoteErr;
+          allLinkedNoteIds.add(newNote.id);
+        }
+        setUploadProgress(70);
+      }
+
+      // --- 3. SAVE STORE PRODUCT RECORD ---
+      const productPayload = {
         title: formData.title,
         description: formData.description || '',
         product_type: formData.product_type,
         price: Number(formData.price),
         original_price: formData.original_price ? Number(formData.original_price) : null,
+        item_reference_id: primaryItemRefId,
         status: formData.status || 'active',
         updated_at: new Date().toISOString()
       };
 
+      let finalProductId = selectedProduct?.id;
+
       if (selectedProduct) {
-        // Update
+        // Update product
         const { error } = await supabase
           .from('store_products')
-          .update(payload)
+          .update(productPayload)
           .eq('id', selectedProduct.id);
         if (error) throw error;
       } else {
-        // Insert
-        const { error } = await supabase
+        // Insert product
+        const { data: newProd, error } = await supabase
           .from('store_products')
-          .insert(payload);
-        if (error) throw error;
+          .insert(productPayload)
+          .select('id')
+          .single();
+        if (error || !newProd) throw error || new Error("Failed to insert store product.");
+        finalProductId = newProd.id;
       }
 
+      setUploadProgress(90);
+
+      // --- 4. LINK NOTES IN JUNCTION TABLE (store_product_notes) ---
+      if (finalProductId && allLinkedNoteIds.size > 0) {
+        try {
+          // Remove old relationships if updating
+          if (selectedProduct) {
+            await supabase
+              .from('store_product_notes')
+              .delete()
+              .eq('product_id', finalProductId);
+          }
+
+          const junctionRows = Array.from(allLinkedNoteIds).map(noteId => ({
+            product_id: finalProductId,
+            note_id: noteId
+          }));
+
+          await supabase
+            .from('store_product_notes')
+            .upsert(junctionRows, { onConflict: 'product_id,note_id' });
+        } catch (juncErr) {
+          console.warn("Could not insert junction rows into store_product_notes:", juncErr);
+        }
+      }
+
+      setUploadProgress(100);
       await fetchProducts();
+      await fetchAvailableNotes();
       setIsFormModalOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error saving store product:", err);
-      alert("Failed to save product.");
+      // Safe cleanup of orphan file if product failed
+      if (uploadedStoragePath && !selectedProduct) {
+        await supabase.storage.from('notes').remove([uploadedStoragePath]).catch(() => {});
+      }
+      alert(err.message || "Failed to save product. Please check your inputs.");
     } finally {
       setIsProcessing(false);
+      setUploadProgress(0);
     }
+  };
+
+  // ---------------- VIEW MODAL HANDLING ---------------- //
+  const openViewModal = async (p: StoreProduct) => {
+    setSelectedProduct(p);
+    setViewAttachedNotes([]);
+    setViewSignedUrls({});
+    setIsViewModalOpen(true);
+
+    const notesList: NoteOption[] = [];
+
+    // Check item_reference_id
+    if (p.item_reference_id) {
+      const match = availableNotes.find(n => n.id === p.item_reference_id);
+      if (match) notesList.push(match);
+    }
+
+    // Check store_product_notes
+    try {
+      const { data: junctionData } = await supabase
+        .from('store_product_notes')
+        .select('note_id, notes (*)')
+        .eq('product_id', p.id);
+
+      if (junctionData) {
+        junctionData.forEach((row: any) => {
+          if (row.notes && !notesList.some(n => n.id === row.notes.id)) {
+            notesList.push(row.notes);
+          }
+        });
+      }
+    } catch (err) {
+      console.warn("Could not load view notes:", err);
+    }
+
+    setViewAttachedNotes(notesList);
+
+    // Create signed URLs for previewing notes
+    const urls: Record<string, string> = {};
+    for (const n of notesList) {
+      if (n.file_url) {
+        const { data } = await supabase.storage.from('notes').createSignedUrl(n.file_url, 120);
+        if (data?.signedUrl) {
+          urls[n.id] = data.signedUrl;
+        }
+      }
+    }
+    setViewSignedUrls(urls);
   };
 
   // ---------------- ACTIONS ---------------- //
@@ -205,6 +564,7 @@ export default function AdminStorePage() {
     if (!selectedProduct) return;
     setIsProcessing(true);
     try {
+      // Delete product (cascades to store_product_notes, leaves public.notes intact)
       const { error } = await supabase
         .from('store_products')
         .delete()
@@ -220,6 +580,15 @@ export default function AdminStorePage() {
     }
   };
 
+  // Filtered notes in bundle selector modal
+  const filteredAvailableNotes = availableNotes.filter(n => {
+    const matchesSearch = bundleSearchTerm === '' || 
+      n.title.toLowerCase().includes(bundleSearchTerm.toLowerCase()) ||
+      n.category.toLowerCase().includes(bundleSearchTerm.toLowerCase());
+    const matchesCat = bundleCategoryFilter === 'all' || n.category === bundleCategoryFilter;
+    return matchesSearch && matchesCat;
+  });
+
   return (
     <AdminLayout>
       <div className="max-w-7xl mx-auto space-y-6 pb-12">
@@ -229,7 +598,7 @@ export default function AdminStorePage() {
           <div>
             <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Store Products</h1>
             <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 font-medium">
-              Create and manage digital products, question packs, note downloads, and study bundles.
+              Create and manage digital products, study note downloads, PDF bundles, and question packs.
             </p>
           </div>
           <Button size="sm" onClick={openAddForm} className="shrink-0 text-xs">
@@ -250,101 +619,119 @@ export default function AdminStorePage() {
             />
           </div>
 
-          <div className="w-full lg:w-auto grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            <select 
-              value={typeFilter} onChange={e => { setTypeFilter(e.target.value); setCurrentPage(1); }}
-              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
-            >
-              <option value="">All Types</option>
-              <option value="question_pack">Question Packs</option>
-              <option value="note">Study Notes</option>
-              <option value="note_bundle">Notes Bundles</option>
-              <option value="interview_bundle">Master Bundles</option>
-            </select>
-            
-            <select 
-              value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
-            >
-              <option value="">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+          <div className="flex flex-wrap sm:flex-nowrap gap-3 w-full lg:w-auto">
+            <div className="w-1/2 sm:w-44">
+              <select
+                value={typeFilter}
+                onChange={e => { setTypeFilter(e.target.value); setCurrentPage(1); }}
+                className="w-full border border-[var(--color-border)] bg-white rounded-[var(--radius-md)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] shadow-xs"
+              >
+                <option value="">All Types</option>
+                <option value="question_pack">Question Pack</option>
+                <option value="note">Study Note (PDF)</option>
+                <option value="note_bundle">Notes Bundle</option>
+                <option value="interview_bundle">Interview Master Bundle</option>
+              </select>
+            </div>
 
-            <Button variant="outline" size="sm" onClick={resetFilters} className="text-xs h-full justify-center">
-              <Filter className="w-3.5 h-3.5 mr-1" /> Reset
-            </Button>
+            <div className="w-1/2 sm:w-36">
+              <select
+                value={statusFilter}
+                onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+                className="w-full border border-[var(--color-border)] bg-white rounded-[var(--radius-md)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] shadow-xs"
+              >
+                <option value="">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+
+            {(searchQuery || typeFilter || statusFilter) && (
+              <Button variant="outline" size="sm" onClick={resetFilters} className="text-xs shrink-0">
+                Clear Filters
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* DATA TABLE CONTAINER */}
+        {/* PRODUCTS TABLE */}
         <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white shadow-[var(--shadow-xs)] overflow-hidden">
           {isFetching ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-[var(--color-brand-500)] border-t-transparent"></div>
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="p-8">
-              <EmptyState 
-                title="No store products found."
-                description="Create a new digital product or try relaxing your search filters."
-                action={<Button size="sm" onClick={openAddForm}>Add Product</Button>}
-              />
-            </div>
+            <EmptyState 
+              title="No store products found" 
+              description={searchQuery || typeFilter || statusFilter ? "No products matched your search or filters." : "Create your first store product to start selling learning content."}
+              action={
+                <Button size="sm" onClick={openAddForm}>
+                  <Plus className="w-4 h-4 mr-1.5" /> Add Store Product
+                </Button>
+              }
+            />
           ) : (
             <>
-              {/* Desktop Table */}
-              <div className="hidden lg:block overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-[var(--color-bg-subtle)] border-b border-[var(--color-border)] text-[11px] uppercase tracking-wider text-[var(--color-text-tertiary)] font-bold">
-                      <th className="px-5 py-3.5 w-2/5">Product Title</th>
-                      <th className="px-5 py-3.5">Type</th>
-                      <th className="px-5 py-3.5">Price</th>
-                      <th className="px-5 py-3.5">Status</th>
-                      <th className="px-5 py-3.5">Created</th>
-                      <th className="px-5 py-3.5 text-right">Actions</th>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] border-b border-[var(--color-border)] font-semibold">
+                    <tr>
+                      <th className="py-3 px-4">Product Title</th>
+                      <th className="py-3 px-4">Type</th>
+                      <th className="py-3 px-4">Price</th>
+                      <th className="py-3 px-4">Original Price</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[var(--color-border)] text-xs">
-                    {paginatedProducts.map(p => {
-                      const typeMeta = PRODUCT_TYPE_LABELS[p.product_type];
+                  <tbody className="divide-y divide-[var(--color-border)]">
+                    {paginatedProducts.map((p) => {
+                      const typeMeta = PRODUCT_TYPE_LABELS[p.product_type] || {
+                        label: p.product_type,
+                        color: 'bg-slate-50',
+                        textColor: 'text-slate-700',
+                        border: 'border-slate-200'
+                      };
 
                       return (
-                        <tr key={p.id} className="hover:bg-[var(--color-bg-subtle)]/70 transition-colors">
-                          <td className="px-5 py-3.5">
-                            <p className="font-bold text-[var(--color-text-primary)] leading-snug">{p.title}</p>
-                            <p className="text-[11px] text-[var(--color-text-tertiary)] truncate max-w-sm mt-0.5">{p.description}</p>
+                        <tr key={p.id} className="hover:bg-[var(--color-bg-subtle)] transition-colors">
+                          <td className="py-3 px-4 font-bold text-[var(--color-text-primary)] max-w-xs truncate">
+                            <div className="flex items-center gap-2">
+                              {p.product_type === 'note' && <FileText className="w-4 h-4 text-emerald-600 shrink-0" />}
+                              {p.product_type === 'note_bundle' && <Layers className="w-4 h-4 text-blue-600 shrink-0" />}
+                              {p.product_type === 'question_pack' && <BookOpen className="w-4 h-4 text-indigo-600 shrink-0" />}
+                              {p.product_type === 'interview_bundle' && <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />}
+                              <span className="truncate">{p.title}</span>
+                            </div>
                           </td>
-                          <td className="px-5 py-3.5">
-                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${typeMeta?.color} ${typeMeta?.textColor} ${typeMeta?.border}`}>
-                              {typeMeta?.label}
+                          <td className="py-3 px-4">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${typeMeta.color} ${typeMeta.textColor} ${typeMeta.border}`}>
+                              {typeMeta.label}
                             </span>
                           </td>
-                          <td className="px-5 py-3.5">
-                            <span className="font-extrabold text-[var(--color-text-primary)]">₹{p.price}</span>
-                            {p.original_price && p.original_price > p.price && (
-                              <span className="text-[10px] text-[var(--color-text-tertiary)] line-through ml-1.5 font-medium">₹{p.original_price}</span>
-                            )}
+                          <td className="py-3 px-4 font-extrabold text-[var(--color-text-primary)]">
+                            ₹{p.price}
                           </td>
-                          <td className="px-5 py-3.5">
-                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                              p.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'
+                          <td className="py-3 px-4 text-[var(--color-text-tertiary)]">
+                            {p.original_price ? `₹${p.original_price}` : '—'}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              p.status === 'active' 
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                                : 'bg-red-50 text-red-700 border border-red-200'
                             }`}>
-                              {p.status.toUpperCase()}
+                              {p.status === 'active' ? 'Active' : 'Inactive'}
                             </span>
                           </td>
-                          <td className="px-5 py-3.5 text-[11px] text-[var(--color-text-secondary)]">
-                            {new Date(p.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="px-5 py-3.5 text-right space-x-1 whitespace-nowrap">
-                            <button onClick={() => { setSelectedProduct(p); setIsViewModalOpen(true); }} className="p-1.5 text-[var(--color-brand-600)] hover:bg-[var(--color-brand-50)] rounded transition-colors" title="View">
+                          <td className="py-3 px-4 text-right space-x-1">
+                            <button onClick={() => openViewModal(p)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="View Overview & Content">
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button onClick={() => openEditForm(p)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Edit">
+                            <button onClick={() => openEditForm(p)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded transition-colors" title="Edit">
                               <Edit className="w-4 h-4" />
                             </button>
-                            <button onClick={() => { setSelectedProduct(p); setIsStatusModalOpen(true); }} className={`p-1.5 rounded transition-colors ${p.status === 'active' ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`} title={p.status === 'active' ? "Deactivate" : "Activate"}>
+                            <button onClick={() => { setSelectedProduct(p); setIsStatusModalOpen(true); }} className="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition-colors" title="Toggle Status">
                               <Power className="w-4 h-4" />
                             </button>
                             <button onClick={() => { setSelectedProduct(p); setIsDeleteModalOpen(true); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">
@@ -375,40 +762,292 @@ export default function AdminStorePage() {
       </div>
 
       {/* FORM MODAL (ADD / EDIT) */}
-      <Modal isOpen={isFormModalOpen} onClose={() => !isProcessing && setIsFormModalOpen(false)} title={selectedProduct ? "Edit Store Product" : "Add Store Product"} className="max-w-xl">
-        <div className="space-y-4 text-xs">
-          <div>
-            <label className="block font-bold text-[var(--color-text-primary)] mb-1">Product Title *</label>
-            <input type="text" name="title" value={formData.title || ''} onChange={handleFormChange} placeholder="e.g. Complete TCS NQT Technical Pack" className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white" />
-            {formErrors.title && <p className="text-red-500 mt-1">{formErrors.title}</p>}
+      <Modal 
+        isOpen={isFormModalOpen} 
+        onClose={() => !isProcessing && setIsFormModalOpen(false)} 
+        title={selectedProduct ? "Edit Store Product & Content" : "Add Store Product & Content"} 
+        className="max-w-2xl"
+      >
+        <div className="space-y-4 text-xs max-h-[80vh] overflow-y-auto pr-1">
+          
+          {/* 1. Basic Product Information */}
+          <div className="space-y-3">
+            <div>
+              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Product Title *</label>
+              <input 
+                type="text" 
+                name="title" 
+                value={formData.title || ''} 
+                onChange={handleFormChange} 
+                placeholder="e.g. Python Full Stack Interview Guide (PDF)" 
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white" 
+              />
+              {formErrors.title && <p className="text-red-500 mt-1">{formErrors.title}</p>}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block font-bold text-[var(--color-text-primary)] mb-1">Product Type *</label>
+                <select 
+                  name="product_type" 
+                  value={formData.product_type} 
+                  onChange={handleFormChange} 
+                  className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white font-medium"
+                >
+                  <option value="note">Study Note (PDF)</option>
+                  <option value="note_bundle">Notes Bundle</option>
+                  <option value="question_pack">Question Pack</option>
+                  <option value="interview_bundle">Interview Master Bundle</option>
+                </select>
+              </div>
+              <div>
+                <label className="block font-bold text-[var(--color-text-primary)] mb-1">Selling Price (₹) *</label>
+                <input 
+                  type="number" 
+                  name="price" 
+                  value={formData.price} 
+                  onChange={handleFormChange} 
+                  placeholder="29" 
+                  min="0" 
+                  step="1" 
+                  className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white" 
+                />
+                {formErrors.price && <p className="text-red-500 mt-1">{formErrors.price}</p>}
+              </div>
+              <div>
+                <label className="block font-bold text-[var(--color-text-primary)] mb-1">Original Price (₹)</label>
+                <input 
+                  type="number" 
+                  name="original_price" 
+                  value={formData.original_price || ''} 
+                  onChange={handleFormChange} 
+                  placeholder="49" 
+                  min="0" 
+                  step="1" 
+                  className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white" 
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Description *</label>
+              <textarea 
+                name="description" 
+                value={formData.description || ''} 
+                onChange={handleFormChange} 
+                rows={2} 
+                placeholder="Detailed summary of what the student gets upon purchasing this item..." 
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white" 
+              />
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Product Type *</label>
-              <select name="product_type" value={formData.product_type} onChange={handleFormChange} className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white">
-                <option value="question_pack">Question Pack</option>
-                <option value="note">Study Note (PDF)</option>
-                <option value="note_bundle">Notes Bundle</option>
-                <option value="interview_bundle">Interview Master Bundle</option>
-              </select>
-            </div>
-            <div>
-              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Selling Price (₹) *</label>
-              <input type="number" name="price" value={formData.price} onChange={handleFormChange} placeholder="29" min="0" step="1" className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white" />
-              {formErrors.price && <p className="text-red-500 mt-1">{formErrors.price}</p>}
-            </div>
-            <div>
-              <label className="block font-bold text-[var(--color-text-primary)] mb-1">Original Price (₹)</label>
-              <input type="number" name="original_price" value={formData.original_price || ''} onChange={handleFormChange} placeholder="49" min="0" step="1" className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white" />
-            </div>
-          </div>
+          {/* 2. DYNAMIC CONTENT ATTACHMENT SECTION */}
 
-          <div>
-            <label className="block font-bold text-[var(--color-text-primary)] mb-1">Description</label>
-            <textarea name="description" value={formData.description || ''} onChange={handleFormChange} rows={3} placeholder="Detailed description of what this pack or bundle contains..." className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white" />
-          </div>
+          {/* --- CASE A: STUDY NOTE (PDF) --- */}
+          {formData.product_type === 'note' && (
+            <div className="rounded-[var(--radius-lg)] border border-emerald-200 bg-emerald-50/30 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs">
+                  <FileText className="w-4 h-4 text-emerald-600" />
+                  <span>Study Note PDF Content *</span>
+                </div>
+                <span className="text-[10px] text-emerald-700 font-medium">Supported: PDF only (Max 50 MB)</span>
+              </div>
 
+              {/* If editing and has existing note attached */}
+              {selectedProduct && attachedNoteForEdit && !isReplacingPdf && (
+                <div className="bg-white border border-emerald-200 rounded-[var(--radius-md)] p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-[var(--color-text-primary)]">{attachedNoteForEdit.title}</p>
+                      <p className="text-[10px] text-[var(--color-text-tertiary)]">Category: {attachedNoteForEdit.category} • Size: {attachedNoteForEdit.file_size || 'PDF'}</p>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setIsReplacingPdf(true)} className="text-xs">
+                    Replace PDF
+                  </Button>
+                </div>
+              )}
+
+              {/* Upload Dropzone */}
+              {(!selectedProduct || !attachedNoteForEdit || isReplacingPdf) && (
+                <div>
+                  {!uploadedPdf ? (
+                    <label className="flex flex-col items-center justify-center p-5 border-2 border-dashed border-emerald-300 rounded-[var(--radius-lg)] bg-white hover:bg-emerald-50/50 cursor-pointer transition-colors text-center">
+                      <Upload className="w-6 h-6 text-emerald-600 mb-1.5" />
+                      <span className="font-bold text-emerald-950">Click to choose PDF or drag & drop</span>
+                      <span className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">Maximum size: 50 MB • PDF Document</span>
+                      <input 
+                        type="file" 
+                        accept="application/pdf" 
+                        className="hidden" 
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            handlePdfSelected(e.target.files[0]);
+                          }
+                        }} 
+                      />
+                    </label>
+                  ) : (
+                    <div className="bg-white border border-emerald-300 rounded-[var(--radius-md)] p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
+                          <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-[var(--color-text-primary)]">{uploadedPdf.name}</p>
+                          <p className="text-[10px] text-[var(--color-text-tertiary)]">{(uploadedPdf.size / (1024 * 1024)).toFixed(2)} MB</p>
+                        </div>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => setUploadedPdf(null)} 
+                        className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                        title="Remove file"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+
+                  {isReplacingPdf && (
+                    <button 
+                      type="button" 
+                      onClick={() => { setIsReplacingPdf(false); setUploadedPdf(null); }} 
+                      className="text-[11px] text-emerald-700 underline mt-1.5 block text-right"
+                    >
+                      Keep existing attached PDF
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {formErrors.pdf && <p className="text-red-500 text-xs font-semibold">{formErrors.pdf}</p>}
+
+              {/* Note Metadata Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div>
+                  <label className="block font-bold text-[var(--color-text-primary)] mb-1">Note Category *</label>
+                  <select 
+                    value={noteCategory} 
+                    onChange={e => setNoteCategory(e.target.value)} 
+                    className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-1.5 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white"
+                  >
+                    {NOTE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-[var(--color-text-primary)] mb-1">Subscription Tier Default</label>
+                  <select 
+                    value={noteMinimumPlan} 
+                    onChange={e => setNoteMinimumPlan(e.target.value)} 
+                    className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-1.5 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white"
+                  >
+                    <option value="free">Free Access</option>
+                    <option value="starter">Starter Plan</option>
+                    <option value="pro">Pro Plan</option>
+                    <option value="premium">Premium Plan</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* --- CASE B: NOTES BUNDLE --- */}
+          {formData.product_type === 'note_bundle' && (
+            <div className="rounded-[var(--radius-lg)] border border-blue-200 bg-blue-50/30 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-blue-950 font-bold text-xs">
+                  <Layers className="w-4 h-4 text-blue-600" />
+                  <span>Bundle Notes Selection & Upload *</span>
+                </div>
+                <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  {selectedBundleNoteIds.size + bundleNewPdfFiles.length} Notes Included
+                </span>
+              </div>
+
+              {formErrors.bundle && <p className="text-red-500 text-xs font-semibold">{formErrors.bundle}</p>}
+
+              {/* 1. Select Existing Notes from Library */}
+              <div className="bg-white border border-blue-200 rounded-[var(--radius-md)] p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-[var(--color-text-primary)]">Select from Existing Notes ({availableNotes.length} available)</span>
+                  <input 
+                    type="text" 
+                    placeholder="Search notes..." 
+                    value={bundleSearchTerm} 
+                    onChange={e => setBundleSearchTerm(e.target.value)} 
+                    className="px-2 py-1 border border-[var(--color-border)] rounded text-[11px] w-36 outline-none" 
+                  />
+                </div>
+
+                <div className="max-h-40 overflow-y-auto space-y-1 divide-y divide-[var(--color-border)] pr-1">
+                  {filteredAvailableNotes.length === 0 ? (
+                    <p className="text-[11px] text-[var(--color-text-tertiary)] py-2 text-center">No notes found matching your search.</p>
+                  ) : (
+                    filteredAvailableNotes.map(n => {
+                      const isSelected = selectedBundleNoteIds.has(n.id);
+                      return (
+                        <label 
+                          key={n.id} 
+                          className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
+                            isSelected ? 'bg-blue-50/80 font-semibold' : 'hover:bg-[var(--color-bg-subtle)]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="checkbox" 
+                              checked={isSelected} 
+                              onChange={() => toggleBundleNoteSelection(n.id)} 
+                              className="h-3.5 w-3.5 rounded border-[var(--color-border)] text-blue-600 focus:ring-blue-500" 
+                            />
+                            <span className="text-xs text-[var(--color-text-primary)]">{n.title}</span>
+                          </div>
+                          <span className="text-[10px] text-[var(--color-text-tertiary)]">{n.category}</span>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* 2. Upload Additional PDFs to Bundle */}
+              <div className="bg-white border border-blue-200 rounded-[var(--radius-md)] p-3 space-y-2">
+                <span className="font-bold text-[var(--color-text-primary)] block">Or Upload New Note PDFs to Bundle</span>
+                <label className="flex items-center justify-center p-3 border border-dashed border-blue-300 rounded bg-blue-50/20 hover:bg-blue-50/50 cursor-pointer text-center">
+                  <Upload className="w-4 h-4 text-blue-600 mr-2" />
+                  <span className="font-semibold text-blue-900 text-xs">Choose PDF files to add to bundle</span>
+                  <input 
+                    type="file" 
+                    accept="application/pdf" 
+                    multiple 
+                    className="hidden" 
+                    onChange={e => handleBundlePdfsSelected(e.target.files)} 
+                  />
+                </label>
+
+                {bundleNewPdfFiles.length > 0 && (
+                  <div className="space-y-1 pt-1">
+                    {bundleNewPdfFiles.map((file, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-blue-50/40 px-2 py-1 rounded text-[11px]">
+                        <span className="truncate font-medium text-blue-950">{file.name} ({(file.size / (1024 * 1024)).toFixed(1)} MB)</span>
+                        <button type="button" onClick={() => removeBundlePdf(idx)} className="text-red-500 hover:text-red-700 ml-2">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+            </div>
+          )}
+
+          {/* 3. Publishing Status */}
           <div>
             <label className="block font-bold text-[var(--color-text-primary)] mb-1">Publishing Status</label>
             <div className="flex gap-4">
@@ -418,22 +1057,65 @@ export default function AdminStorePage() {
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="radio" name="status" value="inactive" checked={formData.status === 'inactive'} onChange={handleFormChange} />
-                <span>Inactive (Hidden)</span>
+                <span>Inactive (Hidden from Students)</span>
               </label>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2.5 pt-4 border-t border-[var(--color-border)]">
+          {/* 4. Upload Progress Bar */}
+          {isProcessing && uploadProgress > 0 && (
+            <div className="space-y-1.5 pt-2">
+              <div className="flex justify-between text-[11px] font-bold text-emerald-800">
+                <span>Uploading & Securing Content...</span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-emerald-500 transition-all duration-300 rounded-full" 
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* 5. Live Admin Preview Box */}
+          <div className="border border-[var(--color-border)] rounded-[var(--radius-lg)] p-3 bg-[var(--color-bg-subtle)] space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-tertiary)] block">
+              Store Card Preview
+            </span>
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-xs text-[var(--color-text-primary)] truncate">
+                {formData.title || 'Untitled Product'}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-extrabold text-xs text-emerald-700">₹{formData.price || 0}</span>
+                {formData.original_price && <span className="line-through text-[10px] text-[var(--color-text-tertiary)]">₹{formData.original_price}</span>}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-[10px] text-[var(--color-text-secondary)]">
+              <span className="capitalize">{formData.product_type?.replace('_', ' ')}</span>
+              <span>•</span>
+              <span>Status: <strong className="capitalize">{formData.status}</strong></span>
+              {formData.product_type === 'note' && uploadedPdf && (
+                <>
+                  <span>•</span>
+                  <span className="text-emerald-700 font-semibold">{uploadedPdf.name}</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2.5 pt-3 border-t border-[var(--color-border)]">
             <Button variant="outline" size="sm" onClick={() => setIsFormModalOpen(false)} disabled={isProcessing}>Cancel</Button>
             <Button variant="primary" size="sm" onClick={handleSave} disabled={isProcessing}>
-              {isProcessing ? 'Saving...' : 'Save Product'}
+              {isProcessing ? 'Saving Content...' : selectedProduct ? 'Update Product' : 'Save Product'}
             </Button>
           </div>
         </div>
       </Modal>
 
-      {/* VIEW MODAL */}
-      <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Product Overview" className="max-w-md">
+      {/* VIEW MODAL WITH CONTENT PREVIEW */}
+      <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Product & Content Overview" className="max-w-lg">
         {selectedProduct && (
           <div className="space-y-4 text-xs">
             <div className="flex items-start justify-between pb-3 border-b border-[var(--color-border)]">
@@ -447,6 +1129,41 @@ export default function AdminStorePage() {
             <div>
               <h4 className="font-bold text-[var(--color-text-primary)] mb-1">Description</h4>
               <p className="text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed">{selectedProduct.description}</p>
+            </div>
+
+            {/* Attached Notes List */}
+            <div>
+              <h4 className="font-bold text-[var(--color-text-primary)] mb-1.5 flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                Attached Learning Resources ({viewAttachedNotes.length})
+              </h4>
+
+              {viewAttachedNotes.length === 0 ? (
+                <p className="text-[11px] text-[var(--color-text-tertiary)] italic">No note files linked to this product.</p>
+              ) : (
+                <div className="space-y-2">
+                  {viewAttachedNotes.map((note) => (
+                    <div key={note.id} className="flex items-center justify-between p-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)]">
+                      <div>
+                        <p className="font-bold text-[var(--color-text-primary)]">{note.title}</p>
+                        <p className="text-[10px] text-[var(--color-text-tertiary)]">{note.category} • {note.file_size || 'PDF'}</p>
+                      </div>
+                      {viewSignedUrls[note.id] ? (
+                        <a 
+                          href={viewSignedUrls[note.id]} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold hover:bg-emerald-100 transition-colors"
+                        >
+                          View PDF <ExternalLink className="w-3 h-3" />
+                        </a>
+                      ) : (
+                        <span className="text-[10px] text-[var(--color-text-tertiary)]">Attached</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end pt-3 border-t border-[var(--color-border)]">
@@ -486,9 +1203,10 @@ export default function AdminStorePage() {
             <div className="flex items-start gap-3 bg-red-50 text-red-900 p-4 rounded-[var(--radius-lg)] border border-red-200">
               <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold text-red-950">Warning: This action cannot be undone.</p>
+                <p className="font-bold text-red-950">Warning: This action will remove this listing from the digital store.</p>
                 <p className="mt-1 leading-relaxed text-red-900">
                   Are you sure you want to delete <strong>"{selectedProduct.title}"</strong>?
+                  Attached study notes will remain safely in the notes library for students with existing access.
                 </p>
               </div>
             </div>

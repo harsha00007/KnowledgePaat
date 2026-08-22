@@ -111,6 +111,7 @@ export default function StudentDashboard() {
       const { data: jobsData } = await supabase
         .from('jobs')
         .select('*')
+        .eq('status', 'Active')
         .order('posted_at', { ascending: false })
         .limit(4);
         

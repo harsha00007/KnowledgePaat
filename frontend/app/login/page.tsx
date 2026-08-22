@@ -1,23 +1,41 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { AlertCircle, GraduationCap } from 'lucide-react';
+import { AlertCircle, GraduationCap, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const supabase = createClient();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+        const role = profile?.role || 'student';
+        router.replace(role === 'admin' ? '/admin/dashboard' : '/student/dashboard');
+      }
+    };
+    checkSession();
+  }, [router, supabase]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +43,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim().toLowerCase(),
       password,
     });
 
@@ -40,7 +58,7 @@ export default function LoginPage() {
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
-        .single();
+        .maybeSingle();
         
       if (profileError) {
         console.error("Profile fetch error:", profileError);
@@ -97,12 +115,22 @@ export default function LoginPage() {
               <div>
                 <Input 
                   label="Password" 
-                  type="password" 
+                  type={showPassword ? "text" : "password"} 
                   placeholder="••••••••" 
                   autoComplete="current-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  rightElement={
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="p-1 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] focus:outline-none"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  }
                 />
               </div>
 
@@ -110,6 +138,8 @@ export default function LoginPage() {
                 <label className="flex items-center text-xs text-[var(--color-text-secondary)] cursor-pointer">
                   <input
                     type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
                     className="h-3.5 w-3.5 rounded border-[var(--color-border)] text-[var(--color-brand-500)] focus:ring-[var(--color-brand-500)]"
                   />
                   <span className="ml-2">Remember me</span>

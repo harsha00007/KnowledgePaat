@@ -18,6 +18,13 @@ export interface StoreProduct {
   status: 'active' | 'inactive';
   created_at: string;
   updated_at: string;
+  attached_notes?: {
+    id: string;
+    title: string;
+    category?: string;
+    file_size?: string;
+    file_url?: string;
+  }[];
 }
 
 export interface CartItem {
@@ -136,6 +143,52 @@ export async function getStudentPurchasedProductIds(supabase: SupabaseClient, st
     return new Set((data || []).map((p: any) => p.product_id));
   } catch (err) {
     console.error('Failed to get student purchases:', err);
+    return new Set();
+  }
+}
+
+/**
+ * Fetch all specific Note IDs unlocked via direct note purchase or note bundles
+ */
+export async function getStudentPurchasedNoteIds(supabase: SupabaseClient, studentId: string): Promise<Set<string>> {
+  try {
+    const purchasedProductIds = await getStudentPurchasedProductIds(supabase, studentId);
+    if (purchasedProductIds.size === 0) return new Set();
+
+    const productIdsArray = Array.from(purchasedProductIds);
+    const unlockedNoteIds = new Set<string>();
+
+    // 1. Direct item_reference_id from store_products
+    const { data: productsData } = await supabase
+      .from('store_products')
+      .select('id, item_reference_id')
+      .in('id', productIdsArray);
+
+    if (productsData) {
+      productsData.forEach((p: any) => {
+        if (p.item_reference_id) unlockedNoteIds.add(p.item_reference_id);
+      });
+    }
+
+    // 2. Multi-note bundle relationships from store_product_notes
+    try {
+      const { data: bundleNotes } = await supabase
+        .from('store_product_notes')
+        .select('note_id')
+        .in('product_id', productIdsArray);
+
+      if (bundleNotes) {
+        bundleNotes.forEach((bn: any) => {
+          if (bn.note_id) unlockedNoteIds.add(bn.note_id);
+        });
+      }
+    } catch {
+      // Table may be optional or gracefully fall back
+    }
+
+    return unlockedNoteIds;
+  } catch (err) {
+    console.error('Failed to get student purchased note IDs:', err);
     return new Set();
   }
 }

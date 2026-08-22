@@ -27,6 +27,7 @@ import {
 import { createClient } from '@/utils/supabase/client';
 import { calculateUserAccess, isContentAccessible, UserAccess } from '@/lib/subscription';
 import { PLANS, normalizePlanId, PlanId } from '@/config/plans';
+import { getStudentPurchasedNoteIds } from '@/lib/store';
 
 type Note = {
   id: string;
@@ -58,6 +59,7 @@ export default function NotesPage() {
   
   // Search & Filters
   const [ownedProductIds, setOwnedProductIds] = useState<Set<string>>(new Set());
+  const [ownedNoteIds, setOwnedNoteIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [planFilter, setPlanFilter] = useState('');
@@ -105,12 +107,16 @@ export default function NotesPage() {
         if (purchasesData) {
           setOwnedProductIds(new Set(purchasesData.map(p => p.product_id)));
         }
+
+        const noteIds = await getStudentPurchasedNoteIds(supabase, user.id);
+        setOwnedNoteIds(noteIds);
       }
 
       // Fetch active Notes
       const { data: notesData, error: notesError } = await supabase
         .from('notes')
         .select('*')
+        .eq('status', 'Active')
         .order('created_at', { ascending: false });
 
       if (notesError) throw notesError;
@@ -138,9 +144,10 @@ export default function NotesPage() {
 
   const checkNoteAccess = (note: Note) => {
     const reqPlan = note.minimum_plan || note.access_type || 'free';
-    // Subscription access OR owned bundles/packs
+    // Subscription access OR specific purchased note / note bundle OR owned product
     if (userAccess.hasAccess(reqPlan)) return true;
-    if (ownedProductIds.size > 0) return true; // Digital notes bundle unlocks all notes
+    if (ownedNoteIds.has(note.id)) return true;
+    if (ownedProductIds.size > 0) return true;
     return false;
   };
 

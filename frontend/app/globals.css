@@ -110,6 +110,15 @@
 
 /* ── BASE & DYNAMIC THEME SYSTEM ─────────────────────────────────────────── */
 :root {
+  --background:      #ffffff;
+  --foreground:      #0f172a;
+  --text-primary:    #0f172a;
+  --text-secondary:  #475569;
+  --text-muted:      #64748b;
+  --text-tertiary:   #94a3b8;
+  --card:            #ffffff;
+  --card-foreground: #0f172a;
+
   --color-bg:        #ffffff;
   --color-bg-subtle: #f8fafc;
   --color-bg-muted:  #f1f5f9;
@@ -129,6 +138,15 @@
 
 /* ── DARK THEME TOKEN OVERRIDES (Active ONLY when .dark is present) ──────── */
 .dark {
+  --background:      #0b0f19;
+  --foreground:      #f8fafc;
+  --text-primary:    #f8fafc;
+  --text-secondary:  #94a3b8;
+  --text-muted:      #94a3b8;
+  --text-tertiary:   #64748b;
+  --card:            #131c2e;
+  --card-foreground: #f8fafc;
+
   --color-bg:        #0b0f19;       /* Deep rich dark background */
   --color-bg-subtle: #0f172a;       /* Slate-900 for sections / app wrapper */
   --color-bg-muted:  #1e293b;       /* Slate-800 for tags, pill backgrounds */
