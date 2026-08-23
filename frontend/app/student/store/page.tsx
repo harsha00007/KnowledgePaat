@@ -105,9 +105,9 @@ export default function StudentStorePage() {
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">GradZenX Store</h1>
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)] font-display">KnowledgePaat Store</h1>
             <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 font-medium">
-              Unlock exactly what you need for your career preparation without recurring subscriptions.
+              Unlock curated study materials and interview bundles directly without recurring fees.
             </p>
           </div>
 

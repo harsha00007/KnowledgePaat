@@ -21,6 +21,7 @@ import { StudentPurchase, PRODUCT_TYPE_LABELS } from '@/lib/store';
 
 export default function StudentPurchasesPage() {
   const [purchases, setPurchases] = useState<StudentPurchase[]>([]);
+  const [productNotesMap, setProductNotesMap] = useState<Map<string, string[]>>(new Map());
   const [isFetching, setIsFetching] = useState(true);
 
   const supabase = createClient();
@@ -45,13 +46,39 @@ export default function StudentPurchasesPage() {
 
       if (error) throw error;
       
-      const sorted = (data || []).sort((a: any, b: any) => {
+      const loadedPurchases = (data || []) as StudentPurchase[];
+      const productIds = loadedPurchases.map((p: any) => p.product_id).filter(Boolean);
+
+      // Fetch any attached notes relationships in store_product_notes
+      const notesMap = new Map<string, string[]>();
+      if (productIds.length > 0) {
+        try {
+          const { data: bundleData } = await supabase
+            .from('store_product_notes')
+            .select('product_id, note_id')
+            .in('product_id', productIds);
+          
+          if (bundleData) {
+            bundleData.forEach((bn: any) => {
+              const existing = notesMap.get(bn.product_id) || [];
+              existing.push(bn.note_id);
+              notesMap.set(bn.product_id, existing);
+            });
+          }
+        } catch {
+          // Table may not have records or be optional
+        }
+      }
+
+      setProductNotesMap(notesMap);
+
+      const sorted = loadedPurchases.sort((a: any, b: any) => {
         const dateA = new Date(a.purchased_at || a.unlocked_at || a.created_at || 0).getTime();
         const dateB = new Date(b.purchased_at || b.unlocked_at || b.created_at || 0).getTime();
         return dateB - dateA;
       });
 
-      setPurchases(sorted as StudentPurchase[]);
+      setPurchases(sorted);
     } catch (err) {
       console.error("Error fetching student purchases:", err);
     } finally {
@@ -101,8 +128,19 @@ export default function StudentPurchasesPage() {
               const product = item.product;
               if (!product) return null;
               const typeMeta = PRODUCT_TYPE_LABELS[product.product_type];
-              const isNote = product.product_type === 'note' || product.product_type === 'note_bundle';
-              const targetRoute = isNote ? '/student/notes' : '/student/interview-preparation';
+              const attachedNoteIds = productNotesMap.get(product.id) || [];
+              
+              // Determine optimal target route for purchased study materials
+              let targetRoute = '/student/notes';
+              if (product.item_reference_id) {
+                targetRoute = `/student/notes?noteId=${encodeURIComponent(product.item_reference_id)}`;
+              } else if (attachedNoteIds.length === 1) {
+                targetRoute = `/student/notes?noteId=${encodeURIComponent(attachedNoteIds[0])}`;
+              } else if (attachedNoteIds.length > 1 || product.product_type === 'note_bundle' || product.product_type === 'interview_bundle') {
+                targetRoute = `/student/notes?bundleId=${encodeURIComponent(product.id)}`;
+              } else {
+                targetRoute = `/student/notes?noteId=${encodeURIComponent(product.id)}`;
+              }
 
               return (
                 <div 

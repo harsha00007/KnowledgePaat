@@ -450,7 +450,7 @@ export function generateImprovementTasks(
         relatedSkill: 'Interview Readiness',
         reason: 'Measure your difficulty adaptation and receive updated AI feedback.',
         resourceUrl: '/student/mock-interview',
-        resourceTitle: 'GradZenX Adaptive Mock Interview',
+        resourceTitle: 'KnowledgePaat Adaptive Mock Interview',
         status: 'pending'
       });
       tasks.push({

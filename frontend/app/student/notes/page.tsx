@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { StudentLayout } from '@/layouts/StudentLayout';
-import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
 import { EmptyState } from '@/components/EmptyState';
@@ -22,7 +22,10 @@ import {
   BookOpen,
   Calendar,
   Lock,
-  Sparkles
+  Sparkles,
+  CheckCircle2,
+  Layers,
+  X
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { calculateUserAccess, isContentAccessible, UserAccess } from '@/lib/subscription';
@@ -52,6 +55,24 @@ const CATEGORIES = [
 ];
 
 export default function NotesPage() {
+  return (
+    <Suspense fallback={
+      <StudentLayout>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-[var(--color-brand-500)] border-t-transparent" />
+        </div>
+      </StudentLayout>
+    }>
+      <NotesContent />
+    </Suspense>
+  );
+}
+
+function NotesContent() {
+  const searchParams = useSearchParams();
+  const noteIdParam = searchParams.get('noteId');
+  const bundleIdParam = searchParams.get('bundleId') || searchParams.get('productId');
+
   const [notes, setNotes] = useState<Note[]>([]);
   const [savedNoteIds, setSavedNoteIds] = useState<Set<string>>(new Set());
   const [userAccess, setUserAccess] = useState<UserAccess>(calculateUserAccess(null));
@@ -63,6 +84,8 @@ export default function NotesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [planFilter, setPlanFilter] = useState('');
+  const [bundleFilter, setBundleFilter] = useState<{ id: string; title: string; noteIds: Set<string> } | null>(null);
+  const [highlightedNoteId, setHighlightedNoteId] = useState<string | null>(null);
 
   // Selected Note for Modal
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -80,12 +103,16 @@ export default function NotesPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [noteIdParam, bundleIdParam]);
 
   const fetchData = async () => {
     setIsFetching(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      let currentOwnedNoteIds = new Set<string>();
+      let currentOwnedProductIds = new Set<string>();
+      
+      let purchasedProductsList: any[] = [];
       
       // Fetch user subscription and purchased products for access control
       if (user) {
@@ -101,15 +128,19 @@ export default function NotesPage() {
 
         const { data: purchasesData } = await supabase
           .from('student_purchases')
-          .select('product_id')
+          .select('product_id, product:product_id (*)')
           .eq('student_id', user.id);
 
         if (purchasesData) {
-          setOwnedProductIds(new Set(purchasesData.map(p => p.product_id)));
+          currentOwnedProductIds = new Set(purchasesData.map(p => p.product_id).filter(Boolean));
+          setOwnedProductIds(currentOwnedProductIds);
+          purchasedProductsList = purchasesData.map(p => p.product).filter(Boolean);
         }
 
-        const noteIds = await getStudentPurchasedNoteIds(supabase, user.id);
-        setOwnedNoteIds(noteIds);
+        currentOwnedNoteIds = await getStudentPurchasedNoteIds(supabase, user.id);
+        // Also add direct purchased product IDs to owned note IDs
+        currentOwnedProductIds.forEach(pid => currentOwnedNoteIds.add(pid));
+        setOwnedNoteIds(currentOwnedNoteIds);
       }
 
       // Fetch active Notes
@@ -120,7 +151,105 @@ export default function NotesPage() {
         .order('created_at', { ascending: false });
 
       if (notesError) throw notesError;
-      if (notesData) setNotes(notesData as Note[]);
+      const loadedNotes = (notesData || []) as Note[];
+
+      // Guarantee that all purchased products appear in the Notes Library
+      if (purchasedProductsList.length > 0) {
+        for (const prod of purchasedProductsList) {
+          const alreadyPresent = loadedNotes.some(n => 
+            n.id === prod.id || 
+            n.id === prod.item_reference_id ||
+            n.title.toLowerCase().trim() === prod.title.toLowerCase().trim()
+          );
+
+          if (!alreadyPresent) {
+            const synthesizedNote: Note = {
+              id: prod.id,
+              title: prod.title,
+              category: prod.category || 'Technical Interview',
+              technology: prod.technology || null,
+              description: prod.description || 'Purchased Study Guide & Revision Material.',
+              file_url: prod.thumbnail_url || prod.item_reference_id || '',
+              file_size: prod.file_size || 'PDF • Available',
+              tags: ['Purchased', 'Store'],
+              updated_at: prod.updated_at || prod.created_at || new Date().toISOString(),
+              minimum_plan: 'free',
+              access_type: 'free',
+            };
+            loadedNotes.unshift(synthesizedNote);
+            currentOwnedNoteIds.add(prod.id);
+          }
+        }
+      }
+
+      setNotes(loadedNotes);
+
+      // Handle direct noteId query parameter navigation from Purchases
+      if (noteIdParam && loadedNotes.length > 0) {
+        let targetNote = loadedNotes.find(n => n.id === noteIdParam);
+
+        if (!targetNote) {
+          // Check if noteIdParam is a store_product id with an item_reference_id or attached note
+          const { data: prod } = await supabase
+            .from('store_products')
+            .select('id, title, item_reference_id')
+            .eq('id', noteIdParam)
+            .maybeSingle();
+
+          if (prod?.item_reference_id) {
+            targetNote = loadedNotes.find(n => n.id === prod.item_reference_id);
+          }
+
+          if (!targetNote) {
+            const { data: bn } = await supabase
+              .from('store_product_notes')
+              .select('note_id')
+              .eq('product_id', noteIdParam)
+              .maybeSingle();
+
+            if (bn?.note_id) {
+              targetNote = loadedNotes.find(n => n.id === bn.note_id);
+            }
+          }
+
+          if (!targetNote && prod?.title) {
+            targetNote = loadedNotes.find(n => 
+              n.title.toLowerCase().trim() === prod.title.toLowerCase().trim() ||
+              n.title.toLowerCase().includes(prod.title.toLowerCase()) ||
+              prod.title.toLowerCase().includes(n.title.toLowerCase())
+            );
+          }
+        }
+
+        if (targetNote) {
+          setSelectedNote(targetNote);
+          setIsModalOpen(true);
+          setHighlightedNoteId(targetNote.id);
+        }
+      }
+
+      // Handle bundleId query parameter navigation from Purchases
+      if (bundleIdParam) {
+        const { data: prodData } = await supabase
+          .from('store_products')
+          .select('title')
+          .eq('id', bundleIdParam)
+          .maybeSingle();
+
+        const { data: bundleNotes } = await supabase
+          .from('store_product_notes')
+          .select('note_id')
+          .eq('product_id', bundleIdParam);
+
+        if (bundleNotes && bundleNotes.length > 0) {
+          const bundleNoteIds = new Set(bundleNotes.map((bn: any) => bn.note_id));
+          setBundleFilter({
+            id: bundleIdParam,
+            title: prodData?.title || 'Purchased Bundle',
+            noteIds: bundleNoteIds,
+          });
+        }
+      }
 
       // Fetch Saved Notes
       if (user) {
@@ -147,6 +276,7 @@ export default function NotesPage() {
     // Subscription access OR specific purchased note / note bundle OR owned product
     if (userAccess.hasAccess(reqPlan)) return true;
     if (ownedNoteIds.has(note.id)) return true;
+    if (ownedProductIds.has(note.id)) return true;
     if (ownedProductIds.size > 0) return true;
     return false;
   };
@@ -205,11 +335,25 @@ export default function NotesPage() {
     }
 
     try {
+      if (!note.file_url) {
+        window.print();
+        return;
+      }
+
+      if (note.file_url.startsWith('http://') || note.file_url.startsWith('https://')) {
+        window.open(note.file_url, '_blank');
+        return;
+      }
+
       const { data, error } = await supabase.storage
         .from('notes')
         .createSignedUrl(note.file_url, 60);
 
-      if (error) throw error;
+      if (error) {
+        console.warn("Could not create signed URL, opening document print:", error);
+        window.print();
+        return;
+      }
       
       if (data?.signedUrl) {
         const a = document.createElement('a');
@@ -228,6 +372,11 @@ export default function NotesPage() {
 
   // Filtering
   const filteredNotes = notes.filter(note => {
+    // If viewing a specific purchased bundle
+    if (bundleFilter && !bundleFilter.noteIds.has(note.id)) {
+      return false;
+    }
+
     const query = searchQuery.toLowerCase();
     const matchesSearch = query === '' || 
       note.title.toLowerCase().includes(query) || 
@@ -246,6 +395,7 @@ export default function NotesPage() {
     setSearchQuery('');
     setCategoryFilter('');
     setPlanFilter('');
+    setBundleFilter(null);
   };
 
   const userPlanConfig = PLANS[userAccess.effectivePlan];
@@ -275,6 +425,27 @@ export default function NotesPage() {
         {actionError && (
           <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-[var(--radius-md)] text-xs font-semibold">
             {actionError}
+          </div>
+        )}
+
+        {/* BUNDLE ACTIVE BANNER */}
+        {bundleFilter && (
+          <div className="p-4 rounded-[var(--radius-xl)] bg-blue-50 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-lg bg-[#2563EB] text-white flex items-center justify-center font-bold text-sm shrink-0">
+                <Layers className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-100 px-2 py-0.5 rounded">Purchased Bundle</span>
+                  <h3 className="text-sm font-bold text-[#0B1D3A]">{bundleFilter.title}</h3>
+                </div>
+                <p className="text-xs text-slate-600">Showing all {bundleFilter.noteIds.size} study guides included in your purchased bundle.</p>
+              </div>
+            </div>
+            <Button variant="secondary" size="sm" onClick={() => setBundleFilter(null)} className="text-xs shrink-0">
+              <X className="w-3.5 h-3.5 mr-1" /> View All Notes
+            </Button>
           </div>
         )}
 
@@ -368,7 +539,9 @@ export default function NotesPage() {
             {filteredNotes.map((note) => {
               const isSaved = savedNoteIds.has(note.id);
               const reqPlan = note.minimum_plan || note.access_type || 'free';
-              const isUnlocked = isContentAccessible(reqPlan, userAccess);
+              const isUnlocked = checkNoteAccess(note);
+              const isPurchased = ownedNoteIds.has(note.id);
+              const isHighlighted = highlightedNoteId === note.id;
               const planMeta = PLANS[normalizePlanId(reqPlan)];
 
               return (
@@ -376,7 +549,9 @@ export default function NotesPage() {
                   key={note.id}
                   onClick={() => handleOpenNote(note)}
                   className={`rounded-[var(--radius-xl)] border p-5 transition-all cursor-pointer flex flex-col justify-between group ${
-                    !isUnlocked 
+                    isHighlighted
+                      ? 'ring-2 ring-[#2563EB] border-[#2563EB] bg-blue-50/20 shadow-md'
+                      : !isUnlocked 
                       ? 'bg-slate-50/70 border-[var(--color-border)] hover:border-[var(--color-brand-300)]' 
                       : 'bg-white border-[var(--color-border)] hover:border-[var(--color-brand-400)] hover:shadow-[var(--shadow-sm)]'
                   }`}
@@ -397,7 +572,13 @@ export default function NotesPage() {
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <PremiumBadge minimumPlan={reqPlan} />
+                        {isPurchased ? (
+                          <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Purchased
+                          </span>
+                        ) : (
+                          <PremiumBadge minimumPlan={reqPlan} />
+                        )}
                         <button 
                           onClick={(e) => handleToggleSave(note.id, e)}
                           className="p-1.5 rounded-full hover:bg-[var(--color-bg-muted)] text-[var(--color-text-tertiary)] hover:text-[var(--color-brand-600)] transition-colors"
@@ -465,7 +646,13 @@ export default function NotesPage() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-brand-600)] bg-[var(--color-brand-50)] px-2 py-0.2 rounded border border-[var(--color-brand-200)]">{selectedNote.category}</span>
-                  <PremiumBadge minimumPlan={selectedNote.minimum_plan || selectedNote.access_type} />
+                  {ownedNoteIds.has(selectedNote.id) ? (
+                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Purchased
+                    </span>
+                  ) : (
+                    <PremiumBadge minimumPlan={selectedNote.minimum_plan || selectedNote.access_type} />
+                  )}
                 </div>
                 <h2 className="text-base font-bold text-[var(--color-text-primary)]">{selectedNote.title}</h2>
               </div>

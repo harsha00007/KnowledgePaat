@@ -1,3 +1,5 @@
+export {};
+
 console.log("=================================================");
 console.log("TESTING ADMIN BULK DELETE ENGINE & UX BEHAVIOR");
 console.log("=================================================\n");

@@ -98,8 +98,8 @@ export default function PricingPage() {
       <section className="bg-white py-16 border-t border-[var(--color-border)]">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
-            <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">Frequently Asked Questions</h2>
-            <p className="text-sm text-[var(--color-text-secondary)] mt-1">Everything you need to know about GradZenX subscriptions.</p>
+            <h2 className="text-2xl font-bold text-[var(--color-text-primary)] font-display">Frequently Asked Questions</h2>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-1">Everything you need to know about KnowledgePaat subscriptions.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-[var(--color-text-secondary)]">

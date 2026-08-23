@@ -1,5 +1,5 @@
 /**
- * GradZenX — Centralized AI Provider Configuration
+ * KnowledgePaat — Centralized AI Provider Configuration
  * ============================================================
  * Server-side only. Never import this in client components.
  * No NEXT_PUBLIC_ variables are used here.

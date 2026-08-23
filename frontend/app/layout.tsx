@@ -10,13 +10,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "GradZenX | Launch Your Career With Confidence",
-  description: "GradZenX helps students and fresh graduates find verified jobs, prepare for interviews, and access expert study resources — all in one platform.",
-  keywords: ["fresher jobs", "interview preparation", "study notes", "career platform", "campus placement"],
+  title: "KnowledgePaat | From Knowledge to Opportunity",
+  description: "KnowledgePaat is an EdTech and career development platform helping students and job seekers learn, practice, interview, and discover verified career opportunities.",
+  keywords: ["KnowledgePaat", "fresher jobs", "interview preparation", "study notes", "AI mock interview", "career platform", "campus placement"],
   openGraph: {
-    title: "GradZenX — Career Platform for Students",
-    description: "Find verified jobs, prepare for interviews, and access study resources designed for freshers and recent graduates.",
-    siteName: "GradZenX",
+    title: "KnowledgePaat — From Knowledge to Opportunity",
+    description: "Learn high-demand skills, practice real interview questions, simulate AI mock interviews, and discover verified direct job openings.",
+    siteName: "KnowledgePaat",
     locale: "en_US",
     type: "website",
   },

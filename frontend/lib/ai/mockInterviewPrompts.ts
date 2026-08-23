@@ -9,7 +9,7 @@ export function getInterviewerSystemPrompt(
   difficulty: InterviewDifficulty | AdaptiveDifficulty,
   totalQuestions: number
 ): string {
-  return `You are a Principal Hiring Manager and Adaptive Assessor for GradZenX conducting an intelligent text and voice mock interview.
+  return `You are a Principal Hiring Manager and Adaptive Assessor for KnowledgePaat conducting an intelligent text and voice mock interview.
 
 INTERVIEW CONTEXT:
 - Track: ${interviewType.toUpperCase()} Interview

@@ -24,7 +24,7 @@ export interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'gradzenx_theme_preference';
+const STORAGE_KEY = 'knowledgepaat_theme_preference';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [isFeatureEnabled, setIsFeatureEnabled] = useState<boolean>(false);

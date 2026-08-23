@@ -433,8 +433,8 @@ export default function MockInterviewSessionPage({ params }: { params: Promise<{
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-600)]">
-                  GradZenX Adaptive AI
+                <h1 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-600)] font-display">
+                  KnowledgePaat Adaptive AI
                 </h1>
                 <span className="text-[10px] bg-slate-100 text-slate-700 font-bold px-2 py-0.2 rounded-full">
                   {trackMeta.title} • {session?.target_role || 'Software'}

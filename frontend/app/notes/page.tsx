@@ -74,9 +74,9 @@ export default function NotesPage() {
           </div>
 
           {/* How it works */}
-          <div className="mt-12 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-xs)]">
-            <h2 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">
-              How to use GradZenX Notes
+          <div className="mt-12 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white dark:bg-[#131c2e] p-6 shadow-[var(--shadow-xs)]">
+            <h2 className="text-sm font-bold text-[var(--color-text-primary)] mb-4 font-display">
+              How to use KnowledgePaat Notes
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               {[

@@ -7,7 +7,7 @@ import { Button } from '@/components/Button';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { AlertCircle, CheckCircle2, GraduationCap, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -157,11 +157,8 @@ export default function RegisterPage() {
       <section className="flex-1 flex items-center justify-center bg-[var(--color-bg-subtle)] py-16 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div className="text-center">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-brand-500)] text-white shadow-sm mb-4">
-              <GraduationCap className="h-6 w-6" strokeWidth={2.5} />
-            </div>
-            <h1 className="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">
-              Create your GradZen<span className="text-[var(--color-brand-500)]">X</span> account
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight font-display">
+              Create your account
             </h1>
             <p className="mt-1.5 text-sm text-[var(--color-text-secondary)]">
               Join thousands of students finding verified fresher jobs

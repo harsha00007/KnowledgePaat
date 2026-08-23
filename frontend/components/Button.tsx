@@ -13,21 +13,21 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       'inline-flex items-center justify-center font-semibold tracking-[-0.01em] transition-all duration-150 focus-ring disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] select-none';
 
     const variants: Record<string, string> = {
-      // Solid indigo — primary CTA (Stitch: primary #7c3aed)
+      // Solid Growth Blue — primary CTA
       primary:
-        'bg-[var(--color-brand-500)] text-white hover:bg-[var(--color-brand-600)] shadow-sm hover:shadow-md',
+        'bg-[#2563EB] text-white hover:bg-[#1d4ed8] shadow-sm hover:shadow-md hover:shadow-blue-500/20 active:bg-[#1e40af]',
 
-      // Neutral — secondary actions (Stitch: white + border)
+      // Neutral White — secondary actions (Deep Navy text + crisp border)
       secondary:
-        'bg-white text-[var(--color-text-primary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-subtle)] shadow-xs',
+        'bg-white text-[#0B1D3A] border border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-2xs dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-800',
 
-      // Outlined — tertiary actions on light bg
+      // Outlined — tertiary actions (high-contrast Deep Navy text on white surface)
       outline:
-        'bg-transparent border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-subtle)] hover:border-[var(--color-border-strong)]',
+        'bg-white text-[#0B1D3A] border border-slate-300 hover:bg-slate-50 hover:text-[#2563EB] hover:border-[#2563EB] shadow-2xs dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-blue-400',
 
       // Ghost — navigation / inline actions
       ghost:
-        'bg-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)] hover:text-[var(--color-text-primary)]',
+        'bg-transparent text-[#475569] hover:bg-slate-100 hover:text-[#0B1D3A] dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
 
       // Danger — destructive actions
       danger:
@@ -35,9 +35,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const sizes: Record<string, string> = {
-      sm: 'h-8 px-3 text-xs rounded-[var(--radius-sm)] gap-1.5',
-      md: 'h-10 px-4 text-sm rounded-[var(--radius-sm)] gap-2',
-      lg: 'h-11 px-6 text-sm rounded-[var(--radius-sm)] gap-2',
+      sm: 'h-8 px-3 text-xs rounded-lg gap-1.5 font-medium',
+      md: 'h-10 px-4 text-sm rounded-xl gap-2 font-semibold',
+      lg: 'h-11 px-6 text-sm rounded-xl gap-2 font-semibold',
     };
 
     return (

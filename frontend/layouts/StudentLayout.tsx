@@ -23,6 +23,8 @@ import {
   TrendingUp,
   ChevronRight
 } from 'lucide-react';
+import { Button } from '@/components/Button';
+import { Logo } from '@/components/Logo';
 import { createClient } from '@/utils/supabase/client';
 import { useCart } from '@/hooks/useCart';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -105,7 +107,7 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
     .slice(0, 2);
 
   return (
-    <div className="min-h-screen flex bg-[var(--color-bg-subtle)] text-[var(--color-text-primary)] font-sans antialiased">
+    <div className="h-screen h-[100dvh] max-h-screen max-h-[100dvh] overflow-hidden flex bg-[var(--color-bg-subtle)] text-[var(--color-text-primary)] font-sans antialiased">
 
       {/* MOBILE OVERLAY */}
       {isMobileMenuOpen && (
@@ -116,21 +118,17 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* SIDEBAR */}
+      {/* SIDEBAR - INDEPENDENT SCROLL CONTAINER */}
       <aside className={`
-        fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-[var(--color-border)]
+        fixed md:static inset-y-0 left-0 z-50 w-64 h-full md:h-screen md:h-[100dvh] max-h-screen max-h-[100dvh]
+        bg-white border-r border-[var(--color-border)] overflow-hidden
         transform transition-transform duration-200 ease-in-out flex flex-col shrink-0
         ${isMobileMenuOpen ? 'translate-x-0 shadow-lg' : '-translate-x-full md:translate-x-0'}
       `}>
         {/* LOGO */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-[var(--color-border)] shrink-0">
+        <div className="h-16 flex items-center justify-between px-5 border-b border-[var(--color-border)] shrink-0 bg-white">
           <Link href="/student/dashboard" className="flex items-center gap-2 focus-ring rounded">
-            <span className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-brand-500)] text-white shadow-sm">
-              <GraduationCap className="h-4 w-4" strokeWidth={2.5} />
-            </span>
-            <span className="text-base font-bold tracking-tight text-[var(--color-text-primary)]">
-              GradZen<span className="text-[var(--color-brand-500)]">X</span>
-            </span>
+            <Logo size="sm" />
           </Link>
           <button
             className="md:hidden text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] p-1 rounded transition-colors"
@@ -141,8 +139,8 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        {/* NAVIGATION LINKS */}
-        <nav className="flex-1 overflow-y-auto py-4" aria-label="Student Navigation">
+        {/* NAVIGATION LINKS - INDEPENDENT SCROLL */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 scroll-smooth" aria-label="Student Navigation">
           {NAV_GROUPS.map((group) => (
             <div key={group.label} className="mb-4">
               <p className="px-5 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)]">
@@ -175,7 +173,7 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* USER FOOTER */}
-        <div className="p-3 border-t border-[var(--color-border)] shrink-0">
+        <div className="p-3 border-t border-[var(--color-border)] shrink-0 bg-white">
           <div className="flex items-center gap-3 p-2 rounded-[var(--radius-sm)] hover:bg-[var(--color-bg-subtle)] transition-colors">
             <div className="h-8 w-8 rounded-full bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] flex items-center justify-center text-[var(--color-brand-600)] font-bold text-xs shrink-0 uppercase">
               {initials}
@@ -199,10 +197,10 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 h-full md:h-screen md:h-[100dvh] max-h-screen max-h-[100dvh] overflow-hidden">
 
         {/* TOP HEADER */}
-        <header className="h-14 shrink-0 border-b border-[var(--color-border)] bg-white flex items-center justify-between px-4 sm:px-6 z-10 sticky top-0">
+        <header className="h-16 shrink-0 border-b border-[var(--color-border)] bg-white flex items-center justify-between px-4 sm:px-6 z-10 sticky top-0">
           <div className="flex items-center gap-3">
             <button
               className="md:hidden text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-subtle)] hover:text-[var(--color-text-primary)] p-1.5 rounded-[var(--radius-sm)] transition-colors -ml-1"
@@ -250,8 +248,8 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {/* PAGE CONTENT */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-[var(--color-bg-subtle)]">
+        {/* PAGE CONTENT - INDEPENDENT SCROLL */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 bg-[var(--color-bg-subtle)] scroll-smooth min-w-0">
           <div className="mx-auto max-w-7xl animate-in fade-in duration-200">
             {children}
           </div>

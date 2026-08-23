@@ -10,8 +10,8 @@ export default function AboutPage() {
       {/* ── HERO ────────────────────────────────────────────────────────── */}
       <section className="bg-white border-b border-[var(--color-border)] pt-16 pb-14">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-3.5 py-1 text-xs font-semibold text-[var(--color-brand-600)] mb-4">
-            About GradZenX
+          <div className="inline-flex items-center gap-2 rounded-full bg-[var(--color-brand-50)] dark:bg-blue-950/60 border border-[var(--color-brand-200)] dark:border-blue-800 px-3.5 py-1 text-xs font-semibold text-[var(--color-brand-600)] dark:text-blue-400 mb-4 font-display">
+            About KnowledgePaat
           </div>
           <h1 className="text-4xl font-bold tracking-tight text-[var(--color-text-primary)] sm:text-5xl">
             Bridging the gap between students and their first career breakthrough
@@ -106,7 +106,7 @@ export default function AboutPage() {
             Start preparing for your next role today
           </h2>
           <p className="mt-4 text-sm sm:text-base text-white/70 max-w-xl mx-auto">
-            Join GradZenX to access verified job openings, industry-standard interview preparation, and high-impact study materials.
+            Join KnowledgePaat to access verified job openings, industry-standard interview preparation, and high-impact study materials.
           </p>
           <div className="mt-8 flex justify-center gap-4">
             <Link href="/register">

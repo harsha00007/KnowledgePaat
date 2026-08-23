@@ -425,7 +425,7 @@ export default function JobBulkImportPage() {
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                       <a
                         href="/api/admin/jobs/template?format=xlsx"
-                        download="gradzenx_jobs_template.xlsx"
+                        download="knowledgepaat_jobs_template.xlsx"
                         className="w-full sm:w-auto"
                       >
                         <Button variant="outline" size="sm" className="w-full text-xs font-semibold border-slate-200 gap-1.5">
@@ -435,7 +435,7 @@ export default function JobBulkImportPage() {
                       </a>
                       <a
                         href="/api/admin/jobs/template?format=csv"
-                        download="gradzenx_jobs_template.csv"
+                        download="knowledgepaat_jobs_template.csv"
                         className="w-full sm:w-auto"
                       >
                         <Button variant="outline" size="sm" className="w-full text-xs font-semibold border-slate-200 gap-1.5">

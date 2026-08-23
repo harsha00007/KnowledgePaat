@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Logo } from '@/components/Logo';
 
 const NAV_ITEMS = [
   { name: 'Dashboard',           href: '/admin/dashboard',            icon: LayoutDashboard },
@@ -51,7 +52,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const activeItem = NAV_ITEMS.find(item => item.href === pathname || (item.matchPrefix && pathname.startsWith(item.matchPrefix)));
 
   return (
-    <div className="min-h-screen flex bg-[var(--color-bg-subtle)] text-[var(--color-text-primary)] font-sans antialiased">
+    <div className="h-screen h-[100dvh] max-h-screen max-h-[100dvh] overflow-hidden flex bg-[var(--color-bg-subtle)] text-[var(--color-text-primary)] font-sans antialiased">
 
       {/* MOBILE OVERLAY */}
       {isMobileMenuOpen && (
@@ -62,26 +63,22 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* SIDEBAR */}
+      {/* SIDEBAR - INDEPENDENT SCROLL CONTAINER */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-[var(--color-border)]
-        flex flex-col transform transition-transform duration-200 ease-out lg:relative lg:translate-x-0
-        ${isMobileMenuOpen ? 'translate-x-0 shadow-lg' : '-translate-x-full'}
+        fixed lg:static inset-y-0 left-0 z-50 w-64 h-full lg:h-screen lg:h-[100dvh] max-h-screen max-h-[100dvh]
+        bg-white border-r border-[var(--color-border)] overflow-hidden
+        flex flex-col transform transition-transform duration-200 ease-out
+        ${isMobileMenuOpen ? 'translate-x-0 shadow-lg' : '-translate-x-full lg:translate-x-0'}
       `}>
 
         {/* BRAND */}
-        <div className="h-14 flex items-center justify-between px-5 border-b border-[var(--color-border)] shrink-0">
+        <div className="h-16 flex items-center justify-between px-5 border-b border-[var(--color-border)] shrink-0 bg-white">
           <Link
             href="/admin/dashboard"
             className="flex items-center gap-2 font-bold tracking-tight text-[var(--color-text-primary)] focus-ring rounded"
           >
-            <div className="h-7 w-7 rounded-[var(--radius-sm)] bg-[var(--color-brand-600)] text-white flex items-center justify-center shadow-xs">
-              <ShieldCheck className="w-3.5 h-3.5" />
-            </div>
-            <span className="text-sm">
-              GradZen<span className="text-[var(--color-brand-600)]">X</span>
-            </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-200)] px-1.5 py-0.5 rounded">
+            <Logo size="sm" />
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-200)] px-1.5 py-0.5 rounded font-display">
               Admin
             </span>
           </Link>
@@ -94,8 +91,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        {/* NAV */}
-        <nav className="flex-1 overflow-y-auto py-4 px-2" aria-label="Admin Navigation">
+        {/* NAV - INDEPENDENT SCROLL */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-2 scroll-smooth" aria-label="Admin Navigation">
           <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)]">
             Management
           </p>
@@ -125,7 +122,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* ADMIN FOOTER */}
-        <div className="p-3 border-t border-[var(--color-border)] shrink-0">
+        <div className="p-3 border-t border-[var(--color-border)] shrink-0 bg-white">
           <div className="flex items-center justify-between p-2 rounded-[var(--radius-sm)] bg-[var(--color-bg-subtle)] border border-[var(--color-border)]">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="h-7 w-7 rounded-full bg-[var(--color-brand-600)] text-white flex items-center justify-center font-bold text-[11px] shrink-0">
@@ -149,10 +146,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 h-full lg:h-screen lg:h-[100dvh] max-h-screen max-h-[100dvh] overflow-hidden">
 
         {/* TOP HEADER */}
-        <header className="h-14 shrink-0 border-b border-[var(--color-border)] bg-white flex items-center justify-between px-4 sm:px-6 z-10 sticky top-0">
+        <header className="h-16 shrink-0 border-b border-[var(--color-border)] bg-white flex items-center justify-between px-4 sm:px-6 z-10 sticky top-0">
           <div className="flex items-center gap-3">
             <button
               className="lg:hidden text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-subtle)] hover:text-[var(--color-text-primary)] p-1.5 rounded-[var(--radius-sm)] transition-colors -ml-1"
@@ -184,13 +181,13 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-3">
             <ThemeToggle size="sm" />
             <span className="text-xs text-[var(--color-text-tertiary)] hidden sm:inline font-medium">
-              GradZenX Admin v1.0
+              KnowledgePaat Admin v1.0
             </span>
           </div>
         </header>
 
-        {/* PAGE CONTENT */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-[var(--color-bg-subtle)]">
+        {/* PAGE CONTENT - INDEPENDENT SCROLL */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 bg-[var(--color-bg-subtle)] scroll-smooth min-w-0">
           <div className="mx-auto max-w-7xl animate-in fade-in duration-200">
             {children}
           </div>

@@ -308,8 +308,8 @@ export default function CareerIntelligencePage() {
                     <span>Improve Score Accuracy:</span>
                   </div>
                   <ul className="text-[11px] list-disc list-inside space-y-0.5 text-amber-800">
-                    {readiness.dataCompleteness < 50 && <li>Add more skills to your profile</li>}
-                    {readiness.interviewPerformance <= 40 && <li>Complete 1 more AI Mock Interview</li>}
+                    {readiness.dataCompleteness < 50 && <li key="add-skills">Add more skills to your profile</li>}
+                    {readiness.interviewPerformance <= 40 && <li key="mock-interview">Complete 1 more AI Mock Interview</li>}
                   </ul>
                 </div>
               )}
@@ -554,7 +554,7 @@ export default function CareerIntelligencePage() {
 
               return (
                 <div 
-                  key={task.id ? `task-${task.id}` : `task-${task.dayNumber}-${idx}-${task.title}`}
+                  key={`task-${task.id || 't'}-${task.dayNumber}-${idx}`}
                   className={`p-4 rounded-[var(--radius-lg)] border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
                     isCompleted 
                       ? 'bg-slate-50 border-slate-200 opacity-75' 

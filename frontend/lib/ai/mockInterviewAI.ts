@@ -87,7 +87,7 @@ Return JSON:
     const parsed = parseJSONSafely(raw, null as any);
     if (parsed?.firstQuestion) {
       return {
-        introduction: parsed.introduction || `Welcome to your GradZenX Adaptive AI Interview for ${config.targetRole}. Let us begin.`,
+        introduction: parsed.introduction || `Welcome to your KnowledgePaat Adaptive AI Interview for ${config.targetRole}. Let us begin.`,
         firstQuestion: parsed.firstQuestion,
         helperTip: parsed.helperTip || 'Provide a structured answer with clear examples.',
         initialTopic
@@ -96,7 +96,7 @@ Return JSON:
   }
 
   // Fallback initial question based on role & track
-  const intro = `Hello! Welcome to your GradZenX Adaptive AI Mock Interview for the ${config.targetRole} role (${config.experienceLevel} level). The interview will adapt dynamically in difficulty based on your answers. Let's begin with ${initialTopic}.`;
+  const intro = `Hello! Welcome to your KnowledgePaat Adaptive AI Mock Interview for the ${config.targetRole} role (${config.experienceLevel} level). The interview will adapt dynamically in difficulty based on your answers. Let's begin with ${initialTopic}.`;
   
   let q1 = `Tell me about your background with ${config.targetRole} and walk me through a core architecture or project in ${initialTopic} that you designed or worked on.`;
   let tip = 'Structure your response: Introduction -> Problem & Tools -> Solution Architecture -> Measurable Result.';

@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': 'attachment; filename="gradzenx_questions_template.csv"',
+        'Content-Disposition': 'attachment; filename="knowledgepaat_questions_template.csv"',
       },
     });
   }
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     status: 200,
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': 'attachment; filename="gradzenx_questions_template.xlsx"',
+      'Content-Disposition': 'attachment; filename="knowledgepaat_questions_template.xlsx"',
     },
   });
 }

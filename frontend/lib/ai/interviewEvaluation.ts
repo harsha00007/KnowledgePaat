@@ -24,7 +24,7 @@ export async function evaluateInterviewAnswer(input: EvaluateAnswerInput): Promi
   const answerText = (studentAnswer || '').trim();
 
   // 1. If an external AI provider is configured, formulate request
-  const systemPrompt = `You are a Principal Hiring Assessor and Interview Coach at GradZenX evaluating candidate responses.
+  const systemPrompt = `You are a Principal Hiring Assessor and Interview Coach at KnowledgePaat evaluating candidate responses.
 You must assess the answer against real industry hiring standards for a ${role} (${interviewType.toUpperCase()} track, Difficulty: ${difficulty}).
 Evaluate objectively across:
 - Relevance (0-10)

@@ -31,11 +31,11 @@ export default function ContactPage() {
       {/* ── HEADER ────────────────────────────────────────────────────── */}
       <section className="bg-white border-b border-[var(--color-border)] pt-14 pb-12">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-3.5 py-1 text-xs font-semibold text-[var(--color-brand-600)] mb-4">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[var(--color-brand-50)] dark:bg-blue-950/60 border border-[var(--color-brand-200)] dark:border-blue-800 px-3.5 py-1 text-xs font-semibold text-[var(--color-brand-600)] dark:text-blue-400 mb-4 font-display">
             Support & Inquiries
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text-primary)] sm:text-4xl">
-            Get in touch with the GradZenX team
+          <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text-primary)] sm:text-4xl font-display">
+            Get in touch with the KnowledgePaat team
           </h1>
           <p className="mt-4 text-base text-[var(--color-text-secondary)] leading-relaxed max-w-xl mx-auto">
             Have questions about student subscriptions, job verification, or interview materials? We're here to help.
@@ -60,8 +60,8 @@ export default function ContactPage() {
                     <p className="text-xs text-[var(--color-text-secondary)]">Response within 24 hours</p>
                   </div>
                 </div>
-                <a href="mailto:support@gradzenx.com" className="text-sm font-semibold text-[var(--color-brand-600)] hover:underline">
-                  support@gradzenx.com
+                <a href="mailto:support@knowledgepaat.com" className="text-sm font-semibold text-[var(--color-brand-600)] hover:underline">
+                  support@knowledgepaat.com
                 </a>
               </div>
 
