@@ -18,8 +18,13 @@ import {
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { StudentPurchase, PRODUCT_TYPE_LABELS } from '@/lib/store';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
 
 export default function StudentPurchasesPage() {
+  const { isModuleEnabled } = useFeatureFlags();
+  const isPurchasesEnabled = isModuleEnabled('student_purchases');
+
   const [purchases, setPurchases] = useState<StudentPurchase[]>([]);
   const [productNotesMap, setProductNotesMap] = useState<Map<string, string[]>>(new Map());
   const [isFetching, setIsFetching] = useState(true);
@@ -27,8 +32,12 @@ export default function StudentPurchasesPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    fetchPurchases();
-  }, []);
+    if (isPurchasesEnabled) {
+      fetchPurchases();
+    } else {
+      setIsFetching(false);
+    }
+  }, [isPurchasesEnabled]);
 
   const fetchPurchases = async () => {
     setIsFetching(true);
@@ -85,6 +94,19 @@ export default function StudentPurchasesPage() {
       setIsFetching(false);
     }
   };
+
+  if (!isPurchasesEnabled) {
+    return (
+      <StudentLayout>
+        <FeatureComingSoon
+          title="My Purchases Coming Soon"
+          description="Your purchased study guides, question packs, and permanent digital assets repository is currently being prepared for rollout."
+          icon={PackageCheck}
+          backHref="/student/dashboard"
+        />
+      </StudentLayout>
+    );
+  }
 
   return (
     <StudentLayout>

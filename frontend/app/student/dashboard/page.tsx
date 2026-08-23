@@ -35,8 +35,18 @@ import { PLANS, normalizePlanId } from '@/config/plans';
 import { calculateMockCreditStatus, getConsumedSessionsCount, MockCreditStatus } from '@/lib/mockInterview';
 import { CompanyNameGate } from '@/components/CompanyNameGate';
 import { UpgradeModal } from '@/components/UpgradeModal';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
 
 export default function StudentDashboard() {
+  const { isModuleEnabled } = useFeatureFlags();
+  const isDashboardEnabled = isModuleEnabled('student_dashboard');
+  const isJobsEnabled = isModuleEnabled('student_jobs');
+  const isMockEnabled = isModuleEnabled('student_mock_interviews');
+  const isIntelEnabled = isModuleEnabled('student_career_intelligence');
+  const isPrepEnabled = isModuleEnabled('student_interview_prep');
+  const isNotesEnabled = isModuleEnabled('student_notes');
+
   const [profile, setProfile] = useState<any>(null);
   const [access, setAccess] = useState<UserAccess>(calculateUserAccess(null));
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
@@ -59,8 +69,12 @@ export default function StudentDashboard() {
   const supabase = createClient();
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (isDashboardEnabled) {
+      fetchDashboardData();
+    } else {
+      setIsFetching(false);
+    }
+  }, [isDashboardEnabled, isJobsEnabled, isMockEnabled, isIntelEnabled]);
 
   const fetchDashboardData = async () => {
     setIsFetching(true);
@@ -87,36 +101,42 @@ export default function StudentDashboard() {
         const userAccessCalc = calculateUserAccess(subData);
         setAccess(userAccessCalc);
 
-        // Fetch consumed credits count & stats
-        const stats = await getConsumedSessionsCount(supabase, user.id, userAccessCalc.startDate);
-        const creds = calculateMockCreditStatus(userAccessCalc, stats.usedCount, stats.completedCount, stats.averageScore);
-        setCreditStatus(creds);
+        // Fetch consumed credits count & stats (only if mock interviews enabled)
+        if (isMockEnabled) {
+          const stats = await getConsumedSessionsCount(supabase, user.id, userAccessCalc.startDate);
+          const creds = calculateMockCreditStatus(userAccessCalc, stats.usedCount, stats.completedCount, stats.averageScore);
+          setCreditStatus(creds);
+        }
 
-        // Fetch active career improvement plan
-        const { data: planData } = await supabase
-          .from('career_improvement_plans')
-          .select('*')
-          .eq('student_id', user.id)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        // Fetch active career improvement plan (only if career intelligence enabled)
+        if (isIntelEnabled) {
+          const { data: planData } = await supabase
+            .from('career_improvement_plans')
+            .select('*')
+            .eq('student_id', user.id)
+            .eq('status', 'active')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-        if (planData) {
-          setCareerPlan(planData);
+          if (planData) {
+            setCareerPlan(planData);
+          }
         }
       }
 
-      // Fetch top recent active jobs
-      const { data: jobsData } = await supabase
-        .from('jobs')
-        .select('*')
-        .eq('status', 'Active')
-        .order('posted_at', { ascending: false })
-        .limit(4);
-        
-      if (jobsData && jobsData.length > 0) {
-        setRecentJobs(jobsData);
+      // Fetch top recent active jobs (only if jobs enabled)
+      if (isJobsEnabled) {
+        const { data: jobsData } = await supabase
+          .from('jobs')
+          .select('*')
+          .eq('status', 'Active')
+          .order('posted_at', { ascending: false })
+          .limit(4);
+          
+        if (jobsData && jobsData.length > 0) {
+          setRecentJobs(jobsData);
+        }
       }
     } catch (err) {
       console.error("Error loading dashboard data:", err);
@@ -127,6 +147,20 @@ export default function StudentDashboard() {
 
   const hasResume = Boolean(profile?.resume_url);
   const currentPlan = PLANS[access.effectivePlan];
+
+  if (!isDashboardEnabled) {
+    return (
+      <StudentLayout>
+        <FeatureComingSoon
+          title="Student Dashboard Coming Soon"
+          description="Your student activity overview, placement roadmap, and career metrics are currently being prepared for rollout."
+          icon={Brain}
+          backHref="/"
+          backLabel="Return to Homepage"
+        />
+      </StudentLayout>
+    );
+  }
 
   return (
     <StudentLayout>

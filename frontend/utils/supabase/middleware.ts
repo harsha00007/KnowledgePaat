@@ -30,26 +30,38 @@ export async function updateSession(request: NextRequest) {
   // Fetch the user session
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isRootRoute = request.nextUrl.pathname === '/'
-  const isAuthRoute = 
-    request.nextUrl.pathname.startsWith('/login') || 
-    request.nextUrl.pathname.startsWith('/register') ||
-    request.nextUrl.pathname.startsWith('/forgot-password') ||
-    request.nextUrl.pathname.startsWith('/reset-password')
-  const isStudentRoute = request.nextUrl.pathname.startsWith('/student')
-  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
+  const pathname = request.nextUrl.pathname
+  const isRootRoute = pathname === '/'
+  const isAdminLoginRoute = pathname === '/admin/login'
+  const isStudentAuthRoute = 
+    pathname.startsWith('/login') || 
+    pathname.startsWith('/register') ||
+    pathname.startsWith('/forgot-password') ||
+    pathname.startsWith('/reset-password')
+  const isStudentRoute = pathname.startsWith('/student')
+  const isAdminRoute = pathname.startsWith('/admin') && !isAdminLoginRoute
 
-  // Not authenticated
+  // 1. Not authenticated
   if (!user) {
-    if (isStudentRoute || isAdminRoute) {
+    // Unauthenticated user trying to access protected admin routes
+    if (isAdminRoute) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/login'
+      return NextResponse.redirect(url)
+    }
+
+    // Unauthenticated user trying to access protected student routes
+    if (isStudentRoute) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       return NextResponse.redirect(url)
     }
+
+    // Allow public pages and /admin/login
     return supabaseResponse
   }
 
-  // User is authenticated. We need to check their role.
+  // 2. User is authenticated: Verify role
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
@@ -58,24 +70,36 @@ export async function updateSession(request: NextRequest) {
 
   const role = profile?.role || 'student'
 
-  // Authenticated user trying to access root landing or login/register/auth routes
-  if (isRootRoute || isAuthRoute) {
-    const url = request.nextUrl.clone()
-    url.pathname = role === 'admin' ? '/admin/dashboard' : '/student/dashboard'
-    return NextResponse.redirect(url)
+  // Admin user routing
+  if (role === 'admin') {
+    // Admin trying to access public auth routes or root landing
+    if (isRootRoute || isStudentAuthRoute || isAdminLoginRoute) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/dashboard'
+      return NextResponse.redirect(url)
+    }
+
+    // Admin trying to access student portal
+    if (isStudentRoute) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/dashboard'
+      return NextResponse.redirect(url)
+    }
+
+    return supabaseResponse
   }
 
-  // Student trying to access admin
-  if (isAdminRoute && role !== 'admin') {
+  // Student user routing (role === 'student' or default)
+  if (isRootRoute || isStudentAuthRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/student/dashboard'
     return NextResponse.redirect(url)
   }
 
-  // Admin trying to access student (optional, but typical)
-  if (isStudentRoute && role !== 'student') {
+  // Student trying to access admin portal or admin login
+  if (isAdminRoute || isAdminLoginRoute) {
     const url = request.nextUrl.clone()
-    url.pathname = '/admin/dashboard'
+    url.pathname = '/student/dashboard'
     return NextResponse.redirect(url)
   }
 

@@ -23,8 +23,13 @@ import {
 import { createClient } from '@/utils/supabase/client';
 import { calculateUserAccess, UserAccess } from '@/lib/subscription';
 import { PLANS, PLANS_LIST, PlanId } from '@/config/plans';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
 
 export default function SubscriptionPage() {
+  const { isModuleEnabled } = useFeatureFlags();
+  const isSubEnabled = isModuleEnabled('student_subscription');
+
   const router = useRouter();
   const [access, setAccess] = useState<UserAccess>(calculateUserAccess(null));
   const [isFetching, setIsFetching] = useState(true);
@@ -32,8 +37,12 @@ export default function SubscriptionPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    fetchSubscription();
-  }, []);
+    if (isSubEnabled) {
+      fetchSubscription();
+    } else {
+      setIsFetching(false);
+    }
+  }, [isSubEnabled]);
 
   const fetchSubscription = async () => {
     setIsFetching(true);
@@ -65,6 +74,19 @@ export default function SubscriptionPage() {
     if (planId === 'free') return;
     router.push(`/student/payment?plan=${planId}`);
   };
+
+  if (!isSubEnabled) {
+    return (
+      <StudentLayout>
+        <FeatureComingSoon
+          title="Subscription Plans Coming Soon"
+          description="Tiered membership plans, upgrades, and premium interview perks are currently being prepared for rollout."
+          icon={Zap}
+          backHref="/student/dashboard"
+        />
+      </StudentLayout>
+    );
+  }
 
   const currentPlanConfig = PLANS[access.effectivePlan];
 

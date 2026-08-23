@@ -39,8 +39,13 @@ import {
   CareerProgressData, 
   ProgressTimelinePoint 
 } from '@/lib/careerProgress';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
 
 export default function CareerProgressPage() {
+  const { isModuleEnabled } = useFeatureFlags();
+  const isProgressEnabled = isModuleEnabled('student_career_progress');
+
   const [progressData, setProgressData] = useState<CareerProgressData | null>(null);
   const [access, setAccess] = useState<UserAccess>(calculateUserAccess(null));
   const [isLoading, setIsLoading] = useState(true);
@@ -50,8 +55,12 @@ export default function CareerProgressPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    loadProgressData();
-  }, []);
+    if (isProgressEnabled) {
+      loadProgressData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [isProgressEnabled]);
 
   const loadProgressData = async () => {
     setIsLoading(true);
@@ -118,6 +127,19 @@ export default function CareerProgressPage() {
             Retry Loading
           </Button>
         </div>
+      </StudentLayout>
+    );
+  }
+
+  if (!isProgressEnabled) {
+    return (
+      <StudentLayout>
+        <FeatureComingSoon
+          title="Career Progress & Readiness Coming Soon"
+          description="Skill assessments, milestone tracking, readiness scores, and performance analytics are currently being prepared for rollout."
+          icon={TrendingUp}
+          backHref="/student/dashboard"
+        />
       </StudentLayout>
     );
   }

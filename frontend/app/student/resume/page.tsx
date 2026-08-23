@@ -8,13 +8,15 @@ import {
   UploadCloud, 
   CheckCircle, 
   Trash2, 
-  Eye,
-  AlertCircle,
-  FileCheck,
-  Calendar,
-  ShieldCheck
+  Eye, 
+  AlertCircle, 
+  FileCheck, 
+  Calendar, 
+  ShieldCheck 
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
 
 type ResumeData = {
   url: string | null;
@@ -30,6 +32,9 @@ const ALLOWED_TYPES = [
 ];
 
 export default function ResumePage() {
+  const { isModuleEnabled } = useFeatureFlags();
+  const isResumeEnabled = isModuleEnabled('student_resume');
+
   const [resume, setResume] = useState<ResumeData>({ url: null, filename: null, uploadedAt: null });
   const [isUploading, setIsUploading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
@@ -40,8 +45,12 @@ export default function ResumePage() {
   const supabase = createClient();
 
   useEffect(() => {
-    fetchResume();
-  }, []);
+    if (isResumeEnabled) {
+      fetchResume();
+    } else {
+      setIsFetching(false);
+    }
+  }, [isResumeEnabled]);
 
   const showSuccess = (msg: string) => {
     setSuccessMsg(msg);
@@ -235,6 +244,19 @@ export default function ResumePage() {
       processFile(file);
     }
   };
+
+  if (!isResumeEnabled) {
+    return (
+      <StudentLayout>
+        <FeatureComingSoon
+          title="Resume Builder & Studio Coming Soon"
+          description="Upload, analyze, and build ATS-friendly resumes for direct employer applications."
+          icon={FileText}
+          backHref="/student/dashboard"
+        />
+      </StudentLayout>
+    );
+  }
 
   return (
     <StudentLayout>

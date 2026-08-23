@@ -36,8 +36,13 @@ import {
   SkillGap, 
   CareerInsight 
 } from '@/lib/careerIntelligence';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
 
 export default function CareerIntelligencePage() {
+  const { isModuleEnabled } = useFeatureFlags();
+  const isIntelligenceEnabled = isModuleEnabled('student_career_intelligence');
+
   const [studentName, setStudentName] = useState('Student');
   const [targetRole, setTargetRole] = useState('Software Engineer');
   const [readiness, setReadiness] = useState<CareerReadiness | null>(null);
@@ -58,8 +63,12 @@ export default function CareerIntelligencePage() {
   const supabase = createClient();
 
   useEffect(() => {
-    loadCareerIntelligenceData();
-  }, []);
+    if (isIntelligenceEnabled) {
+      loadCareerIntelligenceData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [isIntelligenceEnabled]);
 
   const loadCareerIntelligenceData = async () => {
     setIsLoading(true);
@@ -210,6 +219,19 @@ export default function CareerIntelligencePage() {
             <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Analyzing your career profile & readiness...</p>
           </div>
         </div>
+      </StudentLayout>
+    );
+  }
+
+  if (!isIntelligenceEnabled) {
+    return (
+      <StudentLayout>
+        <FeatureComingSoon
+          title="AI Career Intelligence Coming Soon"
+          description="Custom AI-driven career roadmaps, skill gap analysis, and personalized daily action plans are currently being prepared for rollout."
+          icon={Sparkles}
+          backHref="/student/dashboard"
+        />
       </StudentLayout>
     );
   }

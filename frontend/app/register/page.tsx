@@ -4,12 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { AlertCircle, CheckCircle2, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Eye, EyeOff, ArrowRight, UserPlus } from 'lucide-react';
 
 export default function RegisterPage() {
+  const { isFeatureEnabled } = useFeatureFlags();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -151,6 +154,24 @@ export default function RegisterPage() {
       setIsLoading(false);
     }
   };
+
+  // Feature Flag: Student Registration Gating
+  if (!isFeatureEnabled('student_registration')) {
+    return (
+      <PublicLayout>
+        <section className="flex-1 flex items-center justify-center bg-[var(--color-bg-subtle)] py-16 px-4">
+          <FeatureComingSoon
+            title="Registration Coming Soon"
+            description="New student registrations are temporarily unavailable while we prepare the next phase of KnowledgePaat. If you already have an account, please sign in."
+            icon={UserPlus}
+            backHref="/"
+            backLabel="Back to Home"
+            badgeText="Registration Paused"
+          />
+        </section>
+      </PublicLayout>
+    );
+  }
 
   return (
     <PublicLayout>

@@ -37,6 +37,7 @@ const FOOTER_COMPANY = [
 const FOOTER_ACCOUNT = [
   { href: '/login',    label: 'Log In'   },
   { href: '/register', label: 'Register' },
+  { href: '/admin/login', label: 'Admin Login →' },
 ];
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {

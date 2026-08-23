@@ -27,6 +27,8 @@ import { createClient } from '@/utils/supabase/client';
 import { calculateUserAccess, isContentAccessible, canViewCompanyName, UserAccess } from '@/lib/subscription';
 import { PLANS, normalizePlanId, PlanId } from '@/config/plans';
 import { CompanyNameGate } from '@/components/CompanyNameGate';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
 
 type Job = {
   id: string;
@@ -63,6 +65,9 @@ const WORK_MODES = ['Remote', 'Hybrid', 'On-site'];
 const EXPERIENCE_LEVELS = ['Fresher (0 yrs)', '0-1 yrs', '1-2 yrs'];
 
 export default function JobsPage() {
+  const { isModuleEnabled } = useFeatureFlags();
+  const isJobsEnabled = isModuleEnabled('student_jobs');
+
   const [jobs, setJobs] = useState<Job[]>([]);
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
   const [userAccess, setUserAccess] = useState<UserAccess>(calculateUserAccess(null));
@@ -84,8 +89,10 @@ export default function JobsPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    fetchJobsAndSavedState();
-  }, []);
+    if (isJobsEnabled) {
+      fetchJobsAndSavedState();
+    }
+  }, [isJobsEnabled]);
 
   const fetchJobsAndSavedState = async () => {
     setIsFetching(true);
@@ -200,6 +207,19 @@ export default function JobsPage() {
     setExperienceFilter('');
     setPlanFilter('');
   };
+
+  if (!isJobsEnabled) {
+    return (
+      <StudentLayout>
+        <FeatureComingSoon
+          title="Job Opportunities Coming Soon"
+          description="Curated fresher and associate job listings, verified application links, and ATS fast-track recommendations are currently being prepared for launch."
+          icon={Briefcase}
+          backHref="/student/dashboard"
+        />
+      </StudentLayout>
+    );
+  }
 
   const userPlanConfig = PLANS[userAccess.effectivePlan];
 

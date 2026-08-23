@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { normalizePlanId, PLANS, PlanId } from '@/config/plans';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
 
 function PaymentContent() {
   const router = useRouter();
@@ -137,6 +139,22 @@ function PaymentContent() {
 }
 
 export default function PaymentPage() {
+  const { isModuleEnabled } = useFeatureFlags();
+  const isSubEnabled = isModuleEnabled('student_subscription');
+
+  if (!isSubEnabled) {
+    return (
+      <StudentLayout>
+        <FeatureComingSoon
+          title="Plan Upgrades & Checkout Coming Soon"
+          description="Membership subscriptions and upgrade checkouts are currently being prepared for rollout."
+          icon={CreditCard}
+          backHref="/student/dashboard"
+        />
+      </StudentLayout>
+    );
+  }
+
   return (
     <StudentLayout>
       <Suspense fallback={

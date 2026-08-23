@@ -4,12 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Lock } from 'lucide-react';
 
 export default function LoginPage() {
+  const { isFeatureEnabled } = useFeatureFlags();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -68,6 +71,24 @@ export default function LoginPage() {
       }
     }
   };
+
+  // Feature Flag: Student Login Gating
+  if (!isFeatureEnabled('student_login')) {
+    return (
+      <PublicLayout>
+        <section className="flex-1 flex items-center justify-center bg-[var(--color-bg-subtle)] py-16 px-4">
+          <FeatureComingSoon
+            title="Student Login Coming Soon"
+            description="Student sign in is temporarily unavailable while we prepare the next release. If you are an administrator, please use the dedicated Admin Login portal."
+            icon={Lock}
+            backHref="/"
+            backLabel="Back to Home"
+            badgeText="Access Suspended"
+          />
+        </section>
+      </PublicLayout>
+    );
+  }
 
   return (
     <PublicLayout>

@@ -17,8 +17,12 @@ import {
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { useCart } from '@/hooks/useCart';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
 
 export default function StudentCheckoutPage() {
+  const { isModuleEnabled } = useFeatureFlags();
+  const isStoreEnabled = isModuleEnabled('student_store');
   const router = useRouter();
   const { cartItems, totalAmount, isLoading, clearCart } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -26,6 +30,19 @@ export default function StudentCheckoutPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const supabase = createClient();
+
+  if (!isStoreEnabled) {
+    return (
+      <StudentLayout>
+        <FeatureComingSoon
+          title="Checkout & Payment Coming Soon"
+          description="Direct digital checkout and store transactions are currently being prepared for rollout."
+          icon={CreditCard}
+          backHref="/student/dashboard"
+        />
+      </StudentLayout>
+    );
+  }
 
   // If cart is empty and no completed order, return to cart
   useEffect(() => {

@@ -37,6 +37,8 @@ import {
   getStudentSessions 
 } from '@/lib/mockInterview';
 import { ExperienceLevel, InterviewDifficulty } from '@/lib/ai/mockInterviewTypes';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
 
 const TARGET_ROLES = [
   'Software Engineer',
@@ -50,6 +52,9 @@ const TARGET_ROLES = [
 ];
 
 export default function MockInterviewDashboard() {
+  const { isModuleEnabled } = useFeatureFlags();
+  const isMockEnabled = isModuleEnabled('student_mock_interviews');
+
   const router = useRouter();
   const [userAccess, setUserAccess] = useState<UserAccess>(calculateUserAccess(null));
   const [creditStatus, setCreditStatus] = useState<MockCreditStatus>({
@@ -80,8 +85,12 @@ export default function MockInterviewDashboard() {
   const supabase = createClient();
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (isMockEnabled) {
+      fetchDashboardData();
+    } else {
+      setIsFetching(false);
+    }
+  }, [isMockEnabled]);
 
   const fetchDashboardData = async () => {
     setIsFetching(true);
@@ -160,6 +169,19 @@ export default function MockInterviewDashboard() {
       setIsStarting(false);
     }
   };
+
+  if (!isMockEnabled) {
+    return (
+      <StudentLayout>
+        <FeatureComingSoon
+          title="AI Mock Interviews Coming Soon"
+          description="Interactive conversational AI mock interviews with behavioral assessments, technical evaluations, and detailed scorecards are currently being prepared for rollout."
+          icon={Bot}
+          backHref="/student/dashboard"
+        />
+      </StudentLayout>
+    );
+  }
 
   const inProgressSessions = sessions.filter(s => s.status === 'in_progress');
   const completedSessions = sessions.filter(s => s.status === 'completed');

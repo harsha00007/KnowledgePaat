@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { FeatureFlagProvider } from "@/context/FeatureFlagContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -31,7 +32,9 @@ export default function RootLayout({
     <html lang="en" className={inter.variable} suppressHydrationWarning data-scroll-behavior="smooth">
       <body className="antialiased">
         <ThemeProvider>
-          {children}
+          <FeatureFlagProvider>
+            {children}
+          </FeatureFlagProvider>
         </ThemeProvider>
       </body>
     </html>

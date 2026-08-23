@@ -31,6 +31,8 @@ import { createClient } from '@/utils/supabase/client';
 import { calculateUserAccess, isContentAccessible, UserAccess } from '@/lib/subscription';
 import { PLANS, normalizePlanId, PlanId } from '@/config/plans';
 import { getStudentPurchasedNoteIds } from '@/lib/store';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
 
 type Note = {
   id: string;
@@ -69,6 +71,9 @@ export default function NotesPage() {
 }
 
 function NotesContent() {
+  const { isModuleEnabled } = useFeatureFlags();
+  const isNotesEnabled = isModuleEnabled('student_notes');
+
   const searchParams = useSearchParams();
   const noteIdParam = searchParams.get('noteId');
   const bundleIdParam = searchParams.get('bundleId') || searchParams.get('productId');
@@ -102,8 +107,10 @@ function NotesContent() {
   const supabase = createClient();
 
   useEffect(() => {
-    fetchData();
-  }, [noteIdParam, bundleIdParam]);
+    if (isNotesEnabled) {
+      fetchData();
+    }
+  }, [noteIdParam, bundleIdParam, isNotesEnabled]);
 
   const fetchData = async () => {
     setIsFetching(true);
@@ -397,6 +404,19 @@ function NotesContent() {
     setPlanFilter('');
     setBundleFilter(null);
   };
+
+  if (!isNotesEnabled) {
+    return (
+      <StudentLayout>
+        <FeatureComingSoon
+          title="Study Notes & Guides Coming Soon"
+          description="High-yield revision cheatsheets, aptitude formula booklets, and technical interview guides are currently being prepared for rollout."
+          icon={FileText}
+          backHref="/student/dashboard"
+        />
+      </StudentLayout>
+    );
+  }
 
   const userPlanConfig = PLANS[userAccess.effectivePlan];
 

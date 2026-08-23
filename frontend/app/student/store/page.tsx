@@ -25,8 +25,13 @@ import {
   getStudentPurchasedProductIds 
 } from '@/lib/store';
 import { useCart } from '@/hooks/useCart';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
 
 export default function StudentStorePage() {
+  const { isModuleEnabled } = useFeatureFlags();
+  const isStoreEnabled = isModuleEnabled('student_store');
+
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [ownedProductIds, setOwnedProductIds] = useState<Set<string>>(new Set());
   const [isFetching, setIsFetching] = useState(true);
@@ -39,8 +44,12 @@ export default function StudentStorePage() {
   const { cartItems, addToCart } = useCart();
 
   useEffect(() => {
-    fetchStoreData();
-  }, []);
+    if (isStoreEnabled) {
+      fetchStoreData();
+    } else {
+      setIsFetching(false);
+    }
+  }, [isStoreEnabled]);
 
   const fetchStoreData = async () => {
     setIsFetching(true);
@@ -97,6 +106,19 @@ export default function StudentStorePage() {
 
     return matchesSearch && matchesCategory;
   });
+
+  if (!isStoreEnabled) {
+    return (
+      <StudentLayout>
+        <FeatureComingSoon
+          title="KnowledgePaat Digital Store Coming Soon"
+          description="Curated interview packs, high-yield revision guides, and master bundles are currently being prepared for launch."
+          icon={ShoppingBag}
+          backHref="/student/dashboard"
+        />
+      </StudentLayout>
+    );
+  }
 
   return (
     <StudentLayout>

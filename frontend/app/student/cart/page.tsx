@@ -17,10 +17,27 @@ import {
 import Link from 'next/link';
 import { useCart } from '@/hooks/useCart';
 import { PRODUCT_TYPE_LABELS } from '@/lib/store';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
 
 export default function StudentCartPage() {
+  const { isModuleEnabled } = useFeatureFlags();
+  const isStoreEnabled = isModuleEnabled('student_store');
   const router = useRouter();
   const { cartItems, totalAmount, isLoading, removeFromCart } = useCart();
+
+  if (!isStoreEnabled) {
+    return (
+      <StudentLayout>
+        <FeatureComingSoon
+          title="Digital Store & Cart Coming Soon"
+          description="Curated interview packs, high-yield study materials, and direct checkout are currently being prepared for rollout."
+          icon={ShoppingCart}
+          backHref="/student/dashboard"
+        />
+      </StudentLayout>
+    );
+  }
 
   return (
     <StudentLayout>

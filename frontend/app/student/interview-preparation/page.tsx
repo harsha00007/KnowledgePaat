@@ -41,6 +41,8 @@ import {
 import { createClient } from '@/utils/supabase/client';
 import { calculateUserAccess, isContentAccessible, UserAccess } from '@/lib/subscription';
 import { PLANS, normalizePlanId, PlanId } from '@/config/plans';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
 
 type Category = {
   id: string;
@@ -152,6 +154,9 @@ type ActiveTestSession = {
 };
 
 export default function StudentInterviewPrepPage() {
+  const { isModuleEnabled } = useFeatureFlags();
+  const isPrepEnabled = isModuleEnabled('student_interview_prep');
+
   const [activeView, setActiveView] = useState<'tests' | 'practice' | 'history'>('tests');
   
   // Data States
@@ -195,8 +200,10 @@ export default function StudentInterviewPrepPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    fetchPrepData();
-  }, []);
+    if (isPrepEnabled) {
+      fetchPrepData();
+    }
+  }, [isPrepEnabled]);
 
   // Timer Effect for Active Timed Test
   useEffect(() => {
@@ -632,6 +639,19 @@ export default function StudentInterviewPrepPage() {
   const selectedQuestion = selectedQuestionIndex !== null ? filteredQuestions[selectedQuestionIndex] : null;
   const userPlanConfig = PLANS[userAccess.effectivePlan];
   const recommendedTests = testConfigs.filter(t => t.is_recommended);
+
+  if (!isPrepEnabled) {
+    return (
+      <StudentLayout>
+        <FeatureComingSoon
+          title="Interview Preparation Coming Soon"
+          description="Topic tests, curated question archives, model answers, and timed assessments are currently being prepared for rollout."
+          icon={BookOpen}
+          backHref="/student/dashboard"
+        />
+      </StudentLayout>
+    );
+  }
 
   // ---------------- RENDER ACTIVE TEST SESSION ---------------- //
   if (activeSession) {

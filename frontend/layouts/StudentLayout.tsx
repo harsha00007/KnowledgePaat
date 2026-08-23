@@ -21,45 +21,61 @@ import {
   Bot,
   Sparkles,
   TrendingUp,
-  ChevronRight
+  ChevronRight,
+  Lock
 } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Logo } from '@/components/Logo';
 import { createClient } from '@/utils/supabase/client';
 import { useCart } from '@/hooks/useCart';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
+import { FeatureKey } from '@/lib/featureFlags';
 
-const NAV_GROUPS = [
+interface NavLinkItem {
+  name: string;
+  href: string;
+  icon: any;
+  featureKey: FeatureKey;
+}
+
+interface NavGroupItem {
+  label: string;
+  links: NavLinkItem[];
+}
+
+const NAV_GROUPS: NavGroupItem[] = [
   {
     label: 'Overview',
     links: [
-      { name: 'Dashboard', href: '/student/dashboard', icon: LayoutDashboard },
+      { name: 'Dashboard', href: '/student/dashboard', icon: LayoutDashboard, featureKey: 'student_dashboard' },
     ],
   },
   {
     label: 'Career Tools',
     links: [
-      { name: 'My Profile', href: '/student/profile', icon: User },
-      { name: 'Resume', href: '/student/resume', icon: FileUp },
-      { name: 'Jobs', href: '/student/jobs', icon: Briefcase },
-      { name: 'Career Progress', href: '/student/career-progress', icon: TrendingUp },
-      { name: 'Career Intelligence', href: '/student/career-intelligence', icon: Sparkles },
+      { name: 'My Profile', href: '/student/profile', icon: User, featureKey: 'student_profile' },
+      { name: 'Resume', href: '/student/resume', icon: FileUp, featureKey: 'student_resume' },
+      { name: 'Jobs', href: '/student/jobs', icon: Briefcase, featureKey: 'student_jobs' },
+      { name: 'Career Progress', href: '/student/career-progress', icon: TrendingUp, featureKey: 'student_career_progress' },
+      { name: 'Career Intelligence', href: '/student/career-intelligence', icon: Sparkles, featureKey: 'student_career_intelligence' },
     ],
   },
   {
     label: 'Preparation',
     links: [
-      { name: 'Interview Prep', href: '/student/interview-preparation', icon: BookOpen },
-      { name: 'Mock Interviews', href: '/student/mock-interview', icon: Bot },
-      { name: 'Notes', href: '/student/notes', icon: FileText },
+      { name: 'Interview Prep', href: '/student/interview-preparation', icon: BookOpen, featureKey: 'student_interview_prep' },
+      { name: 'Mock Interviews', href: '/student/mock-interview', icon: Bot, featureKey: 'student_mock_interviews' },
+      { name: 'Notes', href: '/student/notes', icon: FileText, featureKey: 'student_notes' },
     ],
   },
   {
     label: 'Account',
     links: [
-      { name: 'Store', href: '/student/store', icon: ShoppingBag },
-      { name: 'My Purchases', href: '/student/purchases', icon: PackageCheck },
-      { name: 'Subscription', href: '/student/subscription', icon: CreditCard },
+      { name: 'Store', href: '/student/store', icon: ShoppingBag, featureKey: 'student_store' },
+      { name: 'My Purchases', href: '/student/purchases', icon: PackageCheck, featureKey: 'student_purchases' },
+      { name: 'Subscription', href: '/student/subscription', icon: CreditCard, featureKey: 'student_subscription' },
     ],
   },
 ];
@@ -72,6 +88,7 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const supabase = createClient();
   const { cartCount } = useCart();
+  const { isModuleEnabled, isPortalEnabled } = useFeatureFlags();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -149,20 +166,38 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
               <ul className="px-2 space-y-0.5">
                 {group.links.map((link) => {
                   const active = isActive(link.href);
+                  const isEnabled = isModuleEnabled(link.featureKey);
                   const Icon = link.icon;
+
                   return (
                     <li key={link.href}>
                       <Link
                         href={link.href}
-                        className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-[var(--radius-sm)] transition-colors ${
+                        className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-[var(--radius-sm)] transition-colors group ${
                           active
                             ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-600)]'
-                            : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-subtle)] hover:text-[var(--color-text-primary)]'
+                            : isEnabled
+                            ? 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-subtle)] hover:text-[var(--color-text-primary)]'
+                            : 'text-slate-400 hover:bg-amber-50/50 hover:text-slate-600'
                         }`}
                       >
-                        <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-[var(--color-brand-500)]' : 'text-[var(--color-text-tertiary)]'}`} />
+                        <Icon className={`w-4 h-4 shrink-0 ${
+                          active 
+                            ? 'text-[var(--color-brand-500)]' 
+                            : isEnabled 
+                            ? 'text-[var(--color-text-tertiary)]' 
+                            : 'text-slate-300'
+                        }`} />
                         <span className="flex-1 truncate">{link.name}</span>
-                        {active && <ChevronRight className="w-3.5 h-3.5 text-[var(--color-brand-400)]" />}
+                        
+                        {!isEnabled && (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200/80 px-1.5 py-0.5 rounded font-display">
+                            <Lock className="w-2.5 h-2.5 text-amber-600" />
+                            Soon
+                          </span>
+                        )}
+
+                        {isEnabled && active && <ChevronRight className="w-3.5 h-3.5 text-[var(--color-brand-400)]" />}
                       </Link>
                     </li>
                   );
@@ -212,10 +247,7 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
 
             {/* Logo visible on mobile only when sidebar is closed */}
             <Link href="/student/dashboard" className="md:hidden flex items-center gap-1.5">
-              <span className="flex h-7 w-7 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-brand-500)] text-white">
-                <GraduationCap className="h-3.5 w-3.5" strokeWidth={2.5} />
-              </span>
-              <span className="text-sm font-bold">GradZen<span className="text-[var(--color-brand-500)]">X</span></span>
+              <Logo size="sm" />
             </Link>
           </div>
 
@@ -251,7 +283,17 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
         {/* PAGE CONTENT - INDEPENDENT SCROLL */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 bg-[var(--color-bg-subtle)] scroll-smooth min-w-0">
           <div className="mx-auto max-w-7xl animate-in fade-in duration-200">
-            {children}
+            {!isPortalEnabled ? (
+              <FeatureComingSoon
+                title="Student Portal Coming Soon"
+                description="KnowledgePaat Student Portal is currently undergoing scheduled platform updates and feature rollout. Please check back shortly."
+                backHref="/"
+                backLabel="Return to Homepage"
+                badgeText="Portal Paused"
+              />
+            ) : (
+              children
+            )}
           </div>
         </div>
       </main>

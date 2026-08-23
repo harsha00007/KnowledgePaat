@@ -4,8 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { StudentLayout } from '@/layouts/StudentLayout';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
-import { Camera, X, Plus, AlertCircle, CheckCircle2, UserCheck } from 'lucide-react';
+import { Camera, X, Plus, AlertCircle, CheckCircle2, UserCheck, User } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
+import { FeatureComingSoon } from '@/components/FeatureComingSoon';
 
 type ProfileData = {
   fullName: string;
@@ -50,6 +52,9 @@ const initialData: ProfileData = {
 };
 
 export default function ProfilePage() {
+  const { isModuleEnabled } = useFeatureFlags();
+  const isProfileEnabled = isModuleEnabled('student_profile');
+
   const [data, setData] = useState<ProfileData>(initialData);
   const [skillInput, setSkillInput] = useState('');
   const [errors, setErrors] = useState<Partial<Record<keyof ProfileData, string>>>({});
@@ -61,8 +66,10 @@ export default function ProfilePage() {
   const supabase = createClient();
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    if (isProfileEnabled) {
+      fetchProfile();
+    }
+  }, [isProfileEnabled]);
 
   const fetchProfile = async () => {
     try {
@@ -221,6 +228,19 @@ export default function ProfilePage() {
       setIsSaving(false);
     }
   };
+
+  if (!isProfileEnabled) {
+    return (
+      <StudentLayout>
+        <FeatureComingSoon
+          title="Student Profile Coming Soon"
+          description="Your personal details, education background, skills portfolio, and job preferences are currently being prepared for rollout."
+          icon={User}
+          backHref="/student/dashboard"
+        />
+      </StudentLayout>
+    );
+  }
 
   return (
     <StudentLayout>

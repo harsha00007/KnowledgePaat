@@ -1,0 +1,21 @@
+{
+  "flags": {
+    "student_portal": true,
+    "student_dashboard": true,
+    "student_profile": true,
+    "student_resume": true,
+    "student_jobs": true,
+    "student_career_progress": true,
+    "student_career_intelligence": true,
+    "student_interview_prep": true,
+    "student_mock_interviews": true,
+    "student_notes": true,
+    "student_store": true,
+    "student_purchases": true,
+    "student_subscription": true,
+    "student_login": true,
+    "student_registration": true
+  },
+  "updated_at": "2026-08-23T17:02:51.476Z",
+  "updated_by": "harshal.782002@gmail.com"
+}
