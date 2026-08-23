@@ -1,8 +1,13 @@
 User-agent: *
 Allow: /
 
-# Block admin and student portals from indexing
+# Block private admin, student portals, and APIs from crawling
 Disallow: /admin/
 Disallow: /student/
+Disallow: /api/
+Disallow: /_next/
+Disallow: /forgot-password
+Disallow: /reset-password
 
-Sitemap: https://careerlaunch.com/sitemap.xml
+Sitemap: https://www.knowledgepaat.com/sitemap.xml
+Host: https://www.knowledgepaat.com

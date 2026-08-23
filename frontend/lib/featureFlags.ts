@@ -139,16 +139,15 @@ export const FEATURE_METADATA: FeatureFlagMeta[] = [
     routePrefix: '/student/subscription',
     defaultEnabled: true,
   },
+  // Public Gateway & Display Controls
   {
     key: 'blur_homepage_pricing',
-    label: 'Blur Homepage Pricing Amounts',
-    category: 'store',
-    description: 'When enabled, obscures and blurs all subscription plan amounts (₹0, ₹49, ₹99, ₹149) on the homepage. Toggle to display or hide pricing.',
-    routePrefix: '/#pricing',
+    label: 'Blur Public Pricing Amounts (Homepage & Pricing Page)',
+    category: 'auth',
+    description: 'When enabled, blurs and obscures all subscription plan amounts (₹0, ₹49, ₹99, ₹149) across the public homepage and pricing pages. Toggle to display or hide pricing.',
+    routePrefix: '/#pricing, /pricing',
     defaultEnabled: true,
   },
-
-  // Public Gateway / Auth
   {
     key: 'student_login',
     label: 'Student Login Gateway',

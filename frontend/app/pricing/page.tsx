@@ -1,11 +1,17 @@
+"use client";
+
 import React from 'react';
 import Link from 'next/link';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { Button } from '@/components/Button';
-import { Check, X, Bot, ShieldCheck, Sparkles } from 'lucide-react';
+import { Check, Bot, Lock } from 'lucide-react';
 import { PLANS_LIST } from '@/config/plans';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
 
 export default function PricingPage() {
+  const { isFeatureEnabled } = useFeatureFlags();
+  const isPricingBlurred = isFeatureEnabled('blur_homepage_pricing');
+
   return (
     <PublicLayout>
       {/* ── HEADER ────────────────────────────────────────────────────── */}
@@ -55,12 +61,28 @@ export default function PricingPage() {
                       {plan.description}
                     </p>
                     
+                    {/* Price container with Admin-Controlled Blur */}
                     <div className="mb-6 pb-4 border-b border-[var(--color-border)]">
-                      <span className="text-3xl font-extrabold text-[var(--color-text-primary)]">{plan.currency}{plan.price}</span>
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] ml-1">/{plan.interval}</span>
+                      <div className="relative min-h-[44px] flex items-center">
+                        <div className={`transition-all duration-300 ${
+                          isPricingBlurred ? 'filter blur-[8px] select-none opacity-30 pointer-events-none' : ''
+                        }`}>
+                          <span className="text-3xl font-extrabold text-[var(--color-text-primary)] font-display">{plan.currency}{plan.price}</span>
+                          <span className="text-xs font-semibold text-[var(--color-text-secondary)] ml-1">/{plan.interval}</span>
+                        </div>
+
+                        {isPricingBlurred && (
+                          <div className="absolute inset-0 flex items-center">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/90 text-white text-[11px] font-bold tracking-wide shadow-xs font-display backdrop-blur-xs">
+                              <Lock className="w-3 h-3 text-amber-400 shrink-0" />
+                              <span>Hidden</span>
+                            </span>
+                          </div>
+                        )}
+                      </div>
 
                       {plan.mockInterviewsPerMonth > 0 && (
-                        <div className="mt-2.5 flex items-center gap-1.5 text-[11px] font-bold text-[var(--color-brand-700)] bg-[var(--color-brand-50)] px-2.5 py-1 rounded border border-[var(--color-brand-200)]">
+                        <div className="mt-3 flex items-center gap-1.5 text-[11px] font-bold text-[var(--color-brand-700)] bg-[var(--color-brand-50)] px-2.5 py-1 rounded border border-[var(--color-brand-200)]">
                           <Bot className="w-3.5 h-3.5" />
                           <span>{plan.mockInterviewsPerMonth} Mock Interview credit{plan.mockInterviewsPerMonth > 1 ? 's' : ''}/mo</span>
                         </div>
