@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { isServerModuleEnabled } from '@/lib/featureFlagsServer';
 
 export async function POST(req: NextRequest) {
   try {
+    const isAllowed = await isServerModuleEnabled('student_career_intelligence');
+    if (!isAllowed) {
+      return NextResponse.json({ 
+        error: 'AI Career Intelligence is currently disabled by administration.' 
+      }, { status: 403 });
+    }
+
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 

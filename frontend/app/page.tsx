@@ -17,8 +17,10 @@ import {
   Zap,
   ChevronDown,
   GraduationCap,
-  Sparkles
+  Sparkles,
+  Lock
 } from 'lucide-react';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
 
 interface CategoryItem {
   id: string;
@@ -37,6 +39,9 @@ const CATEGORIES: CategoryItem[] = [
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const { isFeatureEnabled } = useFeatureFlags();
+  const isPricingBlurred = isFeatureEnabled('blur_homepage_pricing');
+
 
   const handleCategorySelect = (categoryId: string, targetId: string) => {
     setActiveCategory(categoryId);
@@ -397,6 +402,7 @@ export default function Home() {
               cta="Start Free"
               ctaHref="/register"
               variant="default"
+              isBlurred={isPricingBlurred}
             />
             <PricingCard
               plan="Starter"
@@ -406,6 +412,7 @@ export default function Home() {
               cta="Choose Starter"
               ctaHref="/pricing"
               variant="default"
+              isBlurred={isPricingBlurred}
             />
             <PricingCard
               plan="Pro"
@@ -415,6 +422,7 @@ export default function Home() {
               cta="Choose Pro"
               ctaHref="/pricing"
               variant="popular"
+              isBlurred={isPricingBlurred}
             />
             <PricingCard
               plan="Premium"
@@ -424,6 +432,7 @@ export default function Home() {
               cta="Choose Premium"
               ctaHref="/pricing"
               variant="premium"
+              isBlurred={isPricingBlurred}
             />
           </div>
         </div>
@@ -581,10 +590,10 @@ function TestimonialCard({
 }
 
 function PricingCard({
-  plan, price, period, features, cta, ctaHref, variant = 'default',
+  plan, price, period, features, cta, ctaHref, variant = 'default', isBlurred = false,
 }: {
   plan: string; price: string; period: string; features: string[];
-  cta: string; ctaHref: string; variant?: 'default' | 'popular' | 'premium';
+  cta: string; ctaHref: string; variant?: 'default' | 'popular' | 'premium'; isBlurred?: boolean;
 }) {
   const isPopular = variant === 'popular';
   const isPremium = variant === 'premium';
@@ -616,7 +625,24 @@ function PricingCard({
           }`}>
           {plan}
         </p>
-        <div className="font-display text-3xl sm:text-4xl font-extrabold text-[#0B1D3A] mb-0.5">{price}</div>
+        
+        {/* Price container with blur capability */}
+        <div className="relative min-h-[44px] flex items-center mb-0.5">
+          <div className={`font-display text-3xl sm:text-4xl font-extrabold text-[#0B1D3A] transition-all duration-300 ${
+            isBlurred ? 'filter blur-[8px] select-none opacity-30 pointer-events-none scale-105' : ''
+          }`}>
+            {price}
+          </div>
+          {isBlurred && (
+            <div className="absolute inset-0 flex items-center">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/90 text-white text-[11px] font-bold tracking-wide shadow-sm font-display backdrop-blur-xs">
+                <Lock className="w-3 h-3 text-amber-400 shrink-0" />
+                <span>Hidden</span>
+              </span>
+            </div>
+          )}
+        </div>
+
         <p className="text-xs text-slate-500 mb-6">{period}</p>
 
         <ul className="space-y-3 mb-8">

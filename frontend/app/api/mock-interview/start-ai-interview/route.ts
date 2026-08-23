@@ -5,9 +5,17 @@ import { PLANS } from '@/config/plans';
 import { getConsumedSessionsCount, InterviewType } from '@/lib/mockInterview';
 import { startAIInterview } from '@/lib/ai/mockInterviewAI';
 import { ExperienceLevel, InterviewDifficulty } from '@/lib/ai/mockInterviewTypes';
+import { isServerModuleEnabled } from '@/lib/featureFlagsServer';
 
 export async function POST(req: NextRequest) {
   try {
+    const isAllowed = await isServerModuleEnabled('student_mock_interviews');
+    if (!isAllowed) {
+      return NextResponse.json({ 
+        error: 'AI Mock Interviews are currently disabled by administration.' 
+      }, { status: 403 });
+    }
+
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 

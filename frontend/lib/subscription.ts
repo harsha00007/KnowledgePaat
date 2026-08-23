@@ -47,10 +47,10 @@ export function calculateUserAccess(subscription: any | null): UserAccess {
     };
   }
 
-  const rawPlan: string = subscription.plan || 'free';
+  const rawPlan: string = subscription.plan || subscription.plan_id || 'free';
   const rawStatus: string = (subscription.status || 'active').toLowerCase();
-  const endDate: string | null = subscription.end_date || subscription.expires_at || null;
-  const startDate: string | null = subscription.start_date || subscription.created_at || null;
+  const endDate: string | null = subscription.end_date || subscription.expires_at || subscription.current_period_end || null;
+  const startDate: string | null = subscription.start_date || subscription.created_at || subscription.current_period_start || null;
 
   const normalizedPlan = normalizePlanId(rawPlan);
 

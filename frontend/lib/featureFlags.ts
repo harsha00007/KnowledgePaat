@@ -13,7 +13,8 @@ export type FeatureKey =
   | 'student_purchases'
   | 'student_subscription'
   | 'student_login'
-  | 'student_registration';
+  | 'student_registration'
+  | 'blur_homepage_pricing';
 
 export type FeatureCategory = 'core' | 'tools' | 'prep' | 'store' | 'auth';
 
@@ -138,6 +139,14 @@ export const FEATURE_METADATA: FeatureFlagMeta[] = [
     routePrefix: '/student/subscription',
     defaultEnabled: true,
   },
+  {
+    key: 'blur_homepage_pricing',
+    label: 'Blur Homepage Pricing Amounts',
+    category: 'store',
+    description: 'When enabled, obscures and blurs all subscription plan amounts (₹0, ₹49, ₹99, ₹149) on the homepage. Toggle to display or hide pricing.',
+    routePrefix: '/#pricing',
+    defaultEnabled: true,
+  },
 
   // Public Gateway / Auth
   {
@@ -174,6 +183,7 @@ export const DEFAULT_FEATURE_FLAGS: Record<FeatureKey, boolean> = {
   student_subscription: true,
   student_login: true,
   student_registration: true,
+  blur_homepage_pricing: true,
 };
 
 export const CATEGORY_LABELS: Record<FeatureCategory, string> = {
@@ -194,7 +204,7 @@ export function isStudentModuleEnabled(
   if (!flags) return DEFAULT_FEATURE_FLAGS[moduleKey] ?? true;
 
   // Master switch check
-  if (moduleKey !== 'student_login' && moduleKey !== 'student_registration') {
+  if (moduleKey !== 'student_login' && moduleKey !== 'student_registration' && moduleKey !== 'blur_homepage_pricing') {
     if (flags.student_portal === false) {
       return false;
     }
@@ -202,6 +212,7 @@ export function isStudentModuleEnabled(
 
   return flags[moduleKey] ?? DEFAULT_FEATURE_FLAGS[moduleKey] ?? true;
 }
+
 
 /**
  * Match a URL path to its corresponding FeatureKey
@@ -237,13 +248,11 @@ export async function fetchFeatureFlags(): Promise<{
     const res = await fetch('/api/feature-flags', { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
-      if (data?.flags) {
-        return {
-          flags: { ...DEFAULT_FEATURE_FLAGS, ...data.flags },
-          updatedAt: data.updated_at || null,
-          updatedBy: data.updated_by || null,
-        };
-      }
+      return {
+        flags: { ...DEFAULT_FEATURE_FLAGS, ...data.flags },
+        updatedAt: data.updated_at || null,
+        updatedBy: data.updated_by || null,
+      };
     }
   } catch (err) {
     console.warn('Could not fetch feature flags, using defaults:', err);
@@ -272,3 +281,6 @@ export async function saveFeatureFlags(
     return { success: false, error: err.message || 'Network error saving feature flags.' };
   }
 }
+
+
+

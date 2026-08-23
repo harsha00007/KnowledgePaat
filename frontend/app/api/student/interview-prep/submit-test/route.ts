@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { isServerModuleEnabled } from '@/lib/featureFlagsServer';
 
 interface QuestionAnswerSubmission {
   questionId: string;
@@ -9,6 +10,13 @@ interface QuestionAnswerSubmission {
 
 export async function POST(req: NextRequest) {
   try {
+    const isAllowed = await isServerModuleEnabled('student_interview_prep');
+    if (!isAllowed) {
+      return NextResponse.json({ 
+        error: 'Interview Preparation is currently disabled by administration.' 
+      }, { status: 403 });
+    }
+
     const supabase = await createClient();
 
     // 1. Get authenticated student user (or demo fallback)

@@ -47,7 +47,8 @@ function runTestSuite() {
     'student_purchases',
     'student_subscription',
     'student_login',
-    'student_registration'
+    'student_registration',
+    'blur_homepage_pricing'
   ];
 
   requiredKeys.forEach(k => {
