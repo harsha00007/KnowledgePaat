@@ -4,7 +4,7 @@ import path from 'path';
 async function runSEOAudit() {
   console.log("===============================================================================");
   console.log("KNOWLEDGEPAAT — PRODUCTION SEO & GOOGLE INDEXING AUDIT");
-  console.log("Target Domain: https://www.knowledgepaat.com");
+  console.log("Target Domain: https://knowledgepaat.com");
   console.log("===============================================================================\n");
 
   let totalChecks = 0;
@@ -37,8 +37,8 @@ async function runSEOAudit() {
       "robots.txt explicitly blocks private admin and student routes from search engine indexing"
     );
     assert(
-      robotsContent.includes('https://www.knowledgepaat.com/sitemap.xml'),
-      "robots.txt references canonical production sitemap (https://www.knowledgepaat.com/sitemap.xml)"
+      robotsContent.includes('https://knowledgepaat.com/sitemap.xml'),
+      "robots.txt references canonical production sitemap (https://knowledgepaat.com/sitemap.xml)"
     );
     assert(
       !robotsContent.includes('careerlaunch.com') && !robotsContent.includes('localhost'),
@@ -55,16 +55,16 @@ async function runSEOAudit() {
   if (sitemapExists) {
     const sitemapContent = fs.readFileSync(sitemapPath, 'utf8');
     assert(
-      sitemapContent.includes('<loc>https://www.knowledgepaat.com/</loc>'),
+      sitemapContent.includes('<loc>https://knowledgepaat.com/</loc>'),
       "sitemap.xml contains canonical root homepage URL"
     );
     assert(
-      sitemapContent.includes('<loc>https://www.knowledgepaat.com/jobs</loc>') &&
-      sitemapContent.includes('<loc>https://www.knowledgepaat.com/interview-preparation</loc>') &&
-      sitemapContent.includes('<loc>https://www.knowledgepaat.com/notes</loc>') &&
-      sitemapContent.includes('<loc>https://www.knowledgepaat.com/pricing</loc>') &&
-      sitemapContent.includes('<loc>https://www.knowledgepaat.com/about</loc>') &&
-      sitemapContent.includes('<loc>https://www.knowledgepaat.com/contact</loc>'),
+      sitemapContent.includes('<loc>https://knowledgepaat.com/jobs</loc>') &&
+      sitemapContent.includes('<loc>https://knowledgepaat.com/interview-preparation</loc>') &&
+      sitemapContent.includes('<loc>https://knowledgepaat.com/notes</loc>') &&
+      sitemapContent.includes('<loc>https://knowledgepaat.com/pricing</loc>') &&
+      sitemapContent.includes('<loc>https://knowledgepaat.com/about</loc>') &&
+      sitemapContent.includes('<loc>https://knowledgepaat.com/contact</loc>'),
       "sitemap.xml includes all 6 core public pages"
     );
     assert(
@@ -83,20 +83,20 @@ async function runSEOAudit() {
   const layoutContent = fs.readFileSync(layoutPath, 'utf8');
 
   assert(
-    layoutContent.includes('metadataBase: new URL("https://www.knowledgepaat.com")'),
-    "metadataBase is explicitly configured to 'https://www.knowledgepaat.com'"
+    layoutContent.includes('metadataBase: new URL("https://knowledgepaat.com")'),
+    "metadataBase is explicitly configured to 'https://knowledgepaat.com'"
   );
   assert(
-    layoutContent.includes("KnowledgePaat | AI-Powered Career & Learning Platform"),
-    "Title is set to 'KnowledgePaat | AI-Powered Career & Learning Platform'"
+    layoutContent.includes("KnowledgePaat | Learn, Prepare and Build Your Career"),
+    "Title is set to 'KnowledgePaat | Learn, Prepare and Build Your Career'"
   );
   assert(
-    layoutContent.includes("KnowledgePaat helps students and job seekers learn skills"),
+    layoutContent.includes("KnowledgePaat is an online platform for students to learn, prepare for jobs and interviews"),
     "Description is comprehensive and accurately positions the platform"
   );
   assert(
-    layoutContent.includes("canonical: \"https://www.knowledgepaat.com/\""),
-    "Root canonical URL points strictly to 'https://www.knowledgepaat.com/'"
+    layoutContent.includes("canonical: \"https://knowledgepaat.com/\""),
+    "Root canonical URL points strictly to 'https://knowledgepaat.com/'"
   );
   assert(
     layoutContent.includes("index: true") && layoutContent.includes("follow: true"),
@@ -143,8 +143,8 @@ async function runSEOAudit() {
     if (exists) {
       const content = fs.readFileSync(spLayoutPath, 'utf8');
       assert(
-        content.includes(`https://www.knowledgepaat.com/${sp}`),
-        `/${sp} layout has canonical URL 'https://www.knowledgepaat.com/${sp}'`
+        content.includes(`https://knowledgepaat.com/${sp}`),
+        `/${sp} layout has canonical URL 'https://knowledgepaat.com/${sp}'`
       );
     }
   });

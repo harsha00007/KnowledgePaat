@@ -17,7 +17,7 @@ export default function AboutPage() {
             Bridging the gap between students and their first career breakthrough
           </h1>
           <p className="mt-6 text-lg text-[var(--color-text-secondary)] leading-relaxed max-w-2xl mx-auto">
-            We are building a trustworthy, student-first platform designed to eliminate fake job noise, provide focused interview preparation, and empower graduates with real opportunities.
+            KnowledgePaat (Knowledge Paat) is an online platform designed to help students learn, prepare for jobs and interviews, access useful study resources, discover verified opportunities, and build their careers.
           </p>
         </div>
       </section>

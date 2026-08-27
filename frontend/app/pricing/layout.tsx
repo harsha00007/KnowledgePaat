@@ -4,12 +4,12 @@ export const metadata: Metadata = {
   title: 'Transparent Pricing Plans & Subscriptions',
   description: 'Choose flexible subscription plans designed for fresher placement success. Access verified jobs, practice question banks, and AI mock interview simulations on KnowledgePaat.',
   alternates: {
-    canonical: 'https://www.knowledgepaat.com/pricing',
+    canonical: 'https://knowledgepaat.com/pricing',
   },
   openGraph: {
     title: 'Transparent Pricing Plans | KnowledgePaat',
     description: 'Flexible monthly plans for fresher placement success on KnowledgePaat.',
-    url: 'https://www.knowledgepaat.com/pricing',
+    url: 'https://knowledgepaat.com/pricing',
     siteName: 'KnowledgePaat',
     type: 'website',
   },

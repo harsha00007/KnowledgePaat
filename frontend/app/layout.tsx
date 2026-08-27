@@ -17,27 +17,31 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.knowledgepaat.com"),
+  metadataBase: new URL("https://knowledgepaat.com"),
   title: {
-    default: "KnowledgePaat | AI-Powered Career & Learning Platform",
+    default: "KnowledgePaat | Learn, Prepare and Build Your Career",
     template: "%s | KnowledgePaat",
   },
   description:
-    "KnowledgePaat helps students and job seekers learn skills, prepare for interviews, discover jobs, and grow their careers with AI-powered tools.",
+    "KnowledgePaat is an online platform for students to learn, prepare for jobs and interviews, access useful resources, discover opportunities, and build their careers.",
   applicationName: "KnowledgePaat",
-  authors: [{ name: "KnowledgePaat Team", url: "https://www.knowledgepaat.com" }],
+  authors: [{ name: "KnowledgePaat Team", url: "https://knowledgepaat.com" }],
   generator: "Next.js",
   keywords: [
     "KnowledgePaat",
     "Knowledge Paat",
-    "fresher jobs",
+    "knowledgepaat",
+    "knowledge paat",
+    "student learning platform",
+    "job preparation",
     "interview preparation",
+    "career opportunities",
+    "student resources",
+    "career development",
+    "fresher jobs",
     "AI mock interview",
     "study notes",
     "campus placement",
-    "software engineer jobs",
-    "career platform",
-    "aptitude preparation",
   ],
   referrer: "origin-when-cross-origin",
   creator: "KnowledgePaat",
@@ -48,7 +52,7 @@ export const metadata: Metadata = {
     telephone: false,
   },
   alternates: {
-    canonical: "https://www.knowledgepaat.com/",
+    canonical: "https://knowledgepaat.com/",
   },
   robots: {
     index: true,
@@ -63,35 +67,52 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
     shortcut: "/favicon.ico",
-    apple: "/logo.png",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    other: [
+      {
+        rel: "android-chrome-192x192",
+        url: "/android-chrome-192x192.png",
+      },
+      {
+        rel: "android-chrome-512x512",
+        url: "/android-chrome-512x512.png",
+      },
+    ],
   },
+  manifest: "/site.webmanifest",
   openGraph: {
-    title: "KnowledgePaat | AI-Powered Career & Learning Platform",
+    title: "KnowledgePaat | Learn, Prepare and Build Your Career",
     description:
-      "KnowledgePaat helps students and job seekers learn skills, prepare for interviews, discover jobs, and grow their careers with AI-powered tools.",
-    url: "https://www.knowledgepaat.com/",
+      "KnowledgePaat is an online platform for students to learn, prepare for jobs and interviews, access useful resources, discover opportunities, and build their careers.",
+    url: "https://knowledgepaat.com/",
     siteName: "KnowledgePaat",
     locale: "en_US",
     type: "website",
     images: [
       {
-        url: "/logo.png",
+        url: "/brand/knowledgepaat_logo.png",
         width: 1200,
         height: 630,
-        alt: "KnowledgePaat — From Knowledge to Opportunity",
+        alt: "KnowledgePaat — Learn, Prepare and Build Your Career",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "KnowledgePaat | AI-Powered Career & Learning Platform",
+    title: "KnowledgePaat | Learn, Prepare and Build Your Career",
     description:
-      "KnowledgePaat helps students and job seekers learn skills, prepare for interviews, discover jobs, and grow their careers with AI-powered tools.",
+      "KnowledgePaat is an online platform for students to learn, prepare for jobs and interviews, access useful resources, discover opportunities, and build their careers.",
     creator: "@knowledgepaat",
     site: "@knowledgepaat",
-    images: ["/logo.png"],
+    images: ["/brand/knowledgepaat_logo.png"],
   },
   category: "education",
 };
@@ -101,25 +122,25 @@ const jsonLdSchema = {
   "@graph": [
     {
       "@type": "WebSite",
-      "@id": "https://www.knowledgepaat.com/#website",
-      "url": "https://www.knowledgepaat.com/",
+      "@id": "https://knowledgepaat.com/#website",
+      "url": "https://knowledgepaat.com/",
       "name": "KnowledgePaat",
-      "alternateName": ["Knowledge Paat", "KnowledgePaat Platform"],
-      "description": "AI-Powered Career & Learning Platform for students and job seekers",
+      "alternateName": ["Knowledge Paat", "knowledgepaat", "knowledge paat", "KnowledgePaat Platform"],
+      "description": "KnowledgePaat is an online platform for students to learn, prepare for jobs and interviews, access useful resources, discover opportunities, and build their careers.",
       "publisher": {
-        "@id": "https://www.knowledgepaat.com/#organization",
+        "@id": "https://knowledgepaat.com/#organization",
       },
       "inLanguage": "en-US",
     },
     {
       "@type": "Organization",
-      "@id": "https://www.knowledgepaat.com/#organization",
+      "@id": "https://knowledgepaat.com/#organization",
       "name": "KnowledgePaat",
-      "alternateName": ["Knowledge Paat"],
-      "url": "https://www.knowledgepaat.com/",
+      "alternateName": ["Knowledge Paat", "knowledgepaat", "knowledge paat"],
+      "url": "https://knowledgepaat.com/",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://www.knowledgepaat.com/logo.png",
+        "url": "https://knowledgepaat.com/brand/knowledgepaat_logo.png",
       },
       "sameAs": [
         "https://www.linkedin.com/company/knowledgepaat",

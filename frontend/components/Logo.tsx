@@ -13,11 +13,11 @@ export function Logo({
 }: LogoProps) {
   // Height and width mapping for balanced, clean, and elegant presentation
   const sizeMap = {
-    xs: { height: 28, className: 'h-7 w-auto max-w-[120px]' },
-    sm: { height: 34, className: 'h-8 sm:h-[34px] w-auto max-w-[140px]' },
-    md: { height: 60, className: 'h-11 sm:h-[60px] w-auto max-w-[270px]' },
-    lg: { height: 72, className: 'h-14 sm:h-[72px] w-auto max-w-[320px]' },
-    xl: { height: 84, className: 'h-18 sm:h-[84px] w-auto max-w-[370px]' },
+    xs: { height: 26, className: 'h-6 sm:h-[26px] w-auto max-w-[120px]' },
+    sm: { height: 32, className: 'h-7 sm:h-8 w-auto max-w-[150px]' },
+    md: { height: 44, className: 'h-9 sm:h-11 w-auto max-w-[220px]' },
+    lg: { height: 56, className: 'h-12 sm:h-14 w-auto max-w-[280px]' },
+    xl: { height: 72, className: 'h-16 sm:h-[72px] w-auto max-w-[340px]' },
   };
 
   const currentSize = sizeMap[size] || sizeMap.md;
@@ -30,7 +30,7 @@ export function Logo({
       */}
       <img
         src="/brand/knowledgepaat_logo.png"
-        alt="KnowledgePaat — From Knowledge to Opportunity"
+        alt="KnowledgePaat — Learn, Prepare and Build Your Career"
         className={`${currentSize.className} object-contain transition-all`}
         style={{ maxHeight: currentSize.height }}
         loading="eager"

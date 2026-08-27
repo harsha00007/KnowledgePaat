@@ -4,12 +4,12 @@ export const metadata: Metadata = {
   title: 'Verified Fresher Jobs & Direct Placement Openings',
   description: 'Browse 500+ verified entry-level software engineer, analyst, and fresher job openings with direct application links to official company careers portals on KnowledgePaat.',
   alternates: {
-    canonical: 'https://www.knowledgepaat.com/jobs',
+    canonical: 'https://knowledgepaat.com/jobs',
   },
   openGraph: {
     title: 'Verified Fresher Jobs & Direct Openings | KnowledgePaat',
     description: 'Browse verified fresher and entry-level job openings with zero consultancies on KnowledgePaat.',
-    url: 'https://www.knowledgepaat.com/jobs',
+    url: 'https://knowledgepaat.com/jobs',
     siteName: 'KnowledgePaat',
     type: 'website',
   },

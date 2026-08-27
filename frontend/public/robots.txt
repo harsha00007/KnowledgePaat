@@ -9,5 +9,5 @@ Disallow: /_next/
 Disallow: /forgot-password
 Disallow: /reset-password
 
-Sitemap: https://www.knowledgepaat.com/sitemap.xml
-Host: https://www.knowledgepaat.com
+Sitemap: https://knowledgepaat.com/sitemap.xml
+Host: https://knowledgepaat.com

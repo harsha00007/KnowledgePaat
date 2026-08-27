@@ -4,12 +4,12 @@ export const metadata: Metadata = {
   title: 'Interview Preparation Hub & Practice Question Bank',
   description: 'Master technical, HR, and aptitude interviews with 1,500+ curated practice questions, model answers, core concept explanations, and timed assessments on KnowledgePaat.',
   alternates: {
-    canonical: 'https://www.knowledgepaat.com/interview-preparation',
+    canonical: 'https://knowledgepaat.com/interview-preparation',
   },
   openGraph: {
     title: 'Interview Preparation Hub & Question Bank | KnowledgePaat',
     description: 'Master technical, HR, and aptitude interviews with 1,500+ curated practice questions on KnowledgePaat.',
-    url: 'https://www.knowledgepaat.com/interview-preparation',
+    url: 'https://knowledgepaat.com/interview-preparation',
     siteName: 'KnowledgePaat',
     type: 'website',
   },

@@ -244,7 +244,13 @@ export async function fetchFeatureFlags(): Promise<{
   updatedBy?: string | null;
 }> {
   try {
-    const res = await fetch('/api/feature-flags', { cache: 'no-store' });
+    const res = await fetch(`/api/feature-flags?t=${Date.now()}`, { 
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      }
+    });
     if (res.ok) {
       const data = await res.json();
       return {

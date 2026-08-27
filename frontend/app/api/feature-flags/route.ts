@@ -50,7 +50,16 @@ function saveFallbackData(data: StoredFlagsPayload) {
   }
 }
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
+  const noCacheHeaders = {
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+  };
+
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -68,7 +77,7 @@ export async function GET() {
         },
         updated_at: data.updated_at,
         updated_by: data.updated_by,
-      });
+      }, { headers: noCacheHeaders });
     }
   } catch {
     // Fall back to local file or defaults
@@ -80,7 +89,7 @@ export async function GET() {
     flags: fallback.flags,
     updated_at: fallback.updated_at,
     updated_by: fallback.updated_by,
-  });
+  }, { headers: noCacheHeaders });
 }
 
 export async function POST(req: NextRequest) {
@@ -120,17 +129,20 @@ export async function POST(req: NextRequest) {
 
     // Also persist to Supabase platform_settings
     try {
-      await supabase
+      const { error: dbError } = await supabase
         .from('platform_settings')
         .upsert(
           {
             id: 'global',
             feature_flags: flags,
             updated_at: payload.updated_at,
-            updated_by: payload.updated_by,
+            updated_by: user.id, // UUID for database column
           },
           { onConflict: 'id' }
         );
+      if (dbError) {
+        console.warn('Could not update Supabase platform_settings table directly:', dbError);
+      }
     } catch (dbErr) {
       console.warn('Could not update Supabase platform_settings table directly:', dbErr);
     }

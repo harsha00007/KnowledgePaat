@@ -4,12 +4,12 @@ export const metadata: Metadata = {
   title: 'About KnowledgePaat | From Knowledge to Opportunity',
   description: 'Learn about KnowledgePaat mission to bridge the gap between fresh graduates and corporate career breakthroughs through verified jobs, curated prep, and AI simulations.',
   alternates: {
-    canonical: 'https://www.knowledgepaat.com/about',
+    canonical: 'https://knowledgepaat.com/about',
   },
   openGraph: {
     title: 'About KnowledgePaat — Bridging Skills to Opportunity',
     description: 'Learn about KnowledgePaat mission to empower ambitious students and job seekers nationwide.',
-    url: 'https://www.knowledgepaat.com/about',
+    url: 'https://knowledgepaat.com/about',
     siteName: 'KnowledgePaat',
     type: 'website',
   },

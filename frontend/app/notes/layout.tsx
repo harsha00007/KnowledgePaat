@@ -4,12 +4,12 @@ export const metadata: Metadata = {
   title: 'Curated Study Notes, Cheat Sheets & Formula Guides',
   description: 'Access high-yield study notes, programming cheat sheets, CS core fundamentals (OS, DBMS, Networks), and aptitude formula booklets for rapid exam and placement revision on KnowledgePaat.',
   alternates: {
-    canonical: 'https://www.knowledgepaat.com/notes',
+    canonical: 'https://knowledgepaat.com/notes',
   },
   openGraph: {
     title: 'Curated Study Notes & Cheat Sheets | KnowledgePaat',
     description: 'High-yield study notes, CS fundamentals, and cheatsheets on KnowledgePaat.',
-    url: 'https://www.knowledgepaat.com/notes',
+    url: 'https://knowledgepaat.com/notes',
     siteName: 'KnowledgePaat',
     type: 'website',
   },
