@@ -44,19 +44,25 @@ export default function AdminDashboardPage() {
   const fetchDashboardData = async () => {
     setIsFetching(true);
     try {
-      // Fetch Stats in parallel
+      // Fetch Stats and Recent Activity all in parallel (8 queries)
       const [
         { count: studentsCount },
         { count: jobsCount },
         { count: questionsCount },
         { count: notesCount },
-        { data: activeSubsData }
+        { data: activeSubsData },
+        { data: studentsData },
+        { data: jobsData },
+        { data: subRows }
       ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
         supabase.from('jobs').select('*', { count: 'exact', head: true }),
         supabase.from('interview_questions').select('*', { count: 'exact', head: true }),
         supabase.from('notes').select('*', { count: 'exact', head: true }),
-        supabase.from('subscriptions').select('plan, status').in('status', ['active', 'Active'])
+        supabase.from('subscriptions').select('plan, status').in('status', ['active', 'Active']),
+        supabase.from('profiles').select('id, full_name, email, created_at').eq('role', 'student').order('created_at', { ascending: false }).limit(5),
+        supabase.from('jobs').select('id, title, company_name, posted_at').order('posted_at', { ascending: false }).limit(5),
+        supabase.from('subscriptions').select('*').in('plan', ['starter', 'Starter', 'pro', 'Pro', 'premium', 'Premium']).in('status', ['active', 'Active']).order('created_at', { ascending: false }).limit(5)
       ]);
 
       let starter = 0;
@@ -84,17 +90,6 @@ export default function AdminDashboardPage() {
         proCount: pro,
         premiumCount: premium,
       });
-
-      // Fetch Recent Activity in parallel
-      const [
-        { data: studentsData },
-        { data: jobsData },
-        { data: subRows }
-      ] = await Promise.all([
-        supabase.from('profiles').select('id, full_name, email, created_at').eq('role', 'student').order('created_at', { ascending: false }).limit(5),
-        supabase.from('jobs').select('id, title, company_name, posted_at').order('posted_at', { ascending: false }).limit(5),
-        supabase.from('subscriptions').select('*').in('plan', ['starter', 'Starter', 'pro', 'Pro', 'premium', 'Premium']).in('status', ['active', 'Active']).order('created_at', { ascending: false }).limit(5)
-      ]);
 
       setRecentStudents(studentsData || []);
       setRecentJobs(jobsData || []);

@@ -262,11 +262,19 @@ export default function AdminInterviewPrepPage() {
   const [testFormErrors, setTestFormErrors] = useState<Record<string, string>>({});
   const [availablePoolCount, setAvailablePoolCount] = useState<number | null>(null);
 
+  const [normalCount, setNormalCount] = useState(0);
+  const [mcqCount, setMcqCount] = useState(0);
+  const [totalQuestionsCount, setTotalQuestionsCount] = useState(0);
+
   const supabase = createClient();
 
   useEffect(() => {
     fetchAllData();
   }, []);
+
+  useEffect(() => {
+    fetchQuestions();
+  }, [questionSubTab, currentPage, searchQuery, statusFilter, categoryFilter, diffFilter, planFilter]);
 
   const fetchAllData = async () => {
     setIsFetching(true);
@@ -278,17 +286,13 @@ export default function AdminInterviewPrepPage() {
         .order('order_index', { ascending: true });
       if (catData) setCategories(catData as Category[]);
 
-      // 2. Fetch Questions
-      const { data: qData } = await supabase
-        .from('interview_questions')
-        .select(`
-          *,
-          interview_categories(name)
-        `)
-        .order('created_at', { ascending: false });
-      if (qData) {
-        setQuestions(qData.map((q: any) => ({ ...q, category: q.interview_categories })) as Question[]);
-      }
+      // 2. Fetch Tab Counts
+      const [normalHead, mcqHead] = await Promise.all([
+        supabase.from('interview_questions').select('*', { count: 'exact', head: true }).eq('question_type', 'normal'),
+        supabase.from('interview_questions').select('*', { count: 'exact', head: true }).eq('question_type', 'mcq')
+      ]);
+      if (typeof normalHead.count === 'number') setNormalCount(normalHead.count);
+      if (typeof mcqHead.count === 'number') setMcqCount(mcqHead.count);
 
       // 3. Fetch Test Configs
       const { data: testData } = await supabase
@@ -322,6 +326,8 @@ export default function AdminInterviewPrepPage() {
         setAttempts(attemptsData as TestAttemptStat[]);
       }
 
+      await fetchQuestions();
+
     } catch (err) {
       console.error("Error fetching admin interview prep data:", err);
     } finally {
@@ -329,32 +335,60 @@ export default function AdminInterviewPrepPage() {
     }
   };
 
+  const fetchQuestions = async () => {
+    try {
+      let query = supabase
+        .from('interview_questions')
+        .select(`
+          *,
+          interview_categories(name)
+        `, { count: 'exact' })
+        .eq('question_type', questionSubTab);
+
+      if (statusFilter) {
+        query = query.eq('status', statusFilter);
+      }
+      if (categoryFilter) {
+        query = query.eq('category_id', categoryFilter);
+      }
+      if (diffFilter) {
+        query = query.eq('difficulty', diffFilter);
+      }
+      if (planFilter) {
+        query = query.or(`minimum_plan.eq.${planFilter},access_type.eq.${planFilter}`);
+      }
+      if (searchQuery.trim()) {
+        const q = `%${searchQuery.trim()}%`;
+        query = query.or(`title.ilike.${q},answer.ilike.${q}`);
+      }
+
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+
+      const { data: qData, count, error } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+      if (qData) {
+        setQuestions(qData.map((q: any) => ({ ...q, category: q.interview_categories })) as Question[]);
+      }
+      if (typeof count === 'number') {
+        setTotalQuestionsCount(count);
+        if (questionSubTab === 'normal') setNormalCount(count);
+        else setMcqCount(count);
+      }
+    } catch (err) {
+      console.error("Error fetching paginated questions:", err);
+    }
+  };
+
   // ---------------- QUESTIONS TAB LOGIC ---------------- //
-  const normalQuestions = questions.filter(q => q.question_type !== 'mcq' && !q.option_a);
-  const mcqQuestions = questions.filter(q => q.question_type === 'mcq' || !!q.option_a);
-  const currentPool = questionSubTab === 'normal' ? normalQuestions : mcqQuestions;
-
-  const filteredQuestions = currentPool.filter(q => {
-    const query = searchQuery.toLowerCase();
-    const matchesSearch = query === '' || 
-      q.title.toLowerCase().includes(query) || 
-      (q.category?.name || '').toLowerCase().includes(query) || 
-      (q.technology_tags && q.technology_tags.some(t => t.toLowerCase().includes(query))) ||
-      (q.company_tags && q.company_tags.some(c => c.toLowerCase().includes(query))) ||
-      (q.answer && q.answer.toLowerCase().includes(query));
-
-    const matchesStatus = statusFilter === '' || q.status === statusFilter;
-    const matchesCat = categoryFilter === '' || q.category_id === categoryFilter;
-    const matchesDiff = diffFilter === '' || q.difficulty === diffFilter;
-    
-    const itemPlan = normalizePlanId(q.minimum_plan || q.access_type);
-    const matchesPlan = planFilter === '' || itemPlan === planFilter;
-
-    return matchesSearch && matchesStatus && matchesCat && matchesDiff && matchesPlan;
-  });
-
-  const totalPages = Math.ceil(filteredQuestions.length / itemsPerPage);
-  const paginatedQuestions = filteredQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const normalQuestions = questions;
+  const mcqQuestions = questions;
+  const filteredQuestions = questions;
+  const totalPages = Math.ceil(totalQuestionsCount / itemsPerPage) || 1;
+  const paginatedQuestions = questions;
 
   const openAddNormalQuestionForm = () => {
     setQuestionFormData({ 
@@ -1355,7 +1389,7 @@ export default function AdminInterviewPrepPage() {
               {totalPages > 1 && (
                 <div className="p-3 bg-[var(--color-bg-subtle)] border-t border-[var(--color-border)] flex items-center justify-between text-xs">
                   <span className="text-[var(--color-text-tertiary)]">
-                    Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredQuestions.length)} of {filteredQuestions.length}
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalQuestionsCount)} of {totalQuestionsCount}
                   </span>
                   <div className="flex items-center gap-1.5">
                     <Button 

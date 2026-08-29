@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { DEFAULT_SOCIAL_LINKS, SocialLinksSettings } from '@/lib/socialLinks';
+import { checkRateLimit, rateLimitResponse, getRealClientIp, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 import fs from 'fs';
 import path from 'path';
 
@@ -82,6 +83,16 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // Enforce Rate Limit for Social Links Settings
+    const rateLimitKey = user ? `admin_social:${user.id}` : `admin_social_ip:${getRealClientIp(req)}`;
+    const rl = await checkRateLimit(rateLimitKey, RATE_LIMIT_POLICIES.ADMIN_SETTINGS);
+    if (!rl.success) {
+      return rateLimitResponse(rl);
+    }
+
     const body = await req.json();
     const socialLinks: SocialLinksSettings = body.social_links || DEFAULT_SOCIAL_LINKS;
 
@@ -90,8 +101,6 @@ export async function POST(req: NextRequest) {
 
     // Also attempt saving to Supabase platform_settings
     try {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
 
       await supabase
         .from('platform_settings')

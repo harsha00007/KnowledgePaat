@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { isServerModuleEnabled } from '@/lib/featureFlagsServer';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,6 +17,12 @@ export async function POST(req: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized. Please sign in.' }, { status: 401 });
+    }
+
+    // Enforce Rate Limit for Career Plan Task Updates
+    const rl = await checkRateLimit(`career_task_update:${user.id}`, RATE_LIMIT_POLICIES.TASK_UPDATE);
+    if (!rl.success) {
+      return rateLimitResponse(rl);
     }
 
     const body = await req.json();

@@ -1,0 +1,22 @@
+{
+  "facebook": {
+    "url": "https://www.facebook.com/profile.php?id=61593891716949",
+    "enabled": true
+  },
+  "x": {
+    "url": "https://x.com/knowledgepaat",
+    "enabled": true
+  },
+  "linkedin": {
+    "url": "https://linkedin.com/company/knowledgepaat",
+    "enabled": true
+  },
+  "youtube": {
+    "url": "https://youtube.com/@knowledgepaat",
+    "enabled": true
+  },
+  "instagram": {
+    "url": "https://instagram.com/knowledgepaat",
+    "enabled": true
+  }
+}

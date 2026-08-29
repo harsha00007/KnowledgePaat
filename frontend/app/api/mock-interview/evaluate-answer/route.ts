@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { evaluateInterviewAnswer } from '@/lib/ai/interviewEvaluation';
 import { EvaluateAnswerInput } from '@/lib/ai/interviewTypes';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,6 +12,12 @@ export async function POST(req: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized. Please sign in.' }, { status: 401 });
+    }
+
+    // Enforce Rate Limit for AI Answer Evaluation
+    const rl = await checkRateLimit(`ai_mock_eval:${user.id}`, RATE_LIMIT_POLICIES.AI_MOCK_EVALUATE);
+    if (!rl.success) {
+      return rateLimitResponse(rl);
     }
 
     const body = await req.json();
@@ -40,16 +48,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Session not found or access denied.' }, { status: 404 });
     }
 
-    // 2. Perform AI Answer Evaluation
-    const evaluation = await evaluateInterviewAnswer({
-      question,
-      studentAnswer: studentAnswer || '',
-      interviewType,
-      category,
-      difficulty,
-      expectedConcepts,
-      role
-    });
+    // 2. Perform AI Answer Evaluation with slow request profiling
+    const evaluation = await logger.measureDuration(
+      'AI Answer Evaluation',
+      async () => {
+        return evaluateInterviewAnswer({
+          question,
+          studentAnswer: studentAnswer || '',
+          interviewType,
+          category,
+          difficulty,
+          expectedConcepts,
+          role
+        });
+      },
+      3000,
+      { route: '/api/mock-interview/evaluate-answer', userId: user.id }
+    );
 
     // 3. Persist evaluation in mock_interview_answers if matching session exists
     try {
@@ -76,8 +91,8 @@ export async function POST(req: NextRequest) {
           interview_tip: evaluation.interview_tip,
           ai_summary: evaluation.summary
         });
-    } catch (dbErr) {
-      console.warn('Note on persisting individual answer row:', dbErr);
+    } catch (insertErr) {
+      logger.warn('Failed to persist mock answer record:', { error: insertErr, sessionId, userId: user.id });
     }
 
     return NextResponse.json({
@@ -86,7 +101,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (err: any) {
-    console.error('Error evaluating interview answer:', err);
+    logger.error('Error evaluating interview answer', err, { route: '/api/mock-interview/evaluate-answer' });
     return NextResponse.json({ error: err.message || 'Failed to evaluate answer.' }, { status: 500 });
   }
 }

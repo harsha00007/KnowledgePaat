@@ -115,6 +115,8 @@ export default function ProfilePage() {
     }
   };
 
+  const [skillError, setSkillError] = useState<string | null>(null);
+
   // Calculate completion percentage
   useEffect(() => {
     const fieldsToTrack = [
@@ -132,7 +134,7 @@ export default function ProfilePage() {
       data.workMode
     ];
     
-    const completedFields = fieldsToTrack.filter(field => field.trim() !== '');
+    const completedFields = fieldsToTrack.filter(field => (field || '').trim() !== '');
     const percentage = Math.round((completedFields.length / fieldsToTrack.length) * 100);
     setCompletion(percentage);
   }, [data]);
@@ -148,14 +150,31 @@ export default function ProfilePage() {
   const handleAddSkill = (e: React.KeyboardEvent | React.MouseEvent) => {
     if ('key' in e && e.key !== 'Enter') return;
     e.preventDefault();
-    
-    if (skillInput.trim() && !data.skills.includes(skillInput.trim())) {
-      setData(prev => ({
-        ...prev,
-        skills: [...prev.skills, skillInput.trim()]
-      }));
-      setSkillInput('');
+    setSkillError(null);
+
+    const trimmed = skillInput.trim();
+    if (!trimmed) return;
+
+    if (trimmed.length > 50) {
+      setSkillError("Skill name cannot exceed 50 characters.");
+      return;
     }
+
+    if (data.skills.length >= 50) {
+      setSkillError("Maximum 50 skills allowed.");
+      return;
+    }
+
+    if (data.skills.some(s => s.toLowerCase() === trimmed.toLowerCase())) {
+      setSkillError("This skill has already been added.");
+      return;
+    }
+
+    setData(prev => ({
+      ...prev,
+      skills: [...prev.skills, trimmed]
+    }));
+    setSkillInput('');
   };
 
   const handleRemoveSkill = (skillToRemove: string) => {
@@ -163,16 +182,120 @@ export default function ProfilePage() {
       ...prev,
       skills: prev.skills.filter(s => s !== skillToRemove)
     }));
+    setSkillError(null);
   };
 
   const validate = () => {
     const newErrors: Partial<Record<keyof ProfileData, string>> = {};
-    if (!data.fullName.trim()) newErrors.fullName = 'Full Name is required';
-    if (!data.mobile.trim()) newErrors.mobile = 'Mobile Number is required';
-    if (!data.collegeName.trim()) newErrors.collegeName = 'College Name is required';
-    if (!data.degree.trim()) newErrors.degree = 'Degree is required';
-    if (!data.passingYear.trim()) newErrors.passingYear = 'Passing Year is required';
-    if (!data.preferredRole.trim()) newErrors.preferredRole = 'Preferred Job Role is required';
+
+    // 1. Full Name: Required, 2-100 characters
+    const trimmedName = data.fullName.trim();
+    if (!trimmedName) {
+      newErrors.fullName = 'Full Name is required';
+    } else if (trimmedName.length < 2) {
+      newErrors.fullName = 'Full Name must be at least 2 characters';
+    } else if (trimmedName.length > 100) {
+      newErrors.fullName = 'Full Name cannot exceed 100 characters';
+    }
+
+    // 2. Mobile Number: Required, 7-20 chars, numeric format
+    const trimmedMobile = data.mobile.trim();
+    if (!trimmedMobile) {
+      newErrors.mobile = 'Mobile Number is required';
+    } else if (trimmedMobile.length > 20) {
+      newErrors.mobile = 'Mobile Number cannot exceed 20 characters';
+    } else if (/[a-zA-Z]/.test(trimmedMobile) || !/^[\+]?[(]?[0-9]{1,4}[)]?[-\s\./0-9]{6,15}$/.test(trimmedMobile)) {
+      newErrors.mobile = 'Please enter a valid mobile number (e.g. +91 98765 43210)';
+    }
+
+    // 3. Date of Birth: Optional, not in future, realistic year
+    if (data.dob) {
+      const dobDate = new Date(data.dob);
+      const today = new Date();
+      if (isNaN(dobDate.getTime())) {
+        newErrors.dob = 'Please enter a valid date of birth';
+      } else if (dobDate > today) {
+        newErrors.dob = 'Date of birth cannot be in the future';
+      } else if (dobDate.getFullYear() < 1920) {
+        newErrors.dob = 'Please enter a realistic year of birth';
+      }
+    }
+
+    // 4. City, State, Country: Optional, max 100 chars
+    if (data.city && data.city.trim().length > 100) {
+      newErrors.city = 'City cannot exceed 100 characters';
+    }
+    if (data.state && data.state.trim().length > 100) {
+      newErrors.state = 'State cannot exceed 100 characters';
+    }
+    if (data.country && data.country.trim().length > 100) {
+      newErrors.country = 'Country cannot exceed 100 characters';
+    }
+
+    // 5. College Name: Required, max 150 chars
+    const trimmedCollege = data.collegeName.trim();
+    if (!trimmedCollege) {
+      newErrors.collegeName = 'College Name is required';
+    } else if (trimmedCollege.length > 150) {
+      newErrors.collegeName = 'College Name cannot exceed 150 characters';
+    }
+
+    // 6. Degree: Required, max 100 chars
+    const trimmedDegree = data.degree.trim();
+    if (!trimmedDegree) {
+      newErrors.degree = 'Degree is required';
+    } else if (trimmedDegree.length > 100) {
+      newErrors.degree = 'Degree cannot exceed 100 characters';
+    }
+
+    // 7. Branch: Optional, max 100 chars
+    if (data.branch && data.branch.trim().length > 100) {
+      newErrors.branch = 'Branch cannot exceed 100 characters';
+    }
+
+    // 8. Passing Year: Required, integer between 1950 and 2100 (reject negative, decimals, text)
+    const trimmedPassingYear = data.passingYear.trim();
+    if (!trimmedPassingYear) {
+      newErrors.passingYear = 'Passing Year is required';
+    } else {
+      const pyNum = Number(trimmedPassingYear);
+      if (isNaN(pyNum) || !/^\d+$/.test(trimmedPassingYear)) {
+        newErrors.passingYear = 'Passing year must be a valid 4-digit number (e.g. 2026)';
+      } else if (pyNum < 1950 || pyNum > 2100) {
+        newErrors.passingYear = 'Passing year must be between 1950 and 2100';
+      }
+    }
+
+    // 9. CGPA / Percentage: Optional, numeric float/decimal, between 0 and 100 (reject negative, text)
+    const trimmedCgpa = data.cgpa.trim();
+    if (trimmedCgpa) {
+      const cgpaNum = Number(trimmedCgpa);
+      if (isNaN(cgpaNum) || !/^-?\d+(\.\d+)?$/.test(trimmedCgpa)) {
+        newErrors.cgpa = 'Please enter a valid numeric CGPA or Percentage (e.g. 8.5 or 85.0)';
+      } else if (cgpaNum < 0) {
+        newErrors.cgpa = 'CGPA / Percentage cannot be negative (minimum is 0)';
+      } else if (cgpaNum > 100) {
+        newErrors.cgpa = 'CGPA / Percentage cannot exceed 100';
+      }
+    }
+
+    // 10. Preferred Role: Required, max 100 chars
+    const trimmedRole = data.preferredRole.trim();
+    if (!trimmedRole) {
+      newErrors.preferredRole = 'Preferred Job Role is required';
+    } else if (trimmedRole.length > 100) {
+      newErrors.preferredRole = 'Preferred Job Role cannot exceed 100 characters';
+    }
+
+    // 11. Preferred Location: Optional, max 100 chars
+    if (data.preferredLocation && data.preferredLocation.trim().length > 100) {
+      newErrors.preferredLocation = 'Preferred Location cannot exceed 100 characters';
+    }
+
+    // 12. Expected Salary: Optional, max 50 chars
+    if (data.expectedSalary && data.expectedSalary.trim().length > 50) {
+      newErrors.expectedSalary = 'Expected Salary cannot exceed 50 characters';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -192,28 +315,31 @@ export default function ProfilePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Sanitize and bound payload data before saving
+      const sanitizedPayload = {
+        full_name: data.fullName.trim().slice(0, 100),
+        phone: data.mobile.trim().slice(0, 20),
+        dob: data.dob || null,
+        gender: data.gender || null,
+        city: data.city.trim().slice(0, 100) || null,
+        state: data.state.trim().slice(0, 100) || null,
+        country: data.country.trim().slice(0, 100) || null,
+        college_name: data.collegeName.trim().slice(0, 150),
+        degree: data.degree.trim().slice(0, 100),
+        branch: data.branch.trim().slice(0, 100) || null,
+        passing_year: data.passingYear ? parseInt(data.passingYear.trim(), 10) : null,
+        cgpa: data.cgpa ? parseFloat(data.cgpa.trim()) : null,
+        skills: data.skills.slice(0, 50).map(s => s.trim().slice(0, 50)),
+        preferred_role: data.preferredRole.trim().slice(0, 100),
+        preferred_location: data.preferredLocation.trim().slice(0, 100) || null,
+        expected_salary: data.expectedSalary.trim().slice(0, 50) || null,
+        work_mode: data.workMode || null,
+        updated_at: new Date().toISOString(),
+      };
+
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({
-          full_name: data.fullName,
-          phone: data.mobile,
-          dob: data.dob || null,
-          gender: data.gender || null,
-          city: data.city || null,
-          state: data.state || null,
-          country: data.country || null,
-          college_name: data.collegeName,
-          degree: data.degree,
-          branch: data.branch || null,
-          passing_year: data.passingYear ? parseInt(data.passingYear, 10) : null,
-          cgpa: data.cgpa ? parseFloat(data.cgpa) : null,
-          skills: data.skills,
-          preferred_role: data.preferredRole,
-          preferred_location: data.preferredLocation || null,
-          expected_salary: data.expectedSalary || null,
-          work_mode: data.workMode || null,
-          updated_at: new Date().toISOString(),
-        })
+        .update(sanitizedPayload)
         .eq('id', user.id);
 
       if (updateError) throw updateError;
@@ -317,6 +443,7 @@ export default function ProfilePage() {
               value={data.fullName} 
               onChange={handleChange} 
               error={errors.fullName} 
+              maxLength={100}
               placeholder="e.g. Rahul Sharma"
             />
             <Input 
@@ -325,6 +452,7 @@ export default function ProfilePage() {
               value={data.email} 
               onChange={handleChange} 
               disabled 
+              maxLength={150}
             />
             <Input 
               label="Mobile Number *" 
@@ -332,6 +460,7 @@ export default function ProfilePage() {
               value={data.mobile} 
               onChange={handleChange} 
               error={errors.mobile} 
+              maxLength={20}
               placeholder="e.g. +91 98765 43210"
             />
             <Input 
@@ -340,6 +469,8 @@ export default function ProfilePage() {
               type="date" 
               value={data.dob} 
               onChange={handleChange} 
+              error={errors.dob}
+              max={new Date().toISOString().split('T')[0]}
             />
             
             <div>
@@ -357,9 +488,33 @@ export default function ProfilePage() {
               </select>
             </div>
 
-            <Input label="City" name="city" value={data.city} onChange={handleChange} placeholder="e.g. Bangalore" />
-            <Input label="State" name="state" value={data.state} onChange={handleChange} placeholder="e.g. Karnataka" />
-            <Input label="Country" name="country" value={data.country} onChange={handleChange} placeholder="e.g. India" />
+            <Input 
+              label="City" 
+              name="city" 
+              value={data.city} 
+              onChange={handleChange} 
+              error={errors.city}
+              maxLength={100}
+              placeholder="e.g. Bangalore" 
+            />
+            <Input 
+              label="State" 
+              name="state" 
+              value={data.state} 
+              onChange={handleChange} 
+              error={errors.state}
+              maxLength={100}
+              placeholder="e.g. Karnataka" 
+            />
+            <Input 
+              label="Country" 
+              name="country" 
+              value={data.country} 
+              onChange={handleChange} 
+              error={errors.country}
+              maxLength={100}
+              placeholder="e.g. India" 
+            />
           </div>
         </div>
 
@@ -376,6 +531,7 @@ export default function ProfilePage() {
                 value={data.collegeName} 
                 onChange={handleChange} 
                 error={errors.collegeName} 
+                maxLength={150}
                 placeholder="e.g. National Institute of Technology"
               />
             </div>
@@ -385,6 +541,7 @@ export default function ProfilePage() {
               value={data.degree} 
               onChange={handleChange} 
               error={errors.degree} 
+              maxLength={100}
               placeholder="e.g. B.Tech / B.E / B.Sc / MCA"
             />
             <Input 
@@ -392,6 +549,8 @@ export default function ProfilePage() {
               name="branch" 
               value={data.branch} 
               onChange={handleChange} 
+              error={errors.branch}
+              maxLength={100}
               placeholder="e.g. Computer Science & Engineering"
             />
             <Input 
@@ -401,6 +560,9 @@ export default function ProfilePage() {
               onChange={handleChange} 
               error={errors.passingYear} 
               type="number"
+              min={1950}
+              max={2100}
+              step="1"
               placeholder="e.g. 2026"
             />
             <Input 
@@ -408,9 +570,12 @@ export default function ProfilePage() {
               name="cgpa" 
               value={data.cgpa} 
               onChange={handleChange} 
+              error={errors.cgpa}
               type="number" 
+              min={0}
+              max={100}
               step="0.01"
-              placeholder="e.g. 8.5"
+              placeholder="e.g. 8.5 or 85.0"
             />
           </div>
         </div>
@@ -421,20 +586,34 @@ export default function ProfilePage() {
             Skills
           </h3>
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">Add Key Technical & Soft Skills</label>
-            <div className="flex gap-2.5 mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-[var(--color-text-primary)]">Add Key Technical & Soft Skills</label>
+              <span className="text-xs text-[var(--color-text-tertiary)]">{data.skills.length} / 50 skills</span>
+            </div>
+            <div className="flex gap-2.5 mb-2">
               <input 
                 type="text" 
                 value={skillInput}
-                onChange={(e) => setSkillInput(e.target.value)}
+                onChange={(e) => {
+                  setSkillInput(e.target.value);
+                  if (skillError) setSkillError(null);
+                }}
                 onKeyDown={handleAddSkill}
-                placeholder="e.g. React, Java, Python, SQL"
+                maxLength={50}
+                placeholder="e.g. React, Java, Python, SQL (Max 50 chars)"
                 className="flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:border-[var(--color-brand-500)] shadow-[var(--shadow-xs)] transition-colors"
               />
               <Button type="button" variant="outline" onClick={handleAddSkill} className="shrink-0">
                 <Plus className="w-4 h-4 mr-1" /> Add Skill
               </Button>
             </div>
+
+            {skillError && (
+              <p className="text-xs font-medium text-[var(--color-error)] mb-3 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                {skillError}
+              </p>
+            )}
             
             <div className="flex flex-wrap gap-2 min-h-[50px] p-3.5 bg-[var(--color-bg-subtle)] rounded-[var(--radius-md)] border border-[var(--color-border)]">
               {data.skills.length === 0 ? (
@@ -470,6 +649,7 @@ export default function ProfilePage() {
               value={data.preferredRole} 
               onChange={handleChange} 
               error={errors.preferredRole} 
+              maxLength={100}
               placeholder="e.g. Frontend Developer / Software Engineer"
             />
             <Input 
@@ -477,6 +657,8 @@ export default function ProfilePage() {
               name="preferredLocation" 
               value={data.preferredLocation} 
               onChange={handleChange} 
+              error={errors.preferredLocation}
+              maxLength={100}
               placeholder="e.g. Bangalore / Remote / Hyderabad"
             />
             <Input 
@@ -484,6 +666,8 @@ export default function ProfilePage() {
               name="expectedSalary" 
               value={data.expectedSalary} 
               onChange={handleChange} 
+              error={errors.expectedSalary}
+              maxLength={50}
               placeholder="e.g. ₹6,00,000 / year"
             />
             

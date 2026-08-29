@@ -81,22 +81,26 @@ export default function StudentDashboard() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Fetch profile
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        if (profileData) setProfile(profileData);
+        // Parallel fetch: Profile, Subscription, Career Plan, Recent Jobs
+        const [
+          { data: profileData },
+          { data: subData },
+          { data: planData },
+          { data: jobsData }
+        ] = await Promise.all([
+          supabase.from('profiles').select('*').eq('id', user.id).single(),
+          supabase.from('subscriptions').select('*').eq('student_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+          isIntelEnabled
+            ? supabase.from('career_improvement_plans').select('*').eq('student_id', user.id).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle()
+            : Promise.resolve({ data: null }),
+          isJobsEnabled
+            ? supabase.from('jobs').select('*').eq('status', 'Active').order('posted_at', { ascending: false }).limit(4)
+            : Promise.resolve({ data: null })
+        ]);
 
-        // Fetch subscription and calculate unified access
-        const { data: subData } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('student_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        if (profileData) setProfile(profileData);
+        if (planData) setCareerPlan(planData);
+        if (jobsData && jobsData.length > 0) setRecentJobs(jobsData);
 
         const userAccessCalc = calculateUserAccess(subData);
         setAccess(userAccessCalc);
@@ -106,36 +110,6 @@ export default function StudentDashboard() {
           const stats = await getConsumedSessionsCount(supabase, user.id, userAccessCalc.startDate);
           const creds = calculateMockCreditStatus(userAccessCalc, stats.usedCount, stats.completedCount, stats.averageScore);
           setCreditStatus(creds);
-        }
-
-        // Fetch active career improvement plan (only if career intelligence enabled)
-        if (isIntelEnabled) {
-          const { data: planData } = await supabase
-            .from('career_improvement_plans')
-            .select('*')
-            .eq('student_id', user.id)
-            .eq('status', 'active')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (planData) {
-            setCareerPlan(planData);
-          }
-        }
-      }
-
-      // Fetch top recent active jobs (only if jobs enabled)
-      if (isJobsEnabled) {
-        const { data: jobsData } = await supabase
-          .from('jobs')
-          .select('*')
-          .eq('status', 'Active')
-          .order('posted_at', { ascending: false })
-          .limit(4);
-          
-        if (jobsData && jobsData.length > 0) {
-          setRecentJobs(jobsData);
         }
       }
     } catch (err) {

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { isServerModuleEnabled } from '@/lib/featureFlagsServer';
+import { checkRateLimit, rateLimitResponse, getRealClientIp, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
+import { calculateUserAccess } from '@/lib/subscription';
 
 interface QuestionAnswerSubmission {
   questionId: string;
@@ -21,6 +23,14 @@ export async function POST(req: NextRequest) {
 
     // 1. Get authenticated student user (or demo fallback)
     const { data: { user } } = await supabase.auth.getUser();
+
+    // Enforce Rate Limit for Test Submission
+    const rateLimitKey = user ? `test_submit:${user.id}` : `test_submit_ip:${getRealClientIp(req)}`;
+    const rl = await checkRateLimit(rateLimitKey, RATE_LIMIT_POLICIES.TEST_SUBMIT);
+    if (!rl.success) {
+      return rateLimitResponse(rl);
+    }
+
     let studentId = user?.id;
 
     if (!studentId) {
@@ -53,6 +63,24 @@ export async function POST(req: NextRequest) {
       timeSpentSeconds: number;
       answers: QuestionAnswerSubmission[];
     };
+
+    // SERVER-SIDE SECURITY CHECK: AI Adaptive Mode is strictly for Premium subscribers
+    if (mode === 'ai_adaptive') {
+      const { data: subData } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const access = calculateUserAccess(subData);
+      if (!access.hasAccess('premium')) {
+        return NextResponse.json({
+          error: 'AI Adaptive Mode is exclusively available for Premium subscribers. Please upgrade to unlock adaptive assessment.'
+        }, { status: 403 });
+      }
+    }
 
     if (!answers || !Array.isArray(answers) || answers.length === 0) {
       return NextResponse.json({ error: 'No answers provided for evaluation.' }, { status: 400 });

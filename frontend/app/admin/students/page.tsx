@@ -61,24 +61,42 @@ export default function AdminStudentsPage() {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 15;
+  const [totalCount, setTotalCount] = useState(0);
 
   const supabase = createClient();
 
   useEffect(() => {
     fetchStudents();
-  }, []);
+  }, [currentPage, searchQuery, statusFilter, subFilter, yearFilter]);
 
   const fetchStudents = async () => {
     setIsFetching(true);
     try {
-      const { data: studentProfiles, error: profErr } = await supabase
+      let query = supabase
         .from('profiles')
-        .select('*')
-        .eq('role', 'student')
-        .order('created_at', { ascending: false });
+        .select('*', { count: 'exact' })
+        .eq('role', 'student');
+
+      if (searchQuery.trim()) {
+        const q = `%${searchQuery.trim()}%`;
+        query = query.or(`full_name.ilike.${q},email.ilike.${q},college_name.ilike.${q},preferred_role.ilike.${q}`);
+      }
+
+      if (yearFilter) {
+        query = query.eq('passing_year', yearFilter);
+      }
+
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+
+      const { data: studentProfiles, count, error: profErr } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (profErr) throw profErr;
+
+      if (typeof count === 'number') setTotalCount(count);
 
       if (studentProfiles && studentProfiles.length > 0) {
         const studentIds = studentProfiles.map(s => s.id);
@@ -131,31 +149,19 @@ export default function AdminStudentsPage() {
     return student.is_active !== false;
   };
 
-  // Filtering Logic
+  // Filtered Students (plan & active status applied)
   const filteredStudents = students.filter(student => {
-    const query = searchQuery.toLowerCase();
-    const nameMatch = (student.full_name || '').toLowerCase().includes(query);
-    const emailMatch = (student.email || '').toLowerCase().includes(query);
-    const collegeMatch = (student.college_name || '').toLowerCase().includes(query);
-    const roleMatch = (student.preferred_role || '').toLowerCase().includes(query);
-    const matchesSearch = query === '' || nameMatch || emailMatch || collegeMatch || roleMatch;
-
     const matchesStatus = statusFilter === '' || 
       (statusFilter === 'Active' ? isStudentActive(student) : !isStudentActive(student));
       
     const matchesSub = subFilter === '' || getSubPlan(student) === subFilter;
-    
-    const matchesYear = yearFilter === '' || student.passing_year === yearFilter;
 
-    return matchesSearch && matchesStatus && matchesSub && matchesYear;
+    return matchesStatus && matchesSub;
   });
 
   // Pagination Logic
-  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
-  const paginatedStudents = filteredStudents.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
+  const paginatedStudents = filteredStudents;
 
   const resetFilters = () => {
     setSearchQuery('');
@@ -417,7 +423,7 @@ export default function AdminStudentsPage() {
               {/* Pagination Bar */}
               <div className="p-3.5 border-t border-[var(--color-border)] flex items-center justify-between bg-[var(--color-bg-subtle)] text-xs">
                 <span className="font-medium text-[var(--color-text-tertiary)]">
-                  Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredStudents.length)} of {filteredStudents.length} students
+                  Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount} students
                 </span>
                 <div className="flex gap-1.5">
                   <Button 

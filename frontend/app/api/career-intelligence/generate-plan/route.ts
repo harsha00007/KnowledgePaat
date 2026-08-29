@@ -8,6 +8,7 @@ import {
 } from '@/lib/careerIntelligence';
 import { TopicPerformance } from '@/lib/adaptiveInterview';
 import { isServerModuleEnabled } from '@/lib/featureFlagsServer';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,6 +24,12 @@ export async function POST(req: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized. Please sign in.' }, { status: 401 });
+    }
+
+    // Enforce Rate Limit for AI Career Roadmap Generation
+    const rl = await checkRateLimit(`ai_career_plan:${user.id}`, RATE_LIMIT_POLICIES.AI_CAREER_PLAN);
+    if (!rl.success) {
+      return rateLimitResponse(rl);
     }
 
     const body = await req.json().catch(() => ({}));

@@ -3,6 +3,7 @@
 import React from 'react';
 import { Sun, Moon } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
+import { usePathname } from 'next/navigation';
 
 export interface ThemeToggleProps {
   className?: string;
@@ -12,9 +13,10 @@ export interface ThemeToggleProps {
 
 export function ThemeToggle({ className = '', size = 'md', showLabel = false }: ThemeToggleProps) {
   const { isFeatureEnabled, theme, toggleTheme, isLoading } = useTheme();
+  const pathname = usePathname();
 
-  // CRITICAL REQUIREMENT: If Admin disabled theme support, render NOTHING
-  if (!isFeatureEnabled || isLoading) {
+  // CRITICAL REQUIREMENT: Not applicable on Home/Public page, or if Admin disabled theme support
+  if (pathname === '/' || !isFeatureEnabled || isLoading) {
     return null;
   }
 

@@ -4,6 +4,7 @@ import { parseUploadedJobFile } from '@/lib/import/jobFileParser';
 import { validateJobRows } from '@/lib/import/jobValidator';
 import { createJobDuplicateSignature } from '@/lib/import/jobNormalizer';
 import { JobImportDefaults, ValidatedJobRow } from '@/lib/import/jobTypes';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 
 export const maxDuration = 60; // Allow sufficient processing time for large file imports
 
@@ -25,6 +26,12 @@ export async function POST(req: NextRequest) {
 
     if (profErr || !profile || profile.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden. Administrator privileges required.' }, { status: 403 });
+    }
+
+    // Enforce Rate Limit for Admin Bulk Job Imports
+    const rl = await checkRateLimit(`admin_jobs_import:${user.id}`, RATE_LIMIT_POLICIES.ADMIN_BULK_IMPORT);
+    if (!rl.success) {
+      return rateLimitResponse(rl);
     }
 
     const contentType = req.headers.get('content-type') || '';

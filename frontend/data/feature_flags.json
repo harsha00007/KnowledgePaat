@@ -1,6 +1,6 @@
 {
   "flags": {
-    "student_portal": false,
+    "student_portal": true,
     "student_dashboard": true,
     "student_profile": true,
     "student_resume": true,
@@ -17,6 +17,6 @@
     "student_registration": true,
     "blur_homepage_pricing": true
   },
-  "updated_at": "2026-08-25T20:14:26.920Z",
+  "updated_at": "2026-08-29T09:27:24.453Z",
   "updated_by": "harshal.782002@gmail.com"
 }

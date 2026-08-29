@@ -43,6 +43,7 @@ import { calculateUserAccess, isContentAccessible, UserAccess } from '@/lib/subs
 import { PLANS, normalizePlanId, PlanId } from '@/config/plans';
 import { useFeatureFlags } from '@/context/FeatureFlagContext';
 import { FeatureComingSoon } from '@/components/FeatureComingSoon';
+import { fetchWithSWR } from '@/lib/clientQueryCache';
 
 type Category = {
   id: string;
@@ -158,6 +159,7 @@ export default function StudentInterviewPrepPage() {
   const isPrepEnabled = isModuleEnabled('student_interview_prep');
 
   const [activeView, setActiveView] = useState<'tests' | 'practice' | 'history'>('tests');
+  const [testsSubTab, setTestsSubTab] = useState<'available' | 'completed'>('available');
   
   // Data States
   const [categories, setCategories] = useState<Category[]>([]);
@@ -184,6 +186,11 @@ export default function StudentInterviewPrepPage() {
   const [companyFilter, setCompanyFilter] = useState('');
   const [planFilter, setPlanFilter] = useState('');
 
+  // Practice Pagination State
+  const [practicePage, setPracticePage] = useState(1);
+  const [totalNormalCount, setTotalNormalCount] = useState(0);
+  const practiceItemsPerPage = 20;
+
   // Practice Question Modal
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
@@ -204,6 +211,56 @@ export default function StudentInterviewPrepPage() {
       fetchPrepData();
     }
   }, [isPrepEnabled]);
+
+  useEffect(() => {
+    if (isPrepEnabled) {
+      fetchNormalQuestions();
+    }
+  }, [isPrepEnabled, practicePage, searchQuery, categoryFilter, difficultyFilter, planFilter]);
+
+  const fetchNormalQuestions = async () => {
+    try {
+      let query = supabase
+        .from('interview_questions')
+        .select(`
+          *,
+          interview_categories(name)
+        `, { count: 'exact' })
+        .eq('status', 'Active')
+        .eq('question_type', 'normal');
+
+      if (categoryFilter) {
+        query = query.eq('category_id', categoryFilter);
+      }
+      if (difficultyFilter) {
+        query = query.eq('difficulty', difficultyFilter);
+      }
+      if (planFilter) {
+        query = query.or(`minimum_plan.eq.${planFilter},access_type.eq.${planFilter}`);
+      }
+      if (searchQuery.trim()) {
+        const q = `%${searchQuery.trim()}%`;
+        query = query.or(`title.ilike.${q},answer.ilike.${q}`);
+      }
+
+      const from = (practicePage - 1) * practiceItemsPerPage;
+      const to = from + practiceItemsPerPage - 1;
+
+      const { data: normalData, count, error } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+      if (normalData) {
+        setNormalQuestions(normalData.map((q: any) => ({ ...q, category: q.interview_categories })) as Question[]);
+      }
+      if (typeof count === 'number') {
+        setTotalNormalCount(count);
+      }
+    } catch (err) {
+      console.error("Error fetching practice questions:", err);
+    }
+  };
 
   // Timer Effect for Active Timed Test
   useEffect(() => {
@@ -228,105 +285,67 @@ export default function StudentInterviewPrepPage() {
     setIsFetching(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        // 1. Fetch Subscription & calculate effective access
-        const { data: subData } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('student_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
 
-        setUserAccess(calculateUserAccess(subData));
+      const userQueries = user ? [
+        supabase.from('subscriptions').select('*').eq('student_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+        supabase.from('student_question_progress').select('question_id').eq('student_id', user.id).eq('completed', true),
+        supabase.from('student_test_attempts').select('*').eq('student_id', user.id).order('created_at', { ascending: false })
+      ] : [
+        Promise.resolve({ data: null }),
+        Promise.resolve({ data: null }),
+        Promise.resolve({ data: null })
+      ];
 
-        // 2. Fetch Completed Questions
-        const { data: progressData } = await supabase
-          .from('student_question_progress')
-          .select('question_id')
-          .eq('student_id', user.id)
-          .eq('completed', true);
+      const userPromise = Promise.all(userQueries);
 
-        if (progressData) {
-          setCompletedQuestionIds(new Set(progressData.map(p => p.question_id)));
+      const sharedPromise = fetchWithSWR(
+        'interview_prep_shared_config',
+        async () => {
+          const [
+            { data: settingsData },
+            { data: catData },
+            { data: mcqData },
+            { data: testData }
+          ] = await Promise.all([
+            supabase.from('interview_prep_settings').select('*').eq('id', 'global').maybeSingle(),
+            supabase.from('interview_categories').select('*').order('order_index', { ascending: true }),
+            supabase.from('interview_questions').select('*, interview_categories(name)').eq('status', 'Active').eq('question_type', 'mcq').order('created_at', { ascending: false }),
+            supabase.from('interview_test_configs').select('*, interview_categories(name)').eq('status', 'Active').order('created_at', { ascending: false })
+          ]);
+
+          return { settingsData, catData, mcqData, testData };
+        },
+        {
+          staleTimeMs: 300000,
+          onRevalidate: (fresh) => {
+            if (fresh.settingsData) setPrepSettings(fresh.settingsData as PrepSettings);
+            if (fresh.catData) setCategories((fresh.catData as Category[]).filter(c => (c.status || 'Active') === 'Active'));
+            if (fresh.mcqData) setMcqQuestions((fresh.mcqData as any[]).map((q: any) => ({ ...q, category: q.interview_categories })) as Question[]);
+            if (fresh.testData) setTestConfigs((fresh.testData as any[]).map((t: any) => ({ ...t, category: t.interview_categories })) as TestConfig[]);
+          }
         }
+      );
 
-        // 3. Fetch Test Attempts History
-        const { data: historyData } = await supabase
-          .from('student_test_attempts')
-          .select('*')
-          .eq('student_id', user.id)
-          .order('created_at', { ascending: false });
+      const [
+        [{ data: subData }, { data: progressData }, { data: historyData }],
+        { data: sharedData }
+      ] = await Promise.all([userPromise, sharedPromise]);
 
+      if (user) {
+        setUserAccess(calculateUserAccess(subData));
+        if (progressData) {
+          setCompletedQuestionIds(new Set((progressData as any[]).map(p => p.question_id)));
+        }
         if (historyData) {
           setTestHistory(historyData);
         }
       }
 
-      // 4. Fetch Global Prep Settings
-      const { data: settingsData } = await supabase
-        .from('interview_prep_settings')
-        .select('*')
-        .eq('id', 'global')
-        .maybeSingle();
-
-      if (settingsData) {
-        setPrepSettings(settingsData as PrepSettings);
-      }
-
-      // 5. Fetch Active Categories
-      const { data: catData } = await supabase
-        .from('interview_categories')
-        .select('*')
-        .order('order_index', { ascending: true });
-
-      if (catData) {
-        setCategories((catData as Category[]).filter(c => (c.status || 'Active') === 'Active'));
-      }
-
-      // 6. Fetch Active Normal Questions (For Practice Question Bank ONLY)
-      const { data: normalData } = await supabase
-        .from('interview_questions')
-        .select(`
-          *,
-          interview_categories(name)
-        `)
-        .eq('status', 'Active')
-        .eq('question_type', 'normal')
-        .order('created_at', { ascending: false });
-
-      if (normalData) {
-        setNormalQuestions(normalData.map((q: any) => ({ ...q, category: q.interview_categories })) as Question[]);
-      }
-
-      // 7. Fetch Active MCQ Questions (For Assessment Tests & AI Adaptive ONLY)
-      const { data: mcqData } = await supabase
-        .from('interview_questions')
-        .select(`
-          *,
-          interview_categories(name)
-        `)
-        .eq('status', 'Active')
-        .eq('question_type', 'mcq')
-        .order('created_at', { ascending: false });
-
-      if (mcqData) {
-        setMcqQuestions(mcqData.map((q: any) => ({ ...q, category: q.interview_categories })) as Question[]);
-      }
-
-      // 8. Fetch Active Test Configurations
-      const { data: testData } = await supabase
-        .from('interview_test_configs')
-        .select(`
-          *,
-          interview_categories(name)
-        `)
-        .eq('status', 'Active')
-        .order('created_at', { ascending: false });
-
-      if (testData) {
-        setTestConfigs(testData.map((t: any) => ({ ...t, category: t.interview_categories })) as TestConfig[]);
+      if (sharedData) {
+        if (sharedData.settingsData) setPrepSettings(sharedData.settingsData as PrepSettings);
+        if (sharedData.catData) setCategories((sharedData.catData as Category[]).filter(c => (c.status || 'Active') === 'Active'));
+        if (sharedData.mcqData) setMcqQuestions((sharedData.mcqData as any[]).map((q: any) => ({ ...q, category: q.interview_categories })) as Question[]);
+        if (sharedData.testData) setTestConfigs((sharedData.testData as any[]).map((t: any) => ({ ...t, category: t.interview_categories })) as TestConfig[]);
       }
 
     } catch (err) {
@@ -338,11 +357,11 @@ export default function StudentInterviewPrepPage() {
 
   // ---------------- TEST LAUNCH & SUBMISSION ---------------- //
   const handleStartTest = (test: TestConfig) => {
-    // 1. Subscription Gating
-    const reqPlan = test.minimum_plan || 'free';
+    // 1. Subscription Gating (AI Adaptive Mode strictly requires Premium)
+    const reqPlan = test.mode === 'ai_adaptive' ? 'premium' : (test.minimum_plan || 'free');
     if (!userAccess.hasAccess(reqPlan)) {
       setModalRequiredPlan(reqPlan);
-      setUpgradeFeatureTitle(`the ${test.title}`);
+      setUpgradeFeatureTitle(test.mode === 'ai_adaptive' ? 'AI Adaptive Mode' : `the ${test.title}`);
       setIsUpgradeModalOpen(true);
       return;
     }
@@ -473,6 +492,26 @@ export default function StudentInterviewPrepPage() {
 
       const data = await res.json();
       if (data.success) {
+        // Immediate local state update so completed test moves directly to Completed tab
+        const completedAttempt = {
+          id: data.attemptId || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `att-${Date.now()}`),
+          student_id: null,
+          test_config_id: session.testConfig.id,
+          category_id: session.testConfig.category_id,
+          title: session.testConfig.title,
+          mode: session.testConfig.mode,
+          difficulty: session.testConfig.difficulty,
+          total_questions: data.totalCount || totalQ,
+          correct_answers: data.correctCount || 0,
+          score_percentage: data.scorePercentage || 0,
+          time_spent_seconds: data.timeSpentSeconds || timeSpent,
+          status: 'completed',
+          created_at: new Date().toISOString(),
+          answers_payload: data
+        };
+
+        setTestHistory(prev => [completedAttempt, ...prev.filter(p => p.id !== completedAttempt.id && p.test_config_id !== session.testConfig.id)]);
+
         setActiveSession(prev => prev ? {
           ...prev,
           isSubmitted: true,
@@ -1386,123 +1425,332 @@ export default function StudentInterviewPrepPage() {
             </div>
           )}
 
-          {/* Mode 3: AI Adaptive Mode */}
-          {prepSettings.ai_adaptive_mode_enabled && (
-            <div 
-              onClick={() => {
-                const adaptiveTest = testConfigs.find(t => t.mode === 'ai_adaptive') || {
-                  id: 'adaptive-default',
-                  title: 'AI Adaptive Assessment',
-                  description: 'Dynamic difficulty scaling algorithm based on your live responses.',
-                  category_id: null,
-                  mode: 'ai_adaptive',
-                  difficulty: 'Adaptive',
-                  question_count: 10,
-                  time_per_question: 60,
-                  minimum_plan: prepSettings.ai_adaptive_minimum_plan || 'premium',
-                  is_recommended: false,
-                  status: 'Active'
-                };
-                handleStartTest(adaptiveTest as TestConfig);
-              }}
-              className="p-6 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-gradient-to-br from-white to-[var(--color-brand-50)]/30 hover:border-[var(--color-brand-300)] cursor-pointer transition-all flex flex-col justify-between space-y-4"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="h-10 w-10 rounded-[var(--radius-md)] bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-                    <Sparkles className="w-5 h-5" />
+          {/* Mode 3: AI Adaptive Mode (Premium Only) */}
+          {prepSettings.ai_adaptive_mode_enabled && (() => {
+            const isPremium = userAccess.hasAccess('premium');
+            const adaptiveTest = testConfigs.find(t => t.mode === 'ai_adaptive') || {
+              id: 'adaptive-default',
+              title: 'AI Adaptive Assessment',
+              description: 'Dynamic difficulty scaling algorithm based on your live responses.',
+              category_id: null,
+              mode: 'ai_adaptive',
+              difficulty: 'Adaptive',
+              question_count: 10,
+              time_per_question: 60,
+              minimum_plan: 'premium',
+              is_recommended: false,
+              status: 'Active'
+            };
+
+            if (isPremium) {
+              return (
+                <div 
+                  onClick={() => handleStartTest(adaptiveTest as TestConfig)}
+                  className="p-6 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-gradient-to-br from-white to-[var(--color-brand-50)]/30 hover:border-[var(--color-brand-300)] cursor-pointer transition-all flex flex-col justify-between space-y-4 shadow-2xs"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="h-10 w-10 rounded-[var(--radius-md)] bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                        <Sparkles className="w-5 h-5" />
+                      </div>
+                      <PremiumBadge minimumPlan="premium" />
+                    </div>
+                    <h3 className="text-sm font-bold text-[var(--color-text-primary)]">AI Adaptive Mode</h3>
+                    <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+                      Dynamically scales question difficulty based on your verified performance.
+                    </p>
                   </div>
-                  <PremiumBadge minimumPlan={prepSettings.ai_adaptive_minimum_plan || 'premium'} />
+                  <span className="text-xs font-bold text-amber-700 flex items-center gap-1">
+                    Launch Adaptive Test <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
                 </div>
-                <h3 className="text-sm font-bold text-[var(--color-text-primary)]">AI Adaptive Mode</h3>
-                <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                  Dynamically scales question difficulty based on your verified performance.
-                </p>
-              </div>
-              <span className="text-xs font-bold text-amber-700 flex items-center gap-1">
-                Launch Adaptive Test <ChevronRight className="w-3.5 h-3.5" />
-              </span>
-            </div>
-          )}
+              );
+            } else {
+              return (
+                <div 
+                  onClick={() => {
+                    setModalRequiredPlan('premium');
+                    setUpgradeFeatureTitle('AI Adaptive Mode');
+                    setIsUpgradeModalOpen(true);
+                  }}
+                  className="p-6 rounded-[var(--radius-xl)] border border-amber-200/80 bg-gradient-to-br from-amber-50/40 via-white to-slate-50 hover:border-amber-400 cursor-pointer transition-all flex flex-col justify-between space-y-4 relative overflow-hidden shadow-2xs"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="h-10 w-10 rounded-[var(--radius-md)] bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
+                        <Lock className="w-5 h-5" />
+                      </div>
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                        Premium Only
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
+                      AI Adaptive Mode
+                    </h3>
+                    <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+                      Dynamic difficulty scaling algorithm tailored to your live answers. Upgrade to Premium to unlock.
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-amber-700 flex items-center gap-1">
+                    <Lock className="w-3.5 h-3.5" /> Unlock with Premium <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+              );
+            }
+          })()}
 
         </div>
 
         {/* ================================================================ */}
         {/* VIEW 1: TIMED & PRACTICE TESTS GRID */}
         {/* ================================================================ */}
-        {activeView === 'tests' && (
-          <div className="space-y-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-bold text-[var(--color-text-primary)]">Available Assessment Tests</h2>
-                <p className="text-xs text-[var(--color-text-secondary)]">Select a test configuration to begin your session.</p>
-              </div>
-            </div>
+        {activeView === 'tests' && (() => {
+          const completedConfigIds = new Set(
+            testHistory
+              .filter(h => h.status === 'completed' || typeof h.score_percentage === 'number')
+              .map(h => h.test_config_id)
+              .filter(Boolean)
+          );
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {testConfigs.map((test) => {
-                const reqPlan = test.minimum_plan || 'free';
-                const isUnlocked = isContentAccessible(reqPlan, userAccess);
-                const planMeta = PLANS[normalizePlanId(reqPlan)];
+          const availableTests = testConfigs.filter(t => !completedConfigIds.has(t.id));
+          const completedTests = testHistory.filter(h => h.status === 'completed' || typeof h.score_percentage === 'number');
 
-                return (
-                  <div 
-                    key={test.id} 
-                    className="p-5 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white shadow-[var(--shadow-xs)] hover:border-[var(--color-brand-300)] transition-all flex flex-col justify-between space-y-4"
+          return (
+            <div className="space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-base font-bold text-[var(--color-text-primary)]">Timed Assessment Tests</h2>
+                  <p className="text-xs text-[var(--color-text-secondary)]">Countdown sprint assessments and test history.</p>
+                </div>
+
+                {/* Sub-tabs: Available vs Completed */}
+                <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-[var(--radius-lg)] border border-slate-200/80 text-xs self-start sm:self-auto font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setTestsSubTab('available')}
+                    className={`px-3.5 py-1.5 rounded-[var(--radius-md)] transition-all cursor-pointer flex items-center gap-1.5 ${
+                      testsSubTab === 'available'
+                        ? 'bg-white text-[var(--color-brand-600)] shadow-xs font-bold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
                   >
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-200)]">
-                            {test.mode.replace('_', ' ')}
-                          </span>
-                          <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${
-                            test.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                            test.difficulty === 'Medium' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                            'bg-red-50 text-red-700 border-red-200'
-                          }`}>
-                            {test.difficulty}
-                          </span>
-                        </div>
-                        <PremiumBadge minimumPlan={reqPlan} />
-                      </div>
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>Available Tests</span>
+                    <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200/80 text-slate-700">
+                      {availableTests.length}
+                    </span>
+                  </button>
 
-                      <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-1">{test.title}</h3>
-                      <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">
-                        {test.description || 'Topic test sprint configured by platform administrator.'}
-                      </p>
-                    </div>
+                  <button
+                    type="button"
+                    onClick={() => setTestsSubTab('completed')}
+                    className={`px-3.5 py-1.5 rounded-[var(--radius-md)] transition-all cursor-pointer flex items-center gap-1.5 ${
+                      testsSubTab === 'completed'
+                        ? 'bg-white text-[var(--color-brand-600)] shadow-xs font-bold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Completed</span>
+                    <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-100 text-emerald-800">
+                      {completedTests.length}
+                    </span>
+                  </button>
+                </div>
+              </div>
 
-                    <div className="pt-3 border-t border-[var(--color-border)] flex items-center justify-between">
-                      <span className="text-xs text-[var(--color-text-tertiary)] flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" /> {test.question_count} Qs ({Math.round(test.time_per_question * test.question_count / 60)} mins)
-                      </span>
+              {testsSubTab === 'available' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {availableTests.map((test) => {
+                    const reqPlan = test.minimum_plan || 'free';
+                    const isUnlocked = isContentAccessible(reqPlan, userAccess);
+                    const planMeta = PLANS[normalizePlanId(reqPlan)];
 
-                      <Button
-                        variant={isUnlocked ? "primary" : "outline"}
-                        size="sm"
-                        onClick={() => handleStartTest(test)}
-                        className="text-xs shadow-xs"
+                    return (
+                      <div 
+                        key={test.id} 
+                        className="p-5 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white shadow-[var(--shadow-xs)] hover:border-[var(--color-brand-300)] transition-all flex flex-col justify-between space-y-4"
                       >
-                        {isUnlocked ? (
-                          <><Play className="w-3 h-3 mr-1" /> Start Test</>
-                        ) : (
-                          <><Lock className="w-3 h-3 mr-1 text-[var(--color-brand-600)]" /> {planMeta.name} Required</>
-                        )}
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-200)]">
+                                {test.mode.replace('_', ' ')}
+                              </span>
+                              <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${
+                                test.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                test.difficulty === 'Medium' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                'bg-red-50 text-red-700 border-red-200'
+                              }`}>
+                                {test.difficulty}
+                              </span>
+                            </div>
+                            <PremiumBadge minimumPlan={reqPlan} />
+                          </div>
+
+                          <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-1">{test.title}</h3>
+                          <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">
+                            {test.description || 'Topic test sprint configured by platform administrator.'}
+                          </p>
+                        </div>
+
+                        <div className="pt-3 border-t border-[var(--color-border)] flex items-center justify-between">
+                          <span className="text-xs text-[var(--color-text-tertiary)] flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" /> {test.question_count} Qs ({Math.round(test.time_per_question * test.question_count / 60)} mins)
+                          </span>
+
+                          <Button
+                            variant={isUnlocked ? "primary" : "outline"}
+                            size="sm"
+                            onClick={() => handleStartTest(test)}
+                            className="text-xs shadow-xs"
+                          >
+                            {isUnlocked ? (
+                              <><Play className="w-3 h-3 mr-1" /> Start Test</>
+                            ) : (
+                              <><Lock className="w-3 h-3 mr-1 text-[var(--color-brand-600)]" /> {planMeta.name} Required</>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {availableTests.length === 0 && (
+                    <div className="col-span-full py-12 text-center text-xs text-[var(--color-text-tertiary)] bg-white rounded-[var(--radius-xl)] border border-[var(--color-border)] space-y-3">
+                      <div className="flex justify-center">
+                        <CheckCircle className="w-8 h-8 text-emerald-500" />
+                      </div>
+                      <p className="font-semibold text-sm text-[var(--color-text-primary)]">
+                        {testConfigs.length > 0 ? "You have completed all available tests!" : "No active assessment tests configured."}
+                      </p>
+                      {completedTests.length > 0 && (
+                        <Button variant="outline" size="sm" onClick={() => setTestsSubTab('completed')}>
+                          View Completed Tests ({completedTests.length})
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* COMPLETED TESTS TAB */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {completedTests.map((attempt) => {
+                    const isPassed = (attempt.score_percentage || 0) >= 70;
+                    const originalConfig = testConfigs.find(t => t.id === attempt.test_config_id);
+
+                    return (
+                      <div
+                        key={attempt.id}
+                        className="p-5 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white shadow-[var(--shadow-xs)] hover:border-[var(--color-brand-300)] transition-all flex flex-col justify-between space-y-4"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                                {attempt.mode?.replace('_', ' ') || 'Timed Test'}
+                              </span>
+                              <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${
+                                attempt.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                attempt.difficulty === 'Medium' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                'bg-red-50 text-red-700 border-red-200'
+                              }`}>
+                                {attempt.difficulty || 'Medium'}
+                              </span>
+                            </div>
+
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                              isPassed
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : 'bg-amber-50 text-amber-800 border-amber-200'
+                            }`}>
+                              {attempt.score_percentage ?? 0}% Score
+                            </span>
+                          </div>
+
+                          <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-1">
+                            {attempt.title || 'Assessment Test'}
+                          </h3>
+
+                          <div className="text-xs text-[var(--color-text-secondary)] space-y-1 mt-2">
+                            <div className="flex items-center justify-between">
+                              <span>Status:</span>
+                              <span className={`font-bold ${isPassed ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                {isPassed ? 'Passed' : 'Completed (Needs Practice)'}
+                              </span>
+                            </div>
+                            {attempt.correct_answers !== undefined && attempt.total_questions && (
+                              <div className="flex items-center justify-between">
+                                <span>Accuracy:</span>
+                                <span className="font-semibold text-[var(--color-text-primary)]">
+                                  {attempt.correct_answers} / {attempt.total_questions} Correct
+                                </span>
+                              </div>
+                            )}
+                            {attempt.created_at && (
+                              <div className="flex items-center justify-between text-[11px] text-[var(--color-text-tertiary)] pt-1">
+                                <span>Completed:</span>
+                                <span>{new Date(attempt.created_at).toLocaleDateString()}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-[var(--color-border)] flex items-center justify-between gap-2">
+                          <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                            <CheckCircle className="w-3.5 h-3.5" /> Completed
+                          </span>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (originalConfig) {
+                                handleStartTest(originalConfig);
+                              } else {
+                                const fallbackTest: TestConfig = {
+                                  id: attempt.test_config_id || attempt.id,
+                                  title: attempt.title,
+                                  description: 'Retake assessment test.',
+                                  category_id: attempt.category_id || null,
+                                  mode: attempt.mode || 'timed_test',
+                                  difficulty: attempt.difficulty || 'Medium',
+                                  question_count: attempt.total_questions || 10,
+                                  time_per_question: 60,
+                                  minimum_plan: 'free',
+                                  is_recommended: false,
+                                  status: 'Active'
+                                };
+                                handleStartTest(fallbackTest);
+                              }
+                            }}
+                            className="text-xs shadow-xs gap-1"
+                          >
+                            <RotateCcw className="w-3 h-3" /> Retake Test
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {completedTests.length === 0 && (
+                    <div className="col-span-full py-12 text-center text-xs text-[var(--color-text-tertiary)] bg-white rounded-[var(--radius-xl)] border border-[var(--color-border)] space-y-3">
+                      <p className="font-semibold text-sm text-[var(--color-text-primary)]">
+                        No completed tests yet.
+                      </p>
+                      <p className="text-xs text-[var(--color-text-secondary)]">
+                        Complete any timed assessment test to track your scores and progress here.
+                      </p>
+                      <Button variant="primary" size="sm" onClick={() => setTestsSubTab('available')}>
+                        Explore Available Tests
                       </Button>
                     </div>
-                  </div>
-                );
-              })}
-
-              {testConfigs.length === 0 && (
-                <div className="col-span-full py-12 text-center text-xs text-[var(--color-text-tertiary)] bg-white rounded-[var(--radius-xl)] border border-[var(--color-border)]">
-                  No active assessment tests configured at this time.
+                  )}
                 </div>
               )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ================================================================ */}
         {/* VIEW 2: PRACTICE QUESTION BROWSER */}
@@ -1693,6 +1941,38 @@ export default function StudentInterviewPrepPage() {
                 />
               ) : null}
             </div>
+
+            {/* Practice Pagination Bar */}
+            {totalNormalCount > practiceItemsPerPage && (
+              <div className="mt-6 p-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] flex items-center justify-between bg-white text-xs">
+                <span className="font-medium text-[var(--color-text-secondary)]">
+                  Showing {(practicePage - 1) * practiceItemsPerPage + 1} to {Math.min(practicePage * practiceItemsPerPage, totalNormalCount)} of {totalNormalCount} practice questions
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="p-1.5 h-8 px-3 text-xs flex items-center gap-1"
+                    disabled={practicePage === 1}
+                    onClick={() => setPracticePage(p => Math.max(1, p - 1))}
+                  >
+                    <ChevronLeft className="w-4 h-4" /> Previous
+                  </Button>
+                  <span className="px-2 text-xs font-semibold text-[var(--color-text-primary)]">
+                    Page {practicePage} of {Math.ceil(totalNormalCount / practiceItemsPerPage) || 1}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="p-1.5 h-8 px-3 text-xs flex items-center gap-1"
+                    disabled={practicePage >= Math.ceil(totalNormalCount / practiceItemsPerPage)}
+                    onClick={() => setPracticePage(p => p + 1)}
+                  >
+                    Next <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
 
           </div>
         )}

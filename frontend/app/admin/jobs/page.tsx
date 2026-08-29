@@ -107,22 +107,48 @@ export default function AdminJobsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  const [totalCount, setTotalCount] = useState(0);
+
   const supabase = createClient();
 
   useEffect(() => {
     fetchJobs();
-  }, []);
+  }, [currentPage, statusFilter, expFilter, modeFilter, planFilter, searchQuery]);
 
   const fetchJobs = async () => {
     setIsFetching(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('jobs')
-        .select('*')
-        .order('posted_at', { ascending: false });
+        .select('*', { count: 'exact' });
+
+      if (statusFilter) {
+        query = query.eq('status', statusFilter);
+      }
+      if (modeFilter) {
+        query = query.eq('work_mode', modeFilter);
+      }
+      if (expFilter) {
+        query = query.ilike('experience', `%${expFilter}%`);
+      }
+      if (planFilter) {
+        query = query.or(`minimum_plan.eq.${planFilter},access_type.eq.${planFilter}`);
+      }
+      if (searchQuery.trim()) {
+        const q = `%${searchQuery.trim()}%`;
+        query = query.or(`title.ilike.${q},company_name.ilike.${q},location.ilike.${q}`);
+      }
+
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+
+      const { data, count, error } = await query
+        .order('posted_at', { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
       if (data) setJobs(data as Job[]);
+      if (typeof count === 'number') setTotalCount(count);
     } catch (err) {
       console.error("Error fetching jobs:", err);
     } finally {
@@ -130,28 +156,10 @@ export default function AdminJobsPage() {
     }
   };
 
-  // Filtering Logic
-  const filteredJobs = jobs.filter(job => {
-    const query = searchQuery.toLowerCase();
-    const matchesSearch = query === '' || 
-      job.title.toLowerCase().includes(query) || 
-      job.company_name.toLowerCase().includes(query) || 
-      job.location.toLowerCase().includes(query) ||
-      (job.required_skills && job.required_skills.some(s => s.toLowerCase().includes(query)));
-
-    const matchesStatus = statusFilter === '' || job.status === statusFilter;
-    const matchesExp = expFilter === '' || job.experience.toLowerCase().includes(expFilter.toLowerCase());
-    const matchesMode = modeFilter === '' || job.work_mode === modeFilter;
-    
-    const itemPlan = normalizePlanId(job.minimum_plan || job.access_type);
-    const matchesPlan = planFilter === '' || itemPlan === planFilter;
-
-    return matchesSearch && matchesStatus && matchesExp && matchesMode && matchesPlan;
-  });
-
-  // Pagination Logic
-  const totalPages = Math.ceil(filteredJobs.length / itemsPerPage);
-  const paginatedJobs = filteredJobs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  // Pagination Variables
+  const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
+  const filteredJobs = jobs;
+  const paginatedJobs = jobs;
 
   const resetFilters = () => {
     setSearchQuery('');
@@ -604,7 +612,7 @@ export default function AdminJobsPage() {
               {/* Pagination Bar */}
               <div className="p-3.5 border-t border-[var(--color-border)] flex items-center justify-between bg-[var(--color-bg-subtle)] text-xs">
                 <span className="font-medium text-[var(--color-text-tertiary)]">
-                  Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredJobs.length)} of {filteredJobs.length} jobs
+                  Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount} jobs
                 </span>
                 <div className="flex gap-1.5">
                   <Button variant="outline" size="sm" className="p-1.5 h-8 w-8 justify-center" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}><ChevronLeft className="w-4 h-4" /></Button>

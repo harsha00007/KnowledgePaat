@@ -98,25 +98,29 @@ export default function MockInterviewDashboard() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // 1. Fetch Subscription
-      const { data: subData } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('student_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // 1. Fetch Subscription and All Sessions in parallel
+      const [
+        { data: subData },
+        allSessions
+      ] = await Promise.all([
+        supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('student_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        getStudentSessions(supabase, user.id)
+      ]);
 
       const access = calculateUserAccess(subData);
       setUserAccess(access);
+      setSessions(allSessions);
 
-      // 2. Fetch Sessions stats and history
+      // 2. Fetch Sessions stats based on subscription period
       const stats = await getConsumedSessionsCount(supabase, user.id, access.startDate);
       const creds = calculateMockCreditStatus(access, stats.usedCount, stats.completedCount, stats.averageScore);
       setCreditStatus(creds);
-
-      const allSessions = await getStudentSessions(supabase, user.id);
-      setSessions(allSessions);
     } catch (err) {
       console.error("Error loading mock interview dashboard:", err);
     } finally {

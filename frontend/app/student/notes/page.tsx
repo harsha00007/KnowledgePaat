@@ -25,7 +25,9 @@ import {
   Sparkles,
   CheckCircle2,
   Layers,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { calculateUserAccess, isContentAccessible, UserAccess } from '@/lib/subscription';
@@ -33,6 +35,7 @@ import { PLANS, normalizePlanId, PlanId } from '@/config/plans';
 import { getStudentPurchasedNoteIds } from '@/lib/store';
 import { useFeatureFlags } from '@/context/FeatureFlagContext';
 import { FeatureComingSoon } from '@/components/FeatureComingSoon';
+import { fetchWithSWR } from '@/lib/clientQueryCache';
 
 type Note = {
   id: string;
@@ -92,6 +95,11 @@ function NotesContent() {
   const [bundleFilter, setBundleFilter] = useState<{ id: string; title: string; noteIds: Set<string> } | null>(null);
   const [highlightedNoteId, setHighlightedNoteId] = useState<string | null>(null);
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const itemsPerPage = 20;
+
   // Selected Note for Modal
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -110,7 +118,7 @@ function NotesContent() {
     if (isNotesEnabled) {
       fetchData();
     }
-  }, [noteIdParam, bundleIdParam, isNotesEnabled]);
+  }, [noteIdParam, bundleIdParam, isNotesEnabled, currentPage, categoryFilter, searchQuery]);
 
   const fetchData = async () => {
     setIsFetching(true);
@@ -150,15 +158,48 @@ function NotesContent() {
         setOwnedNoteIds(currentOwnedNoteIds);
       }
 
-      // Fetch active Notes
-      const { data: notesData, error: notesError } = await supabase
-        .from('notes')
-        .select('*')
-        .eq('status', 'Active')
-        .order('created_at', { ascending: false });
+      // Build SWR Paginated Notes Query
+      const cacheKey = `notes:${currentPage}:${categoryFilter}:${searchQuery.trim()}`;
 
-      if (notesError) throw notesError;
-      const loadedNotes = (notesData || []) as Note[];
+      const { data: cachedOrFresh } = await fetchWithSWR(
+        cacheKey,
+        async () => {
+          let query = supabase
+            .from('notes')
+            .select('*', { count: 'exact' })
+            .eq('status', 'Active');
+
+          if (categoryFilter) {
+            query = query.eq('category', categoryFilter);
+          }
+          if (searchQuery.trim()) {
+            const q = `%${searchQuery.trim()}%`;
+            query = query.or(`title.ilike.${q},description.ilike.${q},technology.ilike.${q}`);
+          }
+
+          const from = (currentPage - 1) * itemsPerPage;
+          const to = from + itemsPerPage - 1;
+
+          const { data: notesData, count, error: notesError } = await query
+            .order('created_at', { ascending: false })
+            .range(from, to);
+
+          if (notesError) throw notesError;
+          return {
+            notes: (notesData || []) as Note[],
+            count: typeof count === 'number' ? count : 0,
+          };
+        },
+        {
+          staleTimeMs: 60000,
+          onRevalidate: (fresh) => {
+            setTotalCount(fresh.count);
+          },
+        }
+      );
+
+      const loadedNotes = cachedOrFresh ? [...cachedOrFresh.notes] : [];
+      if (cachedOrFresh) setTotalCount(cachedOrFresh.count);
 
       // Guarantee that all purchased products appear in the Notes Library
       if (purchasedProductsList.length > 0) {
@@ -555,6 +596,7 @@ function NotesContent() {
             action={<Button variant="outline" size="sm" onClick={resetFilters}>Reset Filters</Button>}
           />
         ) : (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {filteredNotes.map((note) => {
               const isSaved = savedNoteIds.has(note.id);
@@ -653,6 +695,39 @@ function NotesContent() {
               );
             })}
           </div>
+
+          {/* Pagination Bar */}
+          {totalCount > itemsPerPage && (
+            <div className="mt-6 p-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] flex items-center justify-between bg-white text-xs">
+              <span className="font-medium text-[var(--color-text-secondary)]">
+                Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount} notes
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="p-1.5 h-8 px-3 text-xs flex items-center gap-1"
+                  disabled={currentPage === 1 || isFetching}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft className="w-4 h-4" /> Previous
+                </Button>
+                <span className="px-2 text-xs font-semibold text-[var(--color-text-primary)]">
+                  Page {currentPage} of {Math.ceil(totalCount / itemsPerPage) || 1}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="p-1.5 h-8 px-3 text-xs flex items-center gap-1"
+                  disabled={currentPage >= Math.ceil(totalCount / itemsPerPage) || isFetching}
+                  onClick={() => setCurrentPage(p => p + 1)}
+                >
+                  Next <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+          </>
         )}
 
       </div>

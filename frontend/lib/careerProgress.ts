@@ -227,49 +227,25 @@ export async function getCareerProgressData(
   supabase: SupabaseClient,
   studentId: string
 ): Promise<CareerProgressData> {
-  // 1. Fetch Profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', studentId)
-    .single();
-
-  // 2. Fetch Mock Interview Sessions
-  const { data: interviewSessions } = await supabase
-    .from('mock_interview_sessions')
-    .select('*')
-    .eq('student_id', studentId)
-    .order('started_at', { ascending: true });
+  // Parallel fetch: Profile, Mock Sessions, Completed Tasks, Active Plan, Snapshots
+  const [
+    { data: profile },
+    { data: interviewSessions },
+    { data: completedTasks },
+    { data: activePlan },
+    { data: snapshots }
+  ] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', studentId).single(),
+    supabase.from('mock_interview_sessions').select('*').eq('student_id', studentId).order('started_at', { ascending: true }),
+    supabase.from('career_plan_tasks').select('*').eq('student_id', studentId).eq('status', 'completed'),
+    supabase.from('career_improvement_plans').select('*').eq('student_id', studentId).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('career_progress_snapshots').select('*').eq('student_id', studentId).order('snapshot_date', { ascending: true })
+  ]);
 
   const sessions = interviewSessions || [];
   const completedSessions = sessions.filter(s => s.status === 'completed');
   const hasInterviewData = completedSessions.length > 0;
-
-  // 3. Fetch Career Tasks Completed
-  const { data: completedTasks } = await supabase
-    .from('career_plan_tasks')
-    .select('*')
-    .eq('student_id', studentId)
-    .eq('status', 'completed');
-
   const tasksCount = (completedTasks || []).length;
-
-  // 4. Fetch Active Career Plan
-  const { data: activePlan } = await supabase
-    .from('career_improvement_plans')
-    .select('*')
-    .eq('student_id', studentId)
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  // 5. Fetch Daily Snapshots for Timeline
-  const { data: snapshots } = await supabase
-    .from('career_progress_snapshots')
-    .select('*')
-    .eq('student_id', studentId)
-    .order('snapshot_date', { ascending: true });
 
   // 6. Calculate Score Breakdown & Career Stage
   const breakdown = calculateScoreBreakdown(profile, sessions, tasksCount);

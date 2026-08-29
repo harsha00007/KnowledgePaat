@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { getCareerProgressData } from '@/lib/careerProgress';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,6 +10,12 @@ export async function GET(req: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized. Please sign in.' }, { status: 401 });
+    }
+
+    // Enforce Rate Limit for Career Progress
+    const rl = await checkRateLimit(`career_progress:${user.id}`, RATE_LIMIT_POLICIES.CAREER_PROGRESS);
+    if (!rl.success) {
+      return rateLimitResponse(rl);
     }
 
     const progressData = await getCareerProgressData(supabase, user.id);

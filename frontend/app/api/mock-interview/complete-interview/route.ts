@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import { generateFinalAIReport } from '@/lib/ai/mockInterviewAI';
 import { ExperienceLevel, InterviewDifficulty } from '@/lib/ai/mockInterviewTypes';
 import { TopicPerformance } from '@/lib/adaptiveInterview';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,6 +12,12 @@ export async function POST(req: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized. Please sign in.' }, { status: 401 });
+    }
+
+    // Enforce Rate Limit for AI Complete Interview Report
+    const rl = await checkRateLimit(`ai_mock_complete:${user.id}`, RATE_LIMIT_POLICIES.AI_MOCK_COMPLETE);
+    if (!rl.success) {
+      return rateLimitResponse(rl);
     }
 
     const body = await req.json();

@@ -6,6 +6,7 @@ import { getConsumedSessionsCount, InterviewType } from '@/lib/mockInterview';
 import { startAIInterview } from '@/lib/ai/mockInterviewAI';
 import { ExperienceLevel, InterviewDifficulty } from '@/lib/ai/mockInterviewTypes';
 import { isServerModuleEnabled } from '@/lib/featureFlagsServer';
+import { checkRateLimit, rateLimitResponse, addRateLimitHeaders, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,6 +22,12 @@ export async function POST(req: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized. Please sign in.' }, { status: 401 });
+    }
+
+    // Enforce Rate Limit for AI Mock Interview Start
+    const rl = await checkRateLimit(`ai_mock_start:${user.id}`, RATE_LIMIT_POLICIES.AI_MOCK_START);
+    if (!rl.success) {
+      return rateLimitResponse(rl);
     }
 
     const body = await req.json();

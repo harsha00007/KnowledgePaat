@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { DEFAULT_FEATURE_FLAGS, FeatureKey } from '@/lib/featureFlags';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 import fs from 'fs';
 import path from 'path';
 
@@ -110,6 +111,12 @@ export async function POST(req: NextRequest) {
 
     if (profile?.role !== 'admin') {
       return NextResponse.json({ success: false, error: 'Forbidden: Admin authorization required.' }, { status: 403 });
+    }
+
+    // Enforce Rate Limit for Admin Feature Flag Updates
+    const rl = await checkRateLimit(`admin_flags:${user.id}`, RATE_LIMIT_POLICIES.ADMIN_SETTINGS);
+    if (!rl.success) {
+      return rateLimitResponse(rl);
     }
 
     const body = await req.json();

@@ -55,7 +55,6 @@ const NAV_GROUPS: NavGroupItem[] = [
   {
     label: 'Career Tools',
     links: [
-      { name: 'My Profile', href: '/student/profile', icon: User, featureKey: 'student_profile' },
       { name: 'Resume', href: '/student/resume', icon: FileUp, featureKey: 'student_resume' },
       { name: 'Jobs', href: '/student/jobs', icon: Briefcase, featureKey: 'student_jobs' },
       { name: 'Career Progress', href: '/student/career-progress', icon: TrendingUp, featureKey: 'student_career_progress' },
@@ -82,8 +81,10 @@ const NAV_GROUPS: NavGroupItem[] = [
 
 export function StudentLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [studentName, setStudentName] = useState('Student');
   const [studentEmail, setStudentEmail] = useState('');
+  const profileMenuRef = React.useRef<HTMLDivElement>(null);
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
@@ -103,7 +104,19 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
+    setIsProfileMenuOpen(false);
   }, [pathname]);
+
+  // Click outside to close profile dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -269,14 +282,64 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
               )}
             </Link>
 
-            {/* Profile */}
-            <Link
-              href="/student/profile"
-              className="flex items-center gap-2 text-xs font-semibold text-[var(--color-brand-600)] bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-3 py-1.5 rounded-[var(--radius-sm)] hover:bg-[var(--color-brand-100)] transition-colors"
-            >
-              <User className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline truncate max-w-[120px]">{studentName.split(' ')[0]}</span>
-            </Link>
+            {/* Top-Right Profile Menu */}
+            <div className="relative" ref={profileMenuRef}>
+              <button
+                type="button"
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                className="flex items-center gap-2 text-xs font-semibold text-[var(--color-brand-600)] bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-3 py-1.5 rounded-[var(--radius-sm)] hover:bg-[var(--color-brand-100)] transition-colors cursor-pointer"
+                aria-expanded={isProfileMenuOpen}
+                aria-label="User profile menu"
+              >
+                <User className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline truncate max-w-[120px]">{studentName.split(' ')[0]}</span>
+              </button>
+
+              {/* Profile Dropdown Menu */}
+              {isProfileMenuOpen && (
+                <div className="absolute right-0 mt-2 w-56 rounded-[var(--radius-lg)] bg-white border border-[var(--color-border)] shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-3 py-2 border-b border-[var(--color-border)] mb-1">
+                    <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">{studentName}</p>
+                    {studentEmail && (
+                      <p className="text-[10px] text-[var(--color-text-secondary)] truncate">{studentEmail}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <Link
+                      href="/student/profile"
+                      onClick={() => setIsProfileMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-subtle)] hover:text-[var(--color-brand-600)] rounded-[var(--radius-sm)] transition-colors"
+                    >
+                      <User className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
+                      <span>My Profile</span>
+                    </Link>
+
+                    <Link
+                      href="/student/subscription"
+                      onClick={() => setIsProfileMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-subtle)] hover:text-[var(--color-brand-600)] rounded-[var(--radius-sm)] transition-colors"
+                    >
+                      <CreditCard className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
+                      <span>Subscription</span>
+                    </Link>
+                  </div>
+
+                  <div className="border-t border-[var(--color-border)] mt-1 pt-1">
+                    <button
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        handleLogout();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-[var(--radius-sm)] transition-colors cursor-pointer text-left"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

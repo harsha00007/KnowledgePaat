@@ -74,19 +74,23 @@ export default function CareerProgressPage() {
         return;
       }
 
-      // 1. Fetch Subscription
-      const { data: subData } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('student_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Fetch Subscription & Career Progress API in parallel
+      const [
+        { data: subData },
+        response
+      ] = await Promise.all([
+        supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('student_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        fetch('/api/career-progress')
+      ]);
 
       setAccess(calculateUserAccess(subData));
 
-      // 2. Fetch Aggregated Career Progress via API Route
-      const response = await fetch('/api/career-progress');
       const data = await response.json();
 
       if (!response.ok || !data.success) {

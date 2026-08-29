@@ -4,6 +4,7 @@ import { parseUploadedFile } from '@/lib/import/fileParser';
 import { validateImportRows } from '@/lib/import/questionValidator';
 import { normalizeQuestionTitle } from '@/lib/import/questionNormalizer';
 import { ImportDefaults, ValidatedQuestionRow } from '@/lib/import/types';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 
 export const maxDuration = 60; // Allow sufficient processing time for large file imports
 
@@ -25,6 +26,12 @@ export async function POST(req: NextRequest) {
 
     if (profErr || !profile || profile.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden. Administrator privileges required.' }, { status: 403 });
+    }
+
+    // Enforce Rate Limit for Admin Bulk Question Imports
+    const rl = await checkRateLimit(`admin_questions_import:${user.id}`, RATE_LIMIT_POLICIES.ADMIN_BULK_IMPORT);
+    if (!rl.success) {
+      return rateLimitResponse(rl);
     }
 
     const contentType = req.headers.get('content-type') || '';

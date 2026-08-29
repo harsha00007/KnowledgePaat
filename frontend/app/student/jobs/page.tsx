@@ -21,7 +21,9 @@ import {
   ExternalLink,
   CheckCircle2,
   Lock,
-  Sparkles
+  Sparkles,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { calculateUserAccess, isContentAccessible, canViewCompanyName, UserAccess } from '@/lib/subscription';
@@ -29,6 +31,7 @@ import { PLANS, normalizePlanId, PlanId } from '@/config/plans';
 import { CompanyNameGate } from '@/components/CompanyNameGate';
 import { useFeatureFlags } from '@/context/FeatureFlagContext';
 import { FeatureComingSoon } from '@/components/FeatureComingSoon';
+import { fetchWithSWR } from '@/lib/clientQueryCache';
 
 type Job = {
   id: string;
@@ -80,6 +83,11 @@ export default function JobsPage() {
   const [experienceFilter, setExperienceFilter] = useState('');
   const [planFilter, setPlanFilter] = useState('');
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const itemsPerPage = 20;
+
   // Selected Job for Modal
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -92,7 +100,7 @@ export default function JobsPage() {
     if (isJobsEnabled) {
       fetchJobsAndSavedState();
     }
-  }, [isJobsEnabled]);
+  }, [isJobsEnabled, currentPage, categoryFilter, workModeFilter, experienceFilter, searchQuery]);
 
   const fetchJobsAndSavedState = async () => {
     setIsFetching(true);
@@ -112,15 +120,57 @@ export default function JobsPage() {
         setUserAccess(calculateUserAccess(subData));
       }
 
-      // Fetch active Jobs
-      const { data: jobsData, error: jobsError } = await supabase
-        .from('jobs')
-        .select('*')
-        .eq('status', 'Active')
-        .order('posted_at', { ascending: false });
+      // Build SWR Paginated Query
+      const cacheKey = `jobs:${currentPage}:${categoryFilter}:${workModeFilter}:${experienceFilter}:${searchQuery.trim()}`;
 
-      if (jobsError) throw jobsError;
-      if (jobsData) setJobs(jobsData as Job[]);
+      const { data: cachedOrFresh } = await fetchWithSWR(
+        cacheKey,
+        async () => {
+          let query = supabase
+            .from('jobs')
+            .select('*', { count: 'exact' })
+            .eq('status', 'Active');
+
+          if (categoryFilter) {
+            query = query.eq('category', categoryFilter);
+          }
+          if (workModeFilter) {
+            query = query.eq('work_mode', workModeFilter);
+          }
+          if (experienceFilter) {
+            query = query.eq('experience', experienceFilter);
+          }
+          if (searchQuery.trim()) {
+            const q = `%${searchQuery.trim()}%`;
+            query = query.or(`title.ilike.${q},company_name.ilike.${q},location.ilike.${q}`);
+          }
+
+          const from = (currentPage - 1) * itemsPerPage;
+          const to = from + itemsPerPage - 1;
+
+          const { data: jobsData, count, error: jobsError } = await query
+            .order('posted_at', { ascending: false })
+            .range(from, to);
+
+          if (jobsError) throw jobsError;
+          return {
+            jobs: (jobsData || []) as Job[],
+            count: typeof count === 'number' ? count : 0,
+          };
+        },
+        {
+          staleTimeMs: 60000,
+          onRevalidate: (fresh) => {
+            setJobs(fresh.jobs);
+            setTotalCount(fresh.count);
+          },
+        }
+      );
+
+      if (cachedOrFresh) {
+        setJobs(cachedOrFresh.jobs);
+        setTotalCount(cachedOrFresh.count);
+      }
 
       // Fetch Saved Jobs for current user
       if (user) {
@@ -323,6 +373,7 @@ export default function JobsPage() {
             action={<Button variant="outline" size="sm" onClick={resetFilters}>Reset Filters</Button>}
           />
         ) : (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredJobs.map((job) => {
               const isSaved = savedJobIds.has(job.id);
@@ -441,6 +492,39 @@ export default function JobsPage() {
               );
             })}
           </div>
+
+          {/* Pagination Bar */}
+          {totalCount > itemsPerPage && (
+            <div className="mt-6 p-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] flex items-center justify-between bg-white text-xs">
+              <span className="font-medium text-[var(--color-text-secondary)]">
+                Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount} jobs
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="p-1.5 h-8 px-3 text-xs flex items-center gap-1"
+                  disabled={currentPage === 1 || isFetching}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft className="w-4 h-4" /> Previous
+                </Button>
+                <span className="px-2 text-xs font-semibold text-[var(--color-text-primary)]">
+                  Page {currentPage} of {Math.ceil(totalCount / itemsPerPage) || 1}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="p-1.5 h-8 px-3 text-xs flex items-center gap-1"
+                  disabled={currentPage >= Math.ceil(totalCount / itemsPerPage) || isFetching}
+                  onClick={() => setCurrentPage(p => p + 1)}
+                >
+                  Next <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+          </>
         )}
 
       </div>
