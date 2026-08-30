@@ -70,11 +70,11 @@ export function calculateUserAccess(subscription: any | null): UserAccess {
     effectiveStatus = 'expired';
   }
 
-  // A paid plan is active only if status is active and not expired
+  // A paid plan is active if status is active (or cancelled but not yet expired)
   const isPaid = normalizedPlan !== 'free';
-  const isActivePaid = isPaid && rawStatus === 'active' && !isExpired;
+  const isActivePaid = isPaid && (rawStatus === 'active' || rawStatus === 'cancelled') && !isExpired;
 
-  // Effective plan drops to 'free' if expired or cancelled
+  // Effective plan drops to 'free' once expired
   const effectivePlan: PlanId = isActivePaid ? normalizedPlan : 'free';
   const planConfig = PLANS[effectivePlan];
 

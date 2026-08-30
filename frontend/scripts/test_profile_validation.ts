@@ -1,3 +1,5 @@
+export {};
+
 /**
  * Test script for Student Profile Validation
  */

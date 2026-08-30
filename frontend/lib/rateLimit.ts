@@ -209,4 +209,8 @@ export const RATE_LIMIT_POLICIES = {
   TEST_SUBMIT: { limit: 30, windowSeconds: 300 },         // 30 test submissions per 5 mins
   CAREER_PROGRESS: { limit: 30, windowSeconds: 60 },      // 30 progress aggregations per minute
   TASK_UPDATE: { limit: 60, windowSeconds: 60 },          // 60 task toggles per minute
+  
+  // Payment & Checkout Transactions (Razorpay Test Mode)
+  PAYMENT_CREATE: { limit: 15, windowSeconds: 300 },      // 15 order creations per 5 mins
+  PAYMENT_VERIFY: { limit: 20, windowSeconds: 300 },      // 20 verification attempts per 5 mins
 };

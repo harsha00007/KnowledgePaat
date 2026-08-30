@@ -500,20 +500,40 @@ export default function AdminStorePage() {
 
       if (selectedProduct) {
         // Update product
-        const { error } = await supabase
+        let res = await supabase
           .from('store_products')
           .update(productPayload)
           .eq('id', selectedProduct.id);
-        if (error) throw error;
+
+        if (res.error && (res.error.message?.includes('item_reference_id') || res.error.code === 'PGRST204')) {
+          const { item_reference_id, ...fallbackPayload } = productPayload;
+          const retryRes = await supabase
+            .from('store_products')
+            .update(fallbackPayload)
+            .eq('id', selectedProduct.id);
+          if (retryRes.error) throw retryRes.error;
+        } else if (res.error) {
+          throw res.error;
+        }
       } else {
         // Insert product
-        const { data: newProd, error } = await supabase
+        let res = await supabase
           .from('store_products')
           .insert(productPayload)
           .select('id')
           .single();
-        if (error || !newProd) throw error || new Error("Failed to insert store product.");
-        finalProductId = newProd.id;
+
+        if (res.error && (res.error.message?.includes('item_reference_id') || res.error.code === 'PGRST204')) {
+          const { item_reference_id, ...fallbackPayload } = productPayload;
+          res = await supabase
+            .from('store_products')
+            .insert(fallbackPayload)
+            .select('id')
+            .single();
+        }
+
+        if (res.error || !res.data) throw res.error || new Error("Failed to insert store product.");
+        finalProductId = res.data.id;
       }
 
       setUploadProgress(85);

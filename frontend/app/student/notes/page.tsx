@@ -325,7 +325,6 @@ function NotesContent() {
     if (userAccess.hasAccess(reqPlan)) return true;
     if (ownedNoteIds.has(note.id)) return true;
     if (ownedProductIds.has(note.id)) return true;
-    if (ownedProductIds.size > 0) return true;
     return false;
   };
 
@@ -374,7 +373,7 @@ function NotesContent() {
   const handleDownload = async (note: Note, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     
-    // Access Control check
+    // Client-side access control check (UI guard)
     const isUnlocked = checkNoteAccess(note);
     if (!isUnlocked) {
       setModalRequiredPlan(note.minimum_plan || note.access_type || 'free');
@@ -388,26 +387,33 @@ function NotesContent() {
         return;
       }
 
-      if (note.file_url.startsWith('http://') || note.file_url.startsWith('https://')) {
-        window.open(note.file_url, '_blank');
+      // Server-side authorized download — entitlement verified on backend
+      const res = await fetch('/api/student/notes/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ noteId: note.id }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: 'Download request failed.' }));
+        if (res.status === 401) {
+          showError('Please sign in to download notes.');
+        } else if (res.status === 403) {
+          setModalRequiredPlan(note.minimum_plan || note.access_type || 'free');
+          setIsUpgradeModalOpen(true);
+        } else {
+          showError(errData.error || 'Could not download file. Please try again.');
+        }
         return;
       }
 
-      const { data, error } = await supabase.storage
-        .from('notes')
-        .createSignedUrl(note.file_url, 60);
+      const { signedUrl, title } = await res.json();
 
-      if (error) {
-        console.warn("Could not create signed URL, opening document print:", error);
-        window.print();
-        return;
-      }
-      
-      if (data?.signedUrl) {
+      if (signedUrl) {
         const a = document.createElement('a');
-        a.href = data.signedUrl;
+        a.href = signedUrl;
         a.target = '_blank';
-        a.download = `${note.title}.pdf`;
+        a.download = `${title || note.title}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -782,9 +788,18 @@ function NotesContent() {
                 <Button variant="outline" size="sm" onClick={() => setIsModalOpen(false)}>
                   Close
                 </Button>
-                <Button size="sm" onClick={() => handleDownload(selectedNote)}>
-                  <Download className="w-3.5 h-3.5 mr-1" /> Download PDF
-                </Button>
+                {checkNoteAccess(selectedNote) ? (
+                  <Button size="sm" onClick={() => handleDownload(selectedNote)}>
+                    <Download className="w-3.5 h-3.5 mr-1" /> Download PDF
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={() => {
+                    setModalRequiredPlan(selectedNote.minimum_plan || selectedNote.access_type || 'free');
+                    setIsUpgradeModalOpen(true);
+                  }}>
+                    <Lock className="w-3.5 h-3.5 mr-1" /> Unlock to Download
+                  </Button>
+                )}
               </div>
             </div>
 

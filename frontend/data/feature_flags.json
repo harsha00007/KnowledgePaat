@@ -14,9 +14,9 @@
     "student_purchases": true,
     "student_subscription": true,
     "student_login": true,
-    "student_registration": true,
+    "student_registration": false,
     "blur_homepage_pricing": true
   },
-  "updated_at": "2026-08-29T09:27:24.453Z",
+  "updated_at": "2026-08-30T15:47:14.727Z",
   "updated_by": "harshal.782002@gmail.com"
 }
