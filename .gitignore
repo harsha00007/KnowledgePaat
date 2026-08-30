@@ -48,3 +48,21 @@ load-tests/bin/
 
 .DS_Store
 Thumbs.db
+
+
+
+
+# Local KnowledgePaat audit/review documents
+/KNOWLEDGEPAAT_ARCHITECTURE_REVIEW_REPORT.*
+/KNOWLEDGEPAAT_CAPACITY_AND_PERFORMANCE_REPORT.*
+/KNOWLEDGEPAAT_IMPLEMENTATION_AND_PROJECT_REPORT.md
+/KnowledgePaat_Final_*.docx
+/KnowledgePaat_Final_*.pdf
+/KnowledgePaat_Final_*.md
+/KnowledgePaat_Safe_Project_File_Cleanup_Audit.*
+/KnowledgePaat_Targeted_Changes_Verification_Document.*
+/KnowledgePaat_Payment_Production_Readiness_Audit.*
+/KnowledgePaat_Manual_E2E_Test_Cases.xlsx
+
+# Local document-generation scripts
+/scripts/
