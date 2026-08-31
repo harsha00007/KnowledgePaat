@@ -2,7 +2,15 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { UserAccess } from '@/lib/subscription';
 import { satisfiesPlanRequirement } from '@/config/plans';
 
-export type ProductType = 'question_pack' | 'note' | 'note_bundle' | 'interview_bundle';
+export type ProductType = 
+  | 'question_pack' 
+  | 'note' 
+  | 'note_bundle' 
+  | 'interview_bundle'
+  | 'timed_assessment'
+  | 'ai_mock_interview'
+  | 'resume_template';
+
 export type OrderStatus = 'pending' | 'completed' | 'cancelled';
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'cancelled';
 
@@ -94,6 +102,24 @@ export const PRODUCT_TYPE_LABELS: Record<ProductType, { label: string; color: st
     color: 'bg-purple-50',
     textColor: 'text-purple-700',
     border: 'border-purple-200'
+  },
+  timed_assessment: {
+    label: 'Timed Assessment',
+    color: 'bg-amber-50',
+    textColor: 'text-amber-700',
+    border: 'border-amber-200'
+  },
+  ai_mock_interview: {
+    label: 'AI Mock Interview',
+    color: 'bg-violet-50',
+    textColor: 'text-violet-700',
+    border: 'border-violet-200'
+  },
+  resume_template: {
+    label: 'Resume Template',
+    color: 'bg-teal-50',
+    textColor: 'text-teal-700',
+    border: 'border-teal-200'
   }
 };
 
@@ -189,6 +215,52 @@ export async function getStudentPurchasedNoteIds(supabase: SupabaseClient, stude
     return unlockedNoteIds;
   } catch (err) {
     console.error('Failed to get student purchased note IDs:', err);
+    return new Set();
+  }
+}
+
+/**
+ * Fetch all resource reference IDs and direct product IDs permanently owned by the student
+ */
+export async function getStudentPurchasedResourceIds(supabase: SupabaseClient, studentId: string): Promise<Set<string>> {
+  try {
+    const purchasedProductIds = await getStudentPurchasedProductIds(supabase, studentId);
+    if (purchasedProductIds.size === 0) return new Set();
+
+    const productIdsArray = Array.from(purchasedProductIds);
+    const unlockedIds = new Set<string>(purchasedProductIds);
+
+    // 1. Direct item_reference_id from store_products (Notes, Assessments, Resume Templates)
+    const { data: productsData } = await supabase
+      .from('store_products')
+      .select('id, item_reference_id')
+      .in('id', productIdsArray);
+
+    if (productsData) {
+      productsData.forEach((p: any) => {
+        if (p.item_reference_id) unlockedIds.add(p.item_reference_id);
+      });
+    }
+
+    // 2. Multi-note bundle relationships from store_product_notes
+    try {
+      const { data: bundleNotes } = await supabase
+        .from('store_product_notes')
+        .select('note_id')
+        .in('product_id', productIdsArray);
+
+      if (bundleNotes) {
+        bundleNotes.forEach((bn: any) => {
+          if (bn.note_id) unlockedIds.add(bn.note_id);
+        });
+      }
+    } catch {
+      // Table may be optional or gracefully fall back
+    }
+
+    return unlockedIds;
+  } catch (err) {
+    console.error('Failed to get student purchased resource IDs:', err);
     return new Set();
   }
 }

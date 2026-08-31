@@ -29,7 +29,8 @@ import {
   Check,
   Sparkles,
   RefreshCw,
-  Info
+  Info,
+  Clock
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { StoreProduct, ProductType, PRODUCT_TYPE_LABELS } from '@/lib/store';
@@ -53,6 +54,14 @@ const NOTE_CATEGORIES = [
   'HR Interview',
   'Programming',
   'Career Guidance'
+];
+
+const RESUME_TEMPLATE_CATEGORIES = [
+  'Software Development',
+  'Data & Analytics',
+  'Product & Operations',
+  'Human Resources',
+  'Core Engineering'
 ];
 
 const initialForm: Partial<StoreProduct> = {
@@ -94,6 +103,15 @@ export default function AdminStorePage() {
   const [editSignedUrl, setEditSignedUrl] = useState<string | null>(null);
   const [isReplacingPdf, setIsReplacingPdf] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+
+  // Resume Template State
+  const [uploadedResumeFile, setUploadedResumeFile] = useState<File | null>(null);
+  const [resumeCategory, setResumeCategory] = useState<string>('Software Development');
+  const [resumeMinimumPlan, setResumeMinimumPlan] = useState<string>('starter');
+  const [attachedResumeTemplateForEdit, setAttachedResumeTemplateForEdit] = useState<any | null>(null);
+  const [isReplacingResumeFile, setIsReplacingResumeFile] = useState(false);
+  const [resumeFileSignedUrl, setResumeFileSignedUrl] = useState<string | null>(null);
+  const [viewAttachedResumeTemplate, setViewAttachedResumeTemplate] = useState<any | null>(null);
 
   // Notes Bundle State
   const [selectedBundleNoteIds, setSelectedBundleNoteIds] = useState<Set<string>>(new Set());
@@ -188,6 +206,15 @@ export default function AdminStorePage() {
     setBundleNewPdfFiles([]);
     setBundleSignedUrls({});
     setIsAddingExistingNoteOpen(false);
+
+    // Reset Resume Template state
+    setUploadedResumeFile(null);
+    setResumeCategory('Software Development');
+    setResumeMinimumPlan('starter');
+    setAttachedResumeTemplateForEdit(null);
+    setIsReplacingResumeFile(false);
+    setResumeFileSignedUrl(null);
+
     setUploadProgress(0);
     setIsFormModalOpen(true);
   };
@@ -202,11 +229,70 @@ export default function AdminStorePage() {
     setUploadProgress(0);
     setIsAddingExistingNoteOpen(false);
 
-    // Fetch attached notes for this product
+    // Reset Resume Template state
+    setUploadedResumeFile(null);
+    setAttachedResumeTemplateForEdit(null);
+    setIsReplacingResumeFile(false);
+    setResumeFileSignedUrl(null);
+    setResumeCategory('Software Development');
+    setResumeMinimumPlan('starter');
+
+    // 1. If Resume Template, fetch attached resume_templates row
+    if (p.product_type === 'resume_template') {
+      let matchedTemplate: any = null;
+      if (p.item_reference_id) {
+        try {
+          const { data: tmplData } = await supabase
+            .from('resume_templates')
+            .select('*')
+            .eq('id', p.item_reference_id)
+            .maybeSingle();
+          if (tmplData) matchedTemplate = tmplData;
+        } catch (tErr) {
+          console.warn("Could not query resume_templates:", tErr);
+        }
+      }
+
+      if (!matchedTemplate) {
+        try {
+          const { data: tmplData } = await supabase
+            .from('resume_templates')
+            .select('*')
+            .eq('title', p.title)
+            .maybeSingle();
+          if (tmplData) matchedTemplate = tmplData;
+        } catch {}
+      }
+
+      if (matchedTemplate) {
+        setAttachedResumeTemplateForEdit(matchedTemplate);
+        setResumeCategory(matchedTemplate.category || 'Software Development');
+        setResumeMinimumPlan(matchedTemplate.minimum_plan || 'starter');
+
+        if (matchedTemplate.file_url) {
+          if (matchedTemplate.file_url.startsWith('http') || matchedTemplate.file_url.startsWith('/')) {
+            setResumeFileSignedUrl(matchedTemplate.file_url);
+          } else {
+            try {
+              const bucket = matchedTemplate.file_url.startsWith('notes/') ? 'notes' : 'resumes';
+              const cleanPath = matchedTemplate.file_url.replace(/^(resumes\/|notes\/)/, '');
+              const { data: sData } = await supabase.storage.from(bucket).createSignedUrl(cleanPath, 300);
+              if (sData?.signedUrl) {
+                setResumeFileSignedUrl(sData.signedUrl);
+              }
+            } catch {
+              setResumeFileSignedUrl(null);
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Fetch attached notes for this product
     const attachedIds = new Set<string>();
     let primaryNote: NoteOption | null = null;
 
-    if (p.item_reference_id) {
+    if (p.item_reference_id && p.product_type !== 'resume_template') {
       attachedIds.add(p.item_reference_id);
       primaryNote = availableNotes.find(n => n.id === p.item_reference_id) || null;
     }
@@ -340,6 +426,32 @@ export default function AdminStorePage() {
       const totalNotes = selectedBundleNoteIds.size + bundleNewPdfFiles.length;
       if (totalNotes === 0) {
         errors.bundle = "Add at least one note to create a Notes Bundle.";
+      }
+    }
+
+    if (formData.product_type === 'resume_template') {
+      if (!selectedProduct && !uploadedResumeFile) {
+        errors.resumeFile = "Please upload a Resume Template file (.pdf, .doc, .docx).";
+      }
+      if (selectedProduct && isReplacingResumeFile && !uploadedResumeFile) {
+        errors.resumeFile = "Please choose a replacement Resume Template file.";
+      }
+      if (uploadedResumeFile) {
+        const validExts = ['.pdf', '.doc', '.docx'];
+        const lowerName = uploadedResumeFile.name.toLowerCase();
+        const hasValidExt = validExts.some(ext => lowerName.endsWith(ext));
+        if (!hasValidExt) {
+          errors.resumeFile = "Only PDF, DOC, and DOCX files are supported.";
+        }
+        if (uploadedResumeFile.size > 50 * 1024 * 1024) {
+          errors.resumeFile = "The template file must be 50 MB or smaller.";
+        }
+      }
+      if (!resumeCategory?.trim()) {
+        errors.resumeCategory = "Please select a template category.";
+      }
+      if (!resumeMinimumPlan?.trim()) {
+        errors.resumeMinimumPlan = "Please select the minimum subscription plan.";
       }
     }
     
@@ -484,7 +596,94 @@ export default function AdminStorePage() {
         setUploadProgress(70);
       }
 
-      // --- 3. SAVE STORE PRODUCT RECORD ---
+      // --- 3. RESUME TEMPLATE FILE UPLOAD & DUAL-TABLE SYNCHRONIZATION ---
+      if (pType === 'resume_template') {
+        const isFreePlan = resumeMinimumPlan === 'free' || Number(formData.price) === 0;
+
+        if (uploadedResumeFile) {
+          setUploadProgress(35);
+          const cleanName = `${Date.now()}_${uploadedResumeFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+          const filePath = `templates/resume_${cleanName}`;
+
+          // Upload to 'resumes' storage bucket (with graceful fallback to 'notes')
+          let uploadBucket = 'resumes';
+          let { error: uploadError } = await supabase.storage
+            .from(uploadBucket)
+            .upload(filePath, uploadedResumeFile, {
+              contentType: uploadedResumeFile.type || 'application/octet-stream',
+              upsert: true
+            });
+
+          if (uploadError) {
+            uploadBucket = 'notes';
+            const fallbackPath = `templates/resume_${cleanName}`;
+            const { error: fallbackErr } = await supabase.storage
+              .from(uploadBucket)
+              .upload(fallbackPath, uploadedResumeFile, {
+                contentType: uploadedResumeFile.type || 'application/octet-stream',
+                upsert: true
+              });
+            if (fallbackErr) {
+              throw new Error(`Unable to upload the resume template file: ${uploadError.message}`);
+            }
+            uploadedStoragePath = `notes/${fallbackPath}`;
+          } else {
+            uploadedStoragePath = `resumes/${filePath}`;
+          }
+
+          setUploadProgress(60);
+
+          const templatePayload = {
+            title: formData.title,
+            description: formData.description || `Resume Template for ${formData.title}`,
+            category: resumeCategory,
+            file_url: uploadedStoragePath,
+            minimum_plan: resumeMinimumPlan,
+            price: Number(formData.price),
+            is_free: isFreePlan,
+            is_active: formData.status !== 'inactive',
+            updated_at: new Date().toISOString()
+          };
+
+          if (selectedProduct && attachedResumeTemplateForEdit) {
+            const { error: updateTmplErr } = await supabase
+              .from('resume_templates')
+              .update(templatePayload)
+              .eq('id', attachedResumeTemplateForEdit.id);
+            if (updateTmplErr) throw updateTmplErr;
+            primaryItemRefId = attachedResumeTemplateForEdit.id;
+          } else {
+            const { data: newTmpl, error: createTmplErr } = await supabase
+              .from('resume_templates')
+              .insert(templatePayload)
+              .select('id')
+              .single();
+            if (createTmplErr || !newTmpl) throw createTmplErr || new Error("Failed to create resume template record.");
+            primaryItemRefId = newTmpl.id;
+          }
+        } else if (selectedProduct && attachedResumeTemplateForEdit) {
+          // Admin edited metadata without replacing file
+          const templatePayload = {
+            title: formData.title,
+            description: formData.description || `Resume Template for ${formData.title}`,
+            category: resumeCategory,
+            minimum_plan: resumeMinimumPlan,
+            price: Number(formData.price),
+            is_free: isFreePlan,
+            is_active: formData.status !== 'inactive',
+            updated_at: new Date().toISOString()
+          };
+
+          const { error: updateTmplErr } = await supabase
+            .from('resume_templates')
+            .update(templatePayload)
+            .eq('id', attachedResumeTemplateForEdit.id);
+          if (updateTmplErr) throw updateTmplErr;
+          primaryItemRefId = attachedResumeTemplateForEdit.id;
+        }
+      }
+
+      // --- 4. SAVE STORE PRODUCT RECORD ---
       const productPayload = {
         title: formData.title,
         description: formData.description || '',
@@ -591,7 +790,57 @@ export default function AdminStorePage() {
     setSelectedProduct(p);
     setViewAttachedNotes([]);
     setViewSignedUrls({});
+    setViewAttachedResumeTemplate(null);
+    setResumeFileSignedUrl(null);
     setIsViewModalOpen(true);
+
+    // 1. If resume_template, fetch attached template details
+    if (p.product_type === 'resume_template') {
+      let matchTmpl: any = null;
+      if (p.item_reference_id) {
+        try {
+          const { data: tmplData } = await supabase
+            .from('resume_templates')
+            .select('*')
+            .eq('id', p.item_reference_id)
+            .maybeSingle();
+          if (tmplData) matchTmpl = tmplData;
+        } catch (tErr) {
+          console.warn("Could not query resume_templates:", tErr);
+        }
+      }
+
+      if (!matchTmpl) {
+        try {
+          const { data: tmplData } = await supabase
+            .from('resume_templates')
+            .select('*')
+            .eq('title', p.title)
+            .maybeSingle();
+          if (tmplData) matchTmpl = tmplData;
+        } catch {}
+      }
+
+      setViewAttachedResumeTemplate(matchTmpl);
+
+      if (matchTmpl?.file_url) {
+        if (matchTmpl.file_url.startsWith('http') || matchTmpl.file_url.startsWith('/')) {
+          setResumeFileSignedUrl(matchTmpl.file_url);
+        } else {
+          try {
+            const bucket = matchTmpl.file_url.startsWith('notes/') ? 'notes' : 'resumes';
+            const cleanPath = matchTmpl.file_url.replace(/^(resumes\/|notes\/)/, '');
+            const { data: sData } = await supabase.storage.from(bucket).createSignedUrl(cleanPath, 180);
+            if (sData?.signedUrl) {
+              setResumeFileSignedUrl(sData.signedUrl);
+            }
+          } catch {
+            setResumeFileSignedUrl(null);
+          }
+        }
+      }
+      return;
+    }
 
     const notesList: NoteOption[] = [];
 
@@ -645,11 +894,24 @@ export default function AdminStorePage() {
         .update({ status: newStatus })
         .eq('id', selectedProduct.id);
       if (error) throw error;
+
+      // If this is a resume template with item_reference_id, sync is_active
+      if (selectedProduct.product_type === 'resume_template' && selectedProduct.item_reference_id) {
+        try {
+          await supabase
+            .from('resume_templates')
+            .update({ is_active: newStatus === 'active' })
+            .eq('id', selectedProduct.item_reference_id);
+        } catch {
+          // Graceful fallback
+        }
+      }
       
       await fetchProducts();
       setIsStatusModalOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error toggling product status:", err);
+      alert(err.message || "Failed to toggle status.");
     } finally {
       setIsProcessing(false);
     }
@@ -659,7 +921,26 @@ export default function AdminStorePage() {
     if (!selectedProduct) return;
     setIsProcessing(true);
     try {
-      // Delete product (cascades to store_product_notes, leaves public.notes intact)
+      // 1. Delete junction links if any
+      try {
+        await supabase.from('store_product_notes').delete().eq('product_id', selectedProduct.id);
+      } catch {
+        // Table or row may not exist
+      }
+
+      // 2. If this is a resume template with item_reference_id, soft-deactivate the template row to preserve buyer access
+      if (selectedProduct.product_type === 'resume_template' && selectedProduct.item_reference_id) {
+        try {
+          await supabase
+            .from('resume_templates')
+            .update({ is_active: false })
+            .eq('id', selectedProduct.item_reference_id);
+        } catch {
+          // Graceful fallback
+        }
+      }
+
+      // 3. Delete product (cascades to store_product_notes, leaves public.notes intact)
       const { error } = await supabase
         .from('store_products')
         .delete()
@@ -668,8 +949,9 @@ export default function AdminStorePage() {
       
       await fetchProducts();
       setIsDeleteModalOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error deleting product:", err);
+      alert(err.message || "Failed to delete product.");
     } finally {
       setIsProcessing(false);
     }
@@ -727,8 +1009,11 @@ export default function AdminStorePage() {
                 className="w-full border border-[var(--color-border)] bg-white rounded-[var(--radius-md)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] shadow-xs"
               >
                 <option value="">All Types</option>
-                <option value="question_pack">Question Pack</option>
                 <option value="note">Study Note (PDF)</option>
+                <option value="question_pack">Question Pack</option>
+                <option value="timed_assessment">Timed Assessment</option>
+                <option value="ai_mock_interview">AI Mock Interview</option>
+                <option value="resume_template">Resume Template</option>
                 <option value="note_bundle">Notes Bundle</option>
                 <option value="interview_bundle">Interview Master Bundle</option>
               </select>
@@ -801,6 +1086,9 @@ export default function AdminStorePage() {
                               {p.product_type === 'note_bundle' && <Layers className="w-4 h-4 text-blue-600 shrink-0" />}
                               {p.product_type === 'question_pack' && <BookOpen className="w-4 h-4 text-indigo-600 shrink-0" />}
                               {p.product_type === 'interview_bundle' && <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />}
+                              {p.product_type === 'timed_assessment' && <Clock className="w-4 h-4 text-amber-600 shrink-0" />}
+                              {p.product_type === 'ai_mock_interview' && <Sparkles className="w-4 h-4 text-violet-600 shrink-0" />}
+                              {p.product_type === 'resume_template' && <FileText className="w-4 h-4 text-teal-600 shrink-0" />}
                               <span className="truncate">{p.title}</span>
                             </div>
                           </td>
@@ -896,8 +1184,11 @@ export default function AdminStorePage() {
                   className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white font-medium disabled:bg-[var(--color-bg-muted)] disabled:opacity-75"
                 >
                   <option value="note">Study Note (PDF)</option>
-                  <option value="note_bundle">Notes Bundle</option>
                   <option value="question_pack">Question Pack</option>
+                  <option value="timed_assessment">Timed Assessment</option>
+                  <option value="ai_mock_interview">AI Mock Interview</option>
+                  <option value="resume_template">Resume Template</option>
+                  <option value="note_bundle">Notes Bundle</option>
                   <option value="interview_bundle">Interview Master Bundle</option>
                 </select>
                 {selectedProduct && (attachedNoteForEdit || selectedBundleNoteIds.size > 0) && (
@@ -1262,6 +1553,167 @@ export default function AdminStorePage() {
             </div>
           )}
 
+          {/* --- CASE C: RESUME TEMPLATE --- */}
+          {formData.product_type === 'resume_template' && (
+            <div className="rounded-[var(--radius-lg)] border border-teal-200 bg-teal-50/30 p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-teal-200/60 pb-2">
+                <div className="flex items-center gap-2 text-teal-950 font-bold text-xs uppercase tracking-wide">
+                  <FileText className="w-4 h-4 text-teal-600" />
+                  <span>Resume Template Content</span>
+                </div>
+                <span className="text-[10px] text-teal-700 font-medium">Supported: PDF, DOC, DOCX (Max 50 MB)</span>
+              </div>
+
+              {/* Current Attached Template Display in Edit Mode */}
+              {selectedProduct && attachedResumeTemplateForEdit && !isReplacingResumeFile && (
+                <div className="bg-white border border-teal-200 rounded-[var(--radius-md)] p-3.5 space-y-2.5 shadow-xs">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-9 h-9 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700 shrink-0 mt-0.5">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
+                            Current Attached Template
+                          </span>
+                        </div>
+                        <p className="font-bold text-sm text-[var(--color-text-primary)] mt-1">{attachedResumeTemplateForEdit.title}</p>
+                        <p className="text-[11px] text-[var(--color-text-secondary)] mt-0.5">
+                          Category: <strong>{attachedResumeTemplateForEdit.category}</strong> • Plan: <strong className="capitalize">{attachedResumeTemplateForEdit.minimum_plan || 'starter'}</strong>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--color-border)]">
+                    {resumeFileSignedUrl && (
+                      <a 
+                        href={resumeFileSignedUrl} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-[var(--radius-md)] bg-teal-50 text-teal-700 border border-teal-200 text-xs font-bold hover:bg-teal-100 transition-colors"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> View Template
+                      </a>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setIsReplacingResumeFile(true)} 
+                      className="text-xs border-amber-300 text-amber-800 hover:bg-amber-50"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 mr-1" /> Replace File
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Upload or Replacement Dropzone */}
+              {(!selectedProduct || !attachedResumeTemplateForEdit || isReplacingResumeFile) && (
+                <div className="space-y-2">
+                  {isReplacingResumeFile && (
+                    <div className="flex items-center justify-between bg-amber-50 border border-amber-200 p-2.5 rounded-[var(--radius-md)] text-amber-900 text-xs">
+                      <div className="flex items-center gap-2">
+                        <RefreshCw className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>Select a new file to replace <strong>{attachedResumeTemplateForEdit?.title}</strong></span>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => { setIsReplacingResumeFile(false); setUploadedResumeFile(null); }} 
+                        className="font-bold text-amber-800 hover:underline shrink-0 ml-2"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+
+                  {!uploadedResumeFile ? (
+                    <label className="flex flex-col items-center justify-center p-5 border-2 border-dashed border-teal-300 rounded-[var(--radius-lg)] bg-white hover:bg-teal-50/50 cursor-pointer transition-colors text-center">
+                      <Upload className="w-6 h-6 text-teal-600 mb-1.5" />
+                      <span className="font-bold text-teal-950">Click to choose Resume Template or drag & drop</span>
+                      <span className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">Maximum size: 50 MB • PDF, DOC, DOCX</span>
+                      <input 
+                        type="file" 
+                        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+                        className="hidden" 
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            const file = e.target.files[0];
+                            const validExts = ['.pdf', '.doc', '.docx'];
+                            const lowerName = file.name.toLowerCase();
+                            const hasValidExt = validExts.some(ext => lowerName.endsWith(ext));
+                            if (!hasValidExt) {
+                              setFormErrors(prev => ({ ...prev, resumeFile: "Only PDF, DOC, and DOCX files are supported." }));
+                              return;
+                            }
+                            if (file.size > 50 * 1024 * 1024) {
+                              setFormErrors(prev => ({ ...prev, resumeFile: "File size exceeds 50 MB." }));
+                              return;
+                            }
+                            setUploadedResumeFile(file);
+                            setFormErrors(prev => { const next = { ...prev }; delete next.resumeFile; return next; });
+                          }
+                        }} 
+                      />
+                    </label>
+                  ) : (
+                    <div className="bg-white border border-teal-300 rounded-[var(--radius-md)] p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700">
+                          <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-[var(--color-text-primary)]">{uploadedResumeFile.name}</p>
+                          <p className="text-[10px] text-[var(--color-text-tertiary)]">{(uploadedResumeFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                        </div>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => setUploadedResumeFile(null)} 
+                        className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                        title="Remove selected file"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {formErrors.resumeFile && <p className="text-red-500 text-xs font-semibold">{formErrors.resumeFile}</p>}
+
+              {/* Template Metadata Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div>
+                  <label className="block font-bold text-[var(--color-text-primary)] mb-1">Role Category *</label>
+                  <select 
+                    value={resumeCategory} 
+                    onChange={e => setResumeCategory(e.target.value)} 
+                    className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-1.5 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white"
+                  >
+                    {RESUME_TEMPLATE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  {formErrors.resumeCategory && <p className="text-red-500 text-xs mt-1">{formErrors.resumeCategory}</p>}
+                </div>
+                <div>
+                  <label className="block font-bold text-[var(--color-text-primary)] mb-1">Subscription Tier Default *</label>
+                  <select 
+                    value={resumeMinimumPlan} 
+                    onChange={e => setResumeMinimumPlan(e.target.value)} 
+                    className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-1.5 text-xs focus:ring-2 focus:ring-[var(--color-brand-500)] outline-none bg-white"
+                  >
+                    <option value="free">Free Access</option>
+                    <option value="starter">Starter Plan</option>
+                    <option value="pro">Pro Plan</option>
+                    <option value="premium">Premium Plan</option>
+                  </select>
+                  {formErrors.resumeMinimumPlan && <p className="text-red-500 text-xs mt-1">{formErrors.resumeMinimumPlan}</p>}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 3. Publishing Status */}
           <div>
             <label className="block font-bold text-[var(--color-text-primary)] mb-1">Publishing Status</label>
@@ -1346,40 +1798,79 @@ export default function AdminStorePage() {
               <p className="text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed">{selectedProduct.description}</p>
             </div>
 
-            {/* Attached Notes List */}
-            <div>
-              <h4 className="font-bold text-[var(--color-text-primary)] mb-1.5 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-emerald-600" />
-                Attached Learning Resources ({viewAttachedNotes.length})
-              </h4>
+            {/* Case A: Attached Resume Template */}
+            {selectedProduct.product_type === 'resume_template' && (
+              <div>
+                <h4 className="font-bold text-[var(--color-text-primary)] mb-1.5 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-teal-600" />
+                  Attached Resume Template
+                </h4>
 
-              {viewAttachedNotes.length === 0 ? (
-                <p className="text-[11px] text-[var(--color-text-tertiary)] italic">No note files linked to this product.</p>
-              ) : (
-                <div className="space-y-2">
-                  {viewAttachedNotes.map((note) => (
-                    <div key={note.id} className="flex items-center justify-between p-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)]">
+                {viewAttachedResumeTemplate ? (
+                  <div className="p-3 rounded-[var(--radius-md)] border border-teal-200 bg-teal-50/40 space-y-2">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-bold text-[var(--color-text-primary)]">{note.title}</p>
-                        <p className="text-[10px] text-[var(--color-text-tertiary)]">{note.category} • {note.file_size || 'PDF'}</p>
+                        <p className="font-bold text-[var(--color-text-primary)]">{viewAttachedResumeTemplate.title}</p>
+                        <p className="text-[10px] text-[var(--color-text-tertiary)]">
+                          Category: <strong>{viewAttachedResumeTemplate.category}</strong> • Plan: <strong className="capitalize">{viewAttachedResumeTemplate.minimum_plan || 'starter'}</strong>
+                        </p>
                       </div>
-                      {viewSignedUrls[note.id] ? (
+                      {resumeFileSignedUrl ? (
                         <a 
-                          href={viewSignedUrls[note.id]} 
+                          href={resumeFileSignedUrl} 
                           target="_blank" 
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold hover:bg-emerald-100 transition-colors"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-teal-50 text-teal-700 border border-teal-200 text-[10px] font-bold hover:bg-teal-100 transition-colors"
                         >
-                          View PDF <ExternalLink className="w-3 h-3" />
+                          Preview Template <ExternalLink className="w-3 h-3" />
                         </a>
                       ) : (
                         <span className="text-[10px] text-[var(--color-text-tertiary)]">Attached</span>
                       )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-[var(--color-text-tertiary)] italic">No resume template linked to this product.</p>
+                )}
+              </div>
+            )}
+
+            {/* Case B: Attached Notes List */}
+            {selectedProduct.product_type !== 'resume_template' && (
+              <div>
+                <h4 className="font-bold text-[var(--color-text-primary)] mb-1.5 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                  Attached Learning Resources ({viewAttachedNotes.length})
+                </h4>
+
+                {viewAttachedNotes.length === 0 ? (
+                  <p className="text-[11px] text-[var(--color-text-tertiary)] italic">No note files linked to this product.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {viewAttachedNotes.map((note) => (
+                      <div key={note.id} className="flex items-center justify-between p-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)]">
+                        <div>
+                          <p className="font-bold text-[var(--color-text-primary)]">{note.title}</p>
+                          <p className="text-[10px] text-[var(--color-text-tertiary)]">{note.category} • {note.file_size || 'PDF'}</p>
+                        </div>
+                        {viewSignedUrls[note.id] ? (
+                          <a 
+                            href={viewSignedUrls[note.id]} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold hover:bg-emerald-100 transition-colors"
+                          >
+                            View PDF <ExternalLink className="w-3 h-3" />
+                          </a>
+                        ) : (
+                          <span className="text-[10px] text-[var(--color-text-tertiary)]">Attached</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex justify-end pt-3 border-t border-[var(--color-border)]">
               <Button variant="outline" size="sm" onClick={() => setIsViewModalOpen(false)}>Close</Button>

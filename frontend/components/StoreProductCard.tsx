@@ -105,11 +105,15 @@ export function StoreProductCard({
             href={
               product.product_type === 'note' || product.product_type === 'note_bundle'
                 ? '/student/notes'
-                : '/student/interview-preparation'
+                : product.product_type === 'ai_mock_interview'
+                  ? '/student/mock-interview'
+                  : product.product_type === 'resume_template'
+                    ? '/student/resume'
+                    : '/student/interview-preparation'
             }
             className="block w-full"
           >
-            <Button variant="outline" size="sm" className="w-full justify-center text-xs text-emerald-700 border-emerald-300 hover:bg-emerald-50">
+            <Button variant="outline" size="sm" className="w-full justify-center text-xs text-emerald-700 border-emerald-300 hover:bg-emerald-50 font-semibold">
               <Check className="w-3.5 h-3.5 mr-1" /> Access Content
             </Button>
           </Link>

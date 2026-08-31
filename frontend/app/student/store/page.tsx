@@ -100,6 +100,12 @@ export default function StudentStorePage() {
       matchesCategory = p.product_type === 'question_pack';
     } else if (categoryFilter === 'notes') {
       matchesCategory = p.product_type === 'note';
+    } else if (categoryFilter === 'timed_assessments') {
+      matchesCategory = p.product_type === 'timed_assessment';
+    } else if (categoryFilter === 'mock_interviews') {
+      matchesCategory = p.product_type === 'ai_mock_interview';
+    } else if (categoryFilter === 'resume_templates') {
+      matchesCategory = p.product_type === 'resume_template';
     } else if (categoryFilter === 'bundles') {
       matchesCategory = p.product_type === 'note_bundle' || p.product_type === 'interview_bundle';
     }
@@ -184,14 +190,17 @@ export default function StudentStorePage() {
             <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
               {[
                 { id: 'all', label: 'All Items' },
-                { id: 'questions', label: 'Interview Questions' },
                 { id: 'notes', label: 'Study Notes' },
+                { id: 'questions', label: 'Interview Questions' },
+                { id: 'timed_assessments', label: 'Timed Assessments' },
+                { id: 'mock_interviews', label: 'AI Mock Interviews' },
+                { id: 'resume_templates', label: 'Resume Templates' },
                 { id: 'bundles', label: 'Bundles' },
               ].map(cat => (
                 <button
                   key={cat.id}
                   onClick={() => setCategoryFilter(cat.id)}
-                  className={`px-3 py-1.5 rounded-[var(--radius-md)] text-xs font-semibold transition-all ${
+                  className={`px-3 py-1.5 rounded-[var(--radius-md)] text-xs font-semibold transition-all font-display ${
                     categoryFilter === cat.id
                       ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-300)] shadow-xs'
                       : 'bg-white text-[var(--color-text-secondary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-subtle)]'

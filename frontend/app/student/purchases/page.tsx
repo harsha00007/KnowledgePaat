@@ -152,9 +152,15 @@ export default function StudentPurchasesPage() {
               const typeMeta = PRODUCT_TYPE_LABELS[product.product_type];
               const attachedNoteIds = productNotesMap.get(product.id) || [];
               
-              // Determine optimal target route for purchased study materials
+              // Determine optimal target route based on product type
               let targetRoute = '/student/notes';
-              if (product.item_reference_id) {
+              if (product.product_type === 'ai_mock_interview') {
+                targetRoute = '/student/mock-interview';
+              } else if (product.product_type === 'resume_template') {
+                targetRoute = '/student/resume';
+              } else if (product.product_type === 'timed_assessment' || product.product_type === 'question_pack') {
+                targetRoute = '/student/interview-preparation';
+              } else if (product.item_reference_id) {
                 targetRoute = `/student/notes?noteId=${encodeURIComponent(product.item_reference_id)}`;
               } else if (attachedNoteIds.length === 1) {
                 targetRoute = `/student/notes?noteId=${encodeURIComponent(attachedNoteIds[0])}`;

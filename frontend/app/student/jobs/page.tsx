@@ -28,6 +28,7 @@ import {
 import { createClient } from '@/utils/supabase/client';
 import { calculateUserAccess, isContentAccessible, canViewCompanyName, UserAccess } from '@/lib/subscription';
 import { PLANS, normalizePlanId, PlanId } from '@/config/plans';
+import { CustomSelect } from '@/components/CustomSelect';
 import { CompanyNameGate } from '@/components/CompanyNameGate';
 import { useFeatureFlags } from '@/context/FeatureFlagContext';
 import { FeatureComingSoon } from '@/components/FeatureComingSoon';
@@ -311,50 +312,45 @@ export default function JobsPage() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-1">
-            <select 
-              value={categoryFilter} 
-              onChange={e => setCategoryFilter(e.target.value)}
-              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
-            >
-              <option value="">All Categories</option>
-              {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-            </select>
+            <CustomSelect
+              value={categoryFilter}
+              onChange={val => setCategoryFilter(val)}
+              options={[{ value: '', label: 'All Categories' }, ...CATEGORIES.map(cat => ({ value: cat, label: cat }))]}
+              placeholder="All Categories"
+            />
 
-            <select 
-              value={workModeFilter} 
-              onChange={e => setWorkModeFilter(e.target.value)}
-              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
-            >
-              <option value="">All Work Modes</option>
-              {WORK_MODES.map(mode => <option key={mode} value={mode}>{mode}</option>)}
-            </select>
+            <CustomSelect
+              value={workModeFilter}
+              onChange={val => setWorkModeFilter(val)}
+              options={[{ value: '', label: 'All Work Modes' }, ...WORK_MODES.map(mode => ({ value: mode, label: mode }))]}
+              placeholder="All Work Modes"
+            />
 
-            <select 
-              value={experienceFilter} 
-              onChange={e => setExperienceFilter(e.target.value)}
-              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
-            >
-              <option value="">All Experience</option>
-              {EXPERIENCE_LEVELS.map(exp => <option key={exp} value={exp}>{exp}</option>)}
-            </select>
+            <CustomSelect
+              value={experienceFilter}
+              onChange={val => setExperienceFilter(val)}
+              options={[{ value: '', label: 'All Experience' }, ...EXPERIENCE_LEVELS.map(exp => ({ value: exp, label: exp }))]}
+              placeholder="All Experience"
+            />
 
-            <select 
-              value={planFilter} 
-              onChange={e => setPlanFilter(e.target.value)}
-              className="border border-[var(--color-border)] rounded-[var(--radius-md)] px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] bg-white text-[var(--color-text-primary)] shadow-xs"
-            >
-              <option value="">All Plan Tiers</option>
-              <option value="free">Free Jobs</option>
-              <option value="starter">Starter Jobs</option>
-              <option value="pro">Pro Jobs</option>
-              <option value="premium">Premium Jobs</option>
-            </select>
+            <CustomSelect
+              value={planFilter}
+              onChange={val => setPlanFilter(val)}
+              options={[
+                { value: '', label: 'All Plan Tiers' },
+                { value: 'free', label: 'Free Jobs' },
+                { value: 'starter', label: 'Starter Jobs' },
+                { value: 'pro', label: 'Pro Jobs' },
+                { value: 'premium', label: 'Premium Jobs' },
+              ]}
+              placeholder="All Plan Tiers"
+            />
 
             <Button 
               variant="outline" 
               size="sm" 
               onClick={resetFilters} 
-              className="col-span-2 sm:col-span-1 text-xs justify-center"
+              className="col-span-2 sm:col-span-1 text-xs justify-center font-semibold"
             >
               <Filter className="w-3.5 h-3.5 mr-1" /> Reset
             </Button>

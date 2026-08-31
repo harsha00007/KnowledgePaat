@@ -36,7 +36,9 @@ import {
   TrendingUp,
   Layers,
   Zap,
-  Bot
+  Bot,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { calculateUserAccess, isContentAccessible, UserAccess } from '@/lib/subscription';
@@ -204,6 +206,19 @@ export default function StudentInterviewPrepPage() {
   // Interactive Active Test Session
   const [activeSession, setActiveSession] = useState<ActiveTestSession | null>(null);
 
+  // Notice & Friendly Suggestion Modal
+  const [noticeModal, setNoticeModal] = useState<{
+    title: string;
+    message: string;
+    type?: 'info' | 'warning' | 'error';
+    primaryActionText?: string;
+    primaryActionFn?: () => void;
+    secondaryActionText?: string;
+    secondaryActionFn?: () => void;
+  } | null>(null);
+
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
   const supabase = createClient();
 
   useEffect(() => {
@@ -348,24 +363,17 @@ export default function StudentInterviewPrepPage() {
         if (sharedData.testData) setTestConfigs((sharedData.testData as any[]).map((t: any) => ({ ...t, category: t.interview_categories })) as TestConfig[]);
       }
 
+      setFetchError(null);
     } catch (err) {
       console.error("Error loading interview prep data:", err);
+      setFetchError("Something went wrong while loading the questions. Please try again.");
     } finally {
       setIsFetching(false);
     }
   };
 
   // ---------------- TEST LAUNCH & SUBMISSION ---------------- //
-  const handleStartTest = (test: TestConfig) => {
-    // 1. Subscription Gating (AI Adaptive Mode strictly requires Premium)
-    const reqPlan = test.mode === 'ai_adaptive' ? 'premium' : (test.minimum_plan || 'free');
-    if (!userAccess.hasAccess(reqPlan)) {
-      setModalRequiredPlan(reqPlan);
-      setUpgradeFeatureTitle(test.mode === 'ai_adaptive' ? 'AI Adaptive Mode' : `the ${test.title}`);
-      setIsUpgradeModalOpen(true);
-      return;
-    }
-
+  const startTestExecution = (test: TestConfig) => {
     // 2. Select MCQs from Active MCQ Pool
     let pool = mcqQuestions.filter(q => q.status === 'Active');
     if (test.category_id) {
@@ -380,7 +388,13 @@ export default function StudentInterviewPrepPage() {
     const selected = shuffled.slice(0, Math.min(test.question_count, shuffled.length));
 
     if (selected.length === 0) {
-      alert("No active MCQ assessment questions currently available for this test configuration.");
+      setNoticeModal({
+        title: "Questions Not Available",
+        message: "No active assessment questions are currently available for this test configuration. Please select another test or try again later.",
+        type: 'warning',
+        primaryActionText: "OK",
+        primaryActionFn: () => setNoticeModal(null)
+      });
       return;
     }
 
@@ -398,6 +412,42 @@ export default function StudentInterviewPrepPage() {
       isSubmitted: false,
       isSubmitting: false
     });
+  };
+
+  const handleStartTest = (test: TestConfig) => {
+    // 1. Subscription Gating (AI Adaptive Mode strictly requires Premium)
+    const reqPlan = test.mode === 'ai_adaptive' ? 'premium' : (test.minimum_plan || 'free');
+    if (!userAccess.hasAccess(reqPlan)) {
+      setModalRequiredPlan(reqPlan);
+      setUpgradeFeatureTitle(test.mode === 'ai_adaptive' ? 'AI Adaptive Mode' : `the ${test.title}`);
+      setIsUpgradeModalOpen(true);
+      return;
+    }
+
+    // Check if student has already completed this test
+    const pastAttempt = testHistory.find((h: any) => h.test_config_id === test.id);
+    if (pastAttempt) {
+      const dateStr = pastAttempt.created_at ? new Date(pastAttempt.created_at).toLocaleDateString() : '';
+      setNoticeModal({
+        title: "Test Already Completed",
+        message: `You have already attempted "${test.title}"${dateStr ? ` on ${dateStr}` : ''} with a score of ${pastAttempt.score ?? 0}%. You can view your detailed scorecard in Completed Tests, or retake this test to improve your score.`,
+        type: 'info',
+        primaryActionText: "Retake Test",
+        primaryActionFn: () => {
+          setNoticeModal(null);
+          startTestExecution(test);
+        },
+        secondaryActionText: "View Completed Tests",
+        secondaryActionFn: () => {
+          setNoticeModal(null);
+          setActiveView('tests');
+          setTestsSubTab('completed');
+        }
+      });
+      return;
+    }
+
+    startTestExecution(test);
   };
 
   const handleSelectAnswerState = (state: string) => {
@@ -1319,6 +1369,19 @@ export default function StudentInterviewPrepPage() {
           </div>
         </div>
 
+        {/* ERROR STATE FEEDBACK */}
+        {fetchError && (
+          <div className="p-4 rounded-[var(--radius-lg)] bg-red-50 border border-red-200 text-red-800 flex items-center justify-between animate-in fade-in">
+            <div className="flex items-center gap-2.5">
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+              <p className="text-sm font-medium">{fetchError}</p>
+            </div>
+            <Button size="sm" variant="outline" onClick={fetchPrepData} className="text-xs bg-white">
+              <RefreshCw className="w-3.5 h-3.5 mr-1" /> Retry
+            </Button>
+          </div>
+        )}
+
         {/* ── RECOMMENDED TESTS BANNER (IF CONFIGURED BY ADMIN) ───────── */}
         {recommendedTests.length > 0 && (
           <div className="p-6 rounded-[var(--radius-xl)] border-2 border-[var(--color-brand-300)] bg-gradient-to-r from-white via-white to-[var(--color-brand-50)]/50 shadow-[var(--shadow-xs)] space-y-4">
@@ -2161,6 +2224,43 @@ export default function StudentInterviewPrepPage() {
         requiredPlan={modalRequiredPlan}
         featureTitle={upgradeFeatureTitle}
       />
+
+      {/* ── INFORMATIONAL / NOTICE MODAL ─────────────────────────────────── */}
+      {noticeModal && (
+        <Modal 
+          isOpen={true} 
+          onClose={() => setNoticeModal(null)} 
+          title={noticeModal.title}
+          className="max-w-md"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+              {noticeModal.message}
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-2 pt-3 border-t border-[var(--color-border)]">
+              {noticeModal.secondaryActionText && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={noticeModal.secondaryActionFn || (() => setNoticeModal(null))}
+                  className="w-full sm:w-auto text-xs"
+                >
+                  {noticeModal.secondaryActionText}
+                </Button>
+              )}
+              <Button 
+                variant="primary" 
+                size="sm" 
+                onClick={noticeModal.primaryActionFn || (() => setNoticeModal(null))}
+                className="w-full sm:w-auto text-xs font-bold"
+              >
+                {noticeModal.primaryActionText || 'Understood'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
     </StudentLayout>
   );

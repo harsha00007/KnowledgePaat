@@ -150,69 +150,80 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             : 'border-slate-200/80'
         }`}
       >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 sm:h-18 items-center justify-between relative">
+        <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+          <div className="flex h-14 sm:h-18 items-center justify-between relative">
 
-            {/* ── LEFT: Hamburger Menu Button with Hover & Click Flyout ── */}
-            <div
-              ref={menuContainerRef}
-              className="relative z-20 flex items-center"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-            >
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className={`flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 rounded-xl text-[#0B1D3A] hover:bg-slate-100 hover:text-[#2563EB] transition-all border ${
-                  isMenuOpen
-                    ? 'bg-slate-100 border-slate-300 text-[#2563EB] shadow-2xs'
-                    : 'bg-white border-slate-200/90 shadow-2xs'
-                }`}
-                aria-label="Toggle navigation menu"
-                aria-expanded={isMenuOpen}
+            {/* ── LEFT: Hamburger Menu Button + Mobile Logo (on < md) ── */}
+            <div className="relative z-20 flex items-center gap-1.5 xs:gap-2 sm:gap-3">
+              <div
+                ref={menuContainerRef}
+                className="relative flex items-center"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
               >
-                {isMenuOpen ? (
-                  <X className="h-5 w-5 stroke-[2.2]" />
-                ) : (
-                  <Menu className="h-5 w-5 stroke-[2.2]" />
-                )}
-              </button>
+                <button
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className={`flex items-center justify-center h-9 w-9 sm:h-11 sm:w-11 rounded-xl text-[#0B1D3A] hover:bg-slate-100 hover:text-[#2563EB] transition-all border ${
+                    isMenuOpen
+                      ? 'bg-slate-100 border-slate-300 text-[#2563EB] shadow-2xs'
+                      : 'bg-white border-slate-200/90 shadow-2xs'
+                  }`}
+                  aria-label="Toggle navigation menu"
+                  aria-expanded={isMenuOpen}
+                >
+                  {isMenuOpen ? (
+                    <X className="h-4.5 w-4.5 sm:h-5 sm:w-5 stroke-[2.2]" />
+                  ) : (
+                    <Menu className="h-4.5 w-4.5 sm:h-5 sm:w-5 stroke-[2.2]" />
+                  )}
+                </button>
 
-              {/* Hamburger Flyout Dropdown Menu */}
-              {isMenuOpen && (
-                <div className="absolute top-full left-0 mt-2.5 w-64 rounded-2xl bg-white border border-slate-200 p-2.5 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150 z-50">
-                  <div className="px-3 py-2 border-b border-slate-100 mb-1.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-display">Navigation</p>
+                {/* Hamburger Flyout Dropdown Menu */}
+                {isMenuOpen && (
+                  <div className="absolute top-full left-0 mt-2.5 w-64 rounded-2xl bg-white border border-slate-200 p-2.5 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150 z-50">
+                    <div className="px-3 py-2 border-b border-slate-100 mb-1.5">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-display">Navigation</p>
+                    </div>
+                    <nav className="space-y-1">
+                      {NAV_LINKS.map((link) => {
+                        const isActive = pathname === link.href;
+                        const Icon = link.icon;
+                        return (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            onClick={() => setIsMenuOpen(false)}
+                            className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all font-display ${
+                              isActive
+                                ? 'bg-blue-50 text-[#2563EB]'
+                                : 'text-[#0B1D3A] hover:bg-slate-50 hover:text-[#2563EB]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <Icon className={`h-4 w-4 ${isActive ? 'text-[#2563EB]' : 'text-slate-400'}`} />
+                              <span>{link.label}</span>
+                            </div>
+                            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                          </Link>
+                        );
+                      })}
+                    </nav>
                   </div>
-                  <nav className="space-y-1">
-                    {NAV_LINKS.map((link) => {
-                      const isActive = pathname === link.href;
-                      const Icon = link.icon;
-                      return (
-                        <Link
-                          key={link.href}
-                          href={link.href}
-                          onClick={() => setIsMenuOpen(false)}
-                          className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all font-display ${
-                            isActive
-                              ? 'bg-blue-50 text-[#2563EB]'
-                              : 'text-[#0B1D3A] hover:bg-slate-50 hover:text-[#2563EB]'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <Icon className={`h-4 w-4 ${isActive ? 'text-[#2563EB]' : 'text-slate-400'}`} />
-                            <span>{link.label}</span>
-                          </div>
-                          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-                        </Link>
-                      );
-                    })}
-                  </nav>
-                </div>
-              )}
+                )}
+              </div>
+
+              {/* Mobile-only Logo next to Hamburger — polished sizing */}
+              <Link
+                href="/"
+                className="flex md:hidden items-center transition-opacity hover:opacity-90 pl-0.5"
+                aria-label="KnowledgePaat — go to home"
+              >
+                <Logo size="sm" className="h-7 sm:h-8 w-auto max-w-[135px] xs:max-w-[145px]" />
+              </Link>
             </div>
 
-            {/* ── CENTER: KnowledgePaat Logo (Centered in Viewport, No Box) ── */}
-            <div className="absolute left-1/2 -translate-x-1/2 z-10 flex items-center justify-center">
+            {/* ── CENTER: KnowledgePaat Logo (Desktop Centered in Viewport) ── */}
+            <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 z-10 items-center justify-center">
               <Link
                 href="/"
                 className="flex items-center justify-center transition-opacity hover:opacity-90"
@@ -223,17 +234,17 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* ── RIGHT: Log In & Get Started Free CTA ── */}
-            <div className="relative z-20 flex items-center gap-2 sm:gap-3.5">
+            <div className="relative z-20 flex items-center gap-1.5 xs:gap-2 sm:gap-3.5 shrink-0">
               {user ? (
                 <>
                   <Link href={dashboardHref}>
-                    <Button variant="outline" size="sm" className="font-semibold text-xs sm:text-sm">
+                    <Button variant="outline" size="sm" className="font-semibold text-xs sm:text-sm px-2.5 sm:px-3">
                       Dashboard
                     </Button>
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="font-semibold text-xs sm:text-sm text-slate-600 hover:text-[#2563EB] px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                    className="font-semibold text-xs sm:text-sm text-slate-600 hover:text-[#2563EB] px-2 py-1.5 rounded-lg transition-colors cursor-pointer"
                   >
                     Log out
                   </button>
@@ -242,15 +253,15 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 <>
                   <Link
                     href="/login"
-                    className="font-bold text-xs sm:text-sm text-[#0B1D3A] hover:text-[#2563EB] hover:bg-transparent px-3 py-2 rounded-xl transition-colors font-display"
+                    className="font-bold text-xs sm:text-sm text-[#0B1D3A] hover:text-[#2563EB] hover:bg-transparent px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl transition-colors font-display whitespace-nowrap"
                   >
                     Log In
                   </Link>
-                  <Link href="/register">
+                  <Link href="/register" className="shrink-0">
                     <Button
                       variant="primary"
                       size="sm"
-                      className="shadow-brand font-bold text-xs sm:text-sm px-3.5 sm:px-5 gap-1.5 rounded-xl"
+                      className="shadow-brand font-bold text-xs sm:text-sm px-2.5 xs:px-3.5 sm:px-5 py-1.5 sm:py-2 gap-1 sm:gap-1.5 rounded-xl whitespace-nowrap"
                     >
                       <span>Get Started Free</span>
                       <ArrowRight className="w-3.5 h-3.5 hidden sm:inline" />
@@ -269,27 +280,27 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      {/* ── 5-COLUMN COMPACT & CLEAN FOOTER ────────────────────────────── */}
+      {/* ── 5-COLUMN COMPACT & CLEAN FOOTER (Balanced 2-Column Mobile Flow) ── */}
       <footer className="bg-[#0B1D3A] text-white mt-auto border-t border-slate-800">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 lg:py-12">
+        <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-6 sm:py-10 lg:py-12">
 
-          {/* Top: 5-Column Grid */}
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-5 lg:gap-6">
+          {/* Top: 2-Column Mobile Grid / 5-Column Desktop Grid */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-2 lg:grid-cols-5 lg:gap-6">
 
             {/* Col 1: Small KnowledgePaat Logo (Clean, No Box) */}
-            <div className="flex flex-col items-start justify-start">
+            <div className="col-span-2 sm:col-span-2 lg:col-span-1 flex flex-col items-start justify-start pb-1 sm:pb-0">
               <Link href="/" className="inline-flex items-center" aria-label="KnowledgePaat home">
-                <Logo size="sm" className="w-auto max-w-[130px] sm:max-w-[145px]" />
+                <Logo size="sm" className="w-auto max-w-[135px] sm:max-w-[145px]" />
               </Link>
             </div>
 
             {/* Col 2: Platform */}
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-[#00C2CB] mb-3.5 font-display">Platform</p>
-              <ul className="space-y-2.5">
+            <div className="col-span-1">
+              <p className="text-xs font-bold uppercase tracking-widest text-[#00C2CB] mb-2.5 sm:mb-3.5 font-display">Platform</p>
+              <ul className="space-y-1.5 sm:space-y-2.5">
                 {FOOTER_PRODUCT.map(l => (
                   <li key={l.href}>
-                    <Link href={l.href} className="text-sm text-slate-300 hover:text-white hover:underline transition-colors">
+                    <Link href={l.href} className="text-xs sm:text-sm text-slate-300 hover:text-white hover:underline transition-colors py-0.5 inline-block">
                       {l.label}
                     </Link>
                   </li>
@@ -298,12 +309,12 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Col 3: Company */}
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-[#00C2CB] mb-3.5 font-display">Company</p>
-              <ul className="space-y-2.5">
+            <div className="col-span-1">
+              <p className="text-xs font-bold uppercase tracking-widest text-[#00C2CB] mb-2.5 sm:mb-3.5 font-display">Company</p>
+              <ul className="space-y-1.5 sm:space-y-2.5">
                 {FOOTER_COMPANY.map(l => (
                   <li key={l.href}>
-                    <Link href={l.href} className="text-sm text-slate-300 hover:text-white hover:underline transition-colors">
+                    <Link href={l.href} className="text-xs sm:text-sm text-slate-300 hover:text-white hover:underline transition-colors py-0.5 inline-block">
                       {l.label}
                     </Link>
                   </li>
@@ -312,12 +323,12 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Col 4: Account */}
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-[#00C2CB] mb-3.5 font-display">Account</p>
-              <ul className="space-y-2.5">
+            <div className="col-span-1">
+              <p className="text-xs font-bold uppercase tracking-widest text-[#00C2CB] mb-2.5 sm:mb-3.5 font-display">Account</p>
+              <ul className="space-y-1.5 sm:space-y-2.5">
                 {FOOTER_ACCOUNT.map(l => (
                   <li key={l.href}>
-                    <Link href={l.href} className="text-sm text-slate-300 hover:text-white hover:underline transition-colors">
+                    <Link href={l.href} className="text-xs sm:text-sm text-slate-300 hover:text-white hover:underline transition-colors py-0.5 inline-block">
                       {l.label}
                     </Link>
                   </li>
@@ -326,10 +337,10 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Col 5: Social Media */}
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-[#00C2CB] mb-3.5 font-display">Social</p>
+            <div className="col-span-1">
+              <p className="text-xs font-bold uppercase tracking-widest text-[#00C2CB] mb-2.5 sm:mb-3.5 font-display">Social</p>
               {enabledSocialPlatforms.length > 0 ? (
-                <div className="flex flex-wrap items-center gap-2.5">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
                   {enabledSocialPlatforms.map((platform) => {
                     const linkConfig = socialLinks[platform.key];
                     return (
@@ -339,7 +350,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={platform.label}
-                        className="flex items-center justify-center h-9 w-9 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-[#00C2CB] hover:border-[#00C2CB]/60 hover:bg-slate-800 transition-all focus:outline-none focus:ring-2 focus:ring-[#00C2CB]"
+                        className="flex items-center justify-center h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-[#00C2CB] hover:border-[#00C2CB]/60 hover:bg-slate-800 transition-all focus:outline-none focus:ring-2 focus:ring-[#00C2CB]"
                       >
                         <SocialIcon platformKey={platform.key} />
                       </a>
@@ -353,8 +364,8 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
           </div>
 
-          {/* Bottom Bar: Copyright Only (No duplicate tagline) */}
-          <div className="mt-10 pt-6 border-t border-slate-800/80 flex items-center justify-between">
+          {/* Bottom Bar: Copyright Only */}
+          <div className="mt-6 sm:mt-10 pt-4 sm:pt-6 border-t border-slate-800/80 flex items-center justify-between">
             <p className="text-xs text-slate-400">
               © {new Date().getFullYear()} KnowledgePaat. All rights reserved.
             </p>

@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { StudentLayout } from '@/layouts/StudentLayout';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
-import { Camera, X, Plus, AlertCircle, CheckCircle2, UserCheck, User } from 'lucide-react';
+import { DatePicker } from '@/components/DatePicker';
+import { Camera, X, Plus, AlertCircle, CheckCircle2, UserCheck, User, Info } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useFeatureFlags } from '@/context/FeatureFlagContext';
 import { FeatureComingSoon } from '@/components/FeatureComingSoon';
@@ -56,11 +57,13 @@ export default function ProfilePage() {
   const isProfileEnabled = isModuleEnabled('student_profile');
 
   const [data, setData] = useState<ProfileData>(initialData);
+  const [savedBaseline, setSavedBaseline] = useState<ProfileData>(initialData);
+  const [nameChangeCount, setNameChangeCount] = useState<number>(0);
   const [skillInput, setSkillInput] = useState('');
   const [errors, setErrors] = useState<Partial<Record<keyof ProfileData, string>>>({});
   const [completion, setCompletion] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const supabase = createClient();
@@ -75,11 +78,11 @@ export default function ProfilePage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        setData(prev => ({
-          ...prev,
+        const loaded: ProfileData = {
+          ...initialData,
           fullName: user.user_metadata?.full_name || '',
           email: user.email || '',
-        }));
+        };
 
         const { data: profile } = await supabase
           .from('profiles')
@@ -88,27 +91,29 @@ export default function ProfilePage() {
           .single();
 
         if (profile) {
-          setData(prev => ({
-            ...prev,
-            fullName: profile.full_name || prev.fullName,
-            mobile: profile.phone || '',
-            dob: profile.dob || '',
-            gender: profile.gender || '',
-            city: profile.city || '',
-            state: profile.state || '',
-            country: profile.country || '',
-            collegeName: profile.college_name || '',
-            degree: profile.degree || '',
-            branch: profile.branch || '',
-            passingYear: profile.passing_year ? String(profile.passing_year) : '',
-            cgpa: profile.cgpa ? String(profile.cgpa) : '',
-            skills: Array.isArray(profile.skills) ? profile.skills : [],
-            preferredRole: profile.preferred_role || '',
-            preferredLocation: profile.preferred_location || '',
-            expectedSalary: profile.expected_salary || '',
-            workMode: profile.work_mode || '',
-          }));
+          loaded.fullName = profile.full_name || loaded.fullName;
+          loaded.mobile = profile.phone || '';
+          loaded.dob = profile.dob || '';
+          loaded.gender = profile.gender || '';
+          loaded.city = profile.city || '';
+          loaded.state = profile.state || '';
+          loaded.country = profile.country || '';
+          loaded.collegeName = profile.college_name || '';
+          loaded.degree = profile.degree || '';
+          loaded.branch = profile.branch || '';
+          loaded.passingYear = profile.passing_year ? String(profile.passing_year) : '';
+          loaded.cgpa = profile.cgpa ? String(profile.cgpa) : '';
+          loaded.skills = Array.isArray(profile.skills) ? profile.skills : [];
+          loaded.preferredRole = profile.preferred_role || '';
+          loaded.preferredLocation = profile.preferred_location || '';
+          loaded.expectedSalary = profile.expected_salary || '';
+          loaded.workMode = profile.work_mode || '';
+
+          setNameChangeCount(typeof profile.name_change_count === 'number' ? profile.name_change_count : 0);
         }
+
+        setData(loaded);
+        setSavedBaseline(loaded);
       }
     } catch (err) {
       console.error("Error loading profile:", err);
@@ -116,6 +121,34 @@ export default function ProfilePage() {
   };
 
   const [skillError, setSkillError] = useState<string | null>(null);
+
+  // Check whether there are genuine unsaved changes compared to baseline
+  const hasUnsavedChanges = useMemo(() => {
+    type StringField = Exclude<keyof ProfileData, 'skills'>;
+    const keys: StringField[] = [
+      'fullName', 'mobile', 'dob', 'gender', 'city', 'state', 'country',
+      'collegeName', 'degree', 'branch', 'passingYear', 'cgpa',
+      'preferredRole', 'preferredLocation', 'expectedSalary', 'workMode'
+    ];
+
+    for (const key of keys) {
+      const currentVal = (data[key] ?? '').trim();
+      const baselineVal = (savedBaseline[key] ?? '').trim();
+      if (currentVal !== baselineVal) {
+        return true;
+      }
+    }
+
+    // Compare skills array
+    if (data.skills.length !== savedBaseline.skills.length) return true;
+    const sortedCurrent = [...data.skills].sort();
+    const sortedBaseline = [...savedBaseline.skills].sort();
+    for (let i = 0; i < sortedCurrent.length; i++) {
+      if (sortedCurrent[i] !== sortedBaseline[i]) return true;
+    }
+
+    return false;
+  }, [data, savedBaseline]);
 
   // Calculate completion percentage
   useEffect(() => {
@@ -308,16 +341,31 @@ export default function ProfilePage() {
     }
 
     setIsSaving(true);
-    setSaveSuccess(false);
+    setSaveSuccessMsg(null);
     setSaveError(null);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      const trimmedNewName = data.fullName.trim().slice(0, 100);
+      const isNameChanged = trimmedNewName !== (savedBaseline.fullName || '').trim();
+
+      // Check name change limit
+      if (isNameChanged) {
+        if (nameChangeCount >= 2) {
+          setSaveError("You have reached the maximum of 2 name changes. Please contact support if your name needs to be corrected.");
+          setIsSaving(false);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
+      }
+
+      const nextNameCount = isNameChanged ? nameChangeCount + 1 : nameChangeCount;
+
       // Sanitize and bound payload data before saving
       const sanitizedPayload = {
-        full_name: data.fullName.trim().slice(0, 100),
+        full_name: trimmedNewName,
         phone: data.mobile.trim().slice(0, 20),
         dob: data.dob || null,
         gender: data.gender || null,
@@ -334,6 +382,7 @@ export default function ProfilePage() {
         preferred_location: data.preferredLocation.trim().slice(0, 100) || null,
         expected_salary: data.expectedSalary.trim().slice(0, 50) || null,
         work_mode: data.workMode || null,
+        name_change_count: nextNameCount,
         updated_at: new Date().toISOString(),
       };
 
@@ -344,8 +393,36 @@ export default function ProfilePage() {
 
       if (updateError) throw updateError;
 
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 4000);
+      // Synchronize auth user metadata if name changed so header/greeting updates instantly
+      if (isNameChanged) {
+        try {
+          await supabase.auth.updateUser({
+            data: { full_name: trimmedNewName }
+          });
+        } catch (authErr) {
+          console.warn("Could not sync auth metadata name:", authErr);
+        }
+      }
+
+      // Update baseline and state
+      setNameChangeCount(nextNameCount);
+      const updatedBaseline = { ...data, fullName: trimmedNewName };
+      setData(updatedBaseline);
+      setSavedBaseline(updatedBaseline);
+
+      // Determine appropriate user message
+      if (isNameChanged) {
+        const remaining = 2 - nextNameCount;
+        if (remaining === 1) {
+          setSaveSuccessMsg("Name changed successfully. You have 1 name change remaining.");
+        } else {
+          setSaveSuccessMsg("Name changed successfully. You have no name changes remaining.");
+        }
+      } else {
+        setSaveSuccessMsg("Profile saved successfully.");
+      }
+
+      setTimeout(() => setSaveSuccessMsg(null), 5000);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
       console.error("Error saving profile:", err);
@@ -374,17 +451,17 @@ export default function ProfilePage() {
         
         {/* HEADER */}
         <div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">My Profile</h1>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)] font-display">My Profile</h1>
           <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 font-medium">
             Manage your personal details, education background, skills, and job preferences.
           </p>
         </div>
 
         {/* FEEDBACK ALERTS */}
-        {saveSuccess && (
+        {saveSuccessMsg && (
           <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-[var(--radius-lg)] flex items-center gap-3 animate-in fade-in">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-            <p className="text-sm font-semibold">Your profile has been successfully updated.</p>
+            <p className="text-sm font-semibold">{saveSuccessMsg}</p>
           </div>
         )}
 
@@ -412,11 +489,22 @@ export default function ProfilePage() {
             </div>
             
             <div className="flex-1 text-center sm:text-left w-full">
-              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{data.fullName || 'Student Name'}</h2>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h2 className="text-lg font-bold text-[var(--color-text-primary)] font-display">{data.fullName || 'Student Name'}</h2>
+                {nameChangeCount >= 2 ? (
+                  <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full self-center sm:self-auto">
+                    Name changes exhausted (2/2)
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-semibold text-[var(--color-brand-700)] bg-[var(--color-brand-50)] border border-[var(--color-brand-200)] px-2.5 py-0.5 rounded-full self-center sm:self-auto font-display">
+                    {2 - nameChangeCount} name change{2 - nameChangeCount === 1 ? '' : 's'} remaining
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-[var(--color-text-secondary)] mb-3">{data.email || 'student@example.com'}</p>
               
               <div className="max-w-md w-full mx-auto sm:mx-0">
-                <div className="flex justify-between text-xs font-semibold mb-1.5">
+                <div className="flex justify-between text-xs font-semibold mb-1.5 font-display">
                   <span className="text-[var(--color-text-secondary)]">Profile Completion</span>
                   <span className="text-[var(--color-brand-600)]">{completion}%</span>
                 </div>
@@ -433,19 +521,26 @@ export default function ProfilePage() {
 
         {/* ── SECTION 1: PERSONAL INFORMATION ───────────────────────────── */}
         <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-xs)]">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-primary)] mb-5 pb-3 border-b border-[var(--color-border)]">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-primary)] mb-5 pb-3 border-b border-[var(--color-border)] font-display">
             Personal Information
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input 
-              label="Full Name *" 
-              name="fullName" 
-              value={data.fullName} 
-              onChange={handleChange} 
-              error={errors.fullName} 
-              maxLength={100}
-              placeholder="e.g. Rahul Sharma"
-            />
+            <div>
+              <Input 
+                label="Full Name *" 
+                name="fullName" 
+                value={data.fullName} 
+                onChange={handleChange} 
+                error={errors.fullName} 
+                maxLength={100}
+                placeholder="e.g. Rahul Sharma"
+              />
+              {nameChangeCount >= 2 && data.fullName.trim() !== (savedBaseline.fullName || '').trim() && (
+                <p className="text-[11px] text-amber-600 mt-1 font-medium flex items-center gap-1">
+                  <Info className="w-3 h-3" /> Max 2 name changes reached. Revert to "{savedBaseline.fullName}" to save other details.
+                </p>
+              )}
+            </div>
             <Input 
               label="Email Address" 
               name="email" 
@@ -463,18 +558,21 @@ export default function ProfilePage() {
               maxLength={20}
               placeholder="e.g. +91 98765 43210"
             />
-            <Input 
-              label="Date of Birth" 
-              name="dob" 
-              type="date" 
-              value={data.dob} 
-              onChange={handleChange} 
+            
+            {/* Modern DatePicker for Date of Birth */}
+            <DatePicker
+              label="Date of Birth"
+              name="dob"
+              value={data.dob}
+              onChange={(e) => {
+                setData(prev => ({ ...prev, dob: e.target.value }));
+                if (errors.dob) setErrors(prev => ({ ...prev, dob: undefined }));
+              }}
               error={errors.dob}
-              max={new Date().toISOString().split('T')[0]}
             />
             
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">Gender</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5 font-display">Gender</label>
               <select 
                 name="gender" 
                 value={data.gender} 
@@ -518,23 +616,21 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* ── SECTION 2: EDUCATION ──────────────────────────────────────── */}
+        {/* ── SECTION 2: ACADEMIC BACKGROUND ─────────────────────────────── */}
         <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-xs)]">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-primary)] mb-5 pb-3 border-b border-[var(--color-border)]">
-            Education
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-primary)] mb-5 pb-3 border-b border-[var(--color-border)] font-display">
+            Academic Background
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <Input 
-                label="College / University Name *" 
-                name="collegeName" 
-                value={data.collegeName} 
-                onChange={handleChange} 
-                error={errors.collegeName} 
-                maxLength={150}
-                placeholder="e.g. National Institute of Technology"
-              />
-            </div>
+            <Input 
+              label="College / University Name *" 
+              name="collegeName" 
+              value={data.collegeName} 
+              onChange={handleChange} 
+              error={errors.collegeName} 
+              maxLength={150}
+              placeholder="e.g. RV College of Engineering"
+            />
             <Input 
               label="Degree *" 
               name="degree" 
@@ -542,27 +638,24 @@ export default function ProfilePage() {
               onChange={handleChange} 
               error={errors.degree} 
               maxLength={100}
-              placeholder="e.g. B.Tech / B.E / B.Sc / MCA"
+              placeholder="e.g. B.Tech / B.E / MCA / B.Sc"
             />
             <Input 
               label="Branch / Specialization" 
               name="branch" 
               value={data.branch} 
               onChange={handleChange} 
-              error={errors.branch}
+              error={errors.branch} 
               maxLength={100}
-              placeholder="e.g. Computer Science & Engineering"
+              placeholder="e.g. Computer Science and Engineering"
             />
             <Input 
-              label="Passing Year *" 
+              label="Year of Passing *" 
               name="passingYear" 
               value={data.passingYear} 
               onChange={handleChange} 
               error={errors.passingYear} 
-              type="number"
-              min={1950}
-              max={2100}
-              step="1"
+              maxLength={4}
               placeholder="e.g. 2026"
             />
             <Input 
@@ -570,52 +663,50 @@ export default function ProfilePage() {
               name="cgpa" 
               value={data.cgpa} 
               onChange={handleChange} 
-              error={errors.cgpa}
-              type="number" 
-              min={0}
-              max={100}
-              step="0.01"
+              error={errors.cgpa} 
+              maxLength={5}
               placeholder="e.g. 8.5 or 85.0"
             />
           </div>
         </div>
 
-        {/* ── SECTION 3: SKILLS ─────────────────────────────────────────── */}
+        {/* ── SECTION 3: SKILLS PORTFOLIO ────────────────────────────────── */}
         <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-xs)]">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-primary)] mb-5 pb-3 border-b border-[var(--color-border)]">
-            Skills
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-primary)] mb-5 pb-3 border-b border-[var(--color-border)] font-display">
+            Skills Portfolio
           </h3>
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="block text-sm font-medium text-[var(--color-text-primary)]">Add Key Technical & Soft Skills</label>
-              <span className="text-xs text-[var(--color-text-tertiary)]">{data.skills.length} / 50 skills</span>
-            </div>
-            <div className="flex gap-2.5 mb-2">
-              <input 
-                type="text" 
-                value={skillInput}
-                onChange={(e) => {
-                  setSkillInput(e.target.value);
-                  if (skillError) setSkillError(null);
-                }}
-                onKeyDown={handleAddSkill}
-                maxLength={50}
-                placeholder="e.g. React, Java, Python, SQL (Max 50 chars)"
-                className="flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:border-[var(--color-brand-500)] shadow-[var(--shadow-xs)] transition-colors"
-              />
-              <Button type="button" variant="outline" onClick={handleAddSkill} className="shrink-0">
-                <Plus className="w-4 h-4 mr-1" /> Add Skill
-              </Button>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5 font-display">
+                Add Technical & Professional Skills
+              </label>
+              <div className="flex gap-2">
+                <Input 
+                  name="skillInput" 
+                  value={skillInput} 
+                  onChange={(e) => setSkillInput(e.target.value)}
+                  onKeyDown={handleAddSkill}
+                  placeholder="Type a skill (e.g. React, Python, SQL) and press Enter"
+                  className="flex-1"
+                  maxLength={50}
+                />
+                <Button 
+                  type="button" 
+                  variant="secondary" 
+                  onClick={handleAddSkill}
+                  className="px-4"
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Add
+                </Button>
+              </div>
+              {skillError && (
+                <p className="text-xs text-[var(--color-error)] mt-1 font-medium">{skillError}</p>
+              )}
             </div>
 
-            {skillError && (
-              <p className="text-xs font-medium text-[var(--color-error)] mb-3 flex items-center gap-1">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                {skillError}
-              </p>
-            )}
-            
-            <div className="flex flex-wrap gap-2 min-h-[50px] p-3.5 bg-[var(--color-bg-subtle)] rounded-[var(--radius-md)] border border-[var(--color-border)]">
+            {/* SKILLS CHIPS */}
+            <div className="flex flex-wrap gap-2 pt-2 p-3 bg-[var(--color-bg-subtle)] rounded-[var(--radius-lg)] border border-[var(--color-border)] min-h-[60px]">
               {data.skills.length === 0 ? (
                 <span className="text-xs text-[var(--color-text-tertiary)] italic m-auto">No skills added yet. Type a skill and press Enter or Add.</span>
               ) : (
@@ -639,7 +730,7 @@ export default function ProfilePage() {
 
         {/* ── SECTION 4: CAREER PREFERENCES ─────────────────────────────── */}
         <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-xs)]">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-primary)] mb-5 pb-3 border-b border-[var(--color-border)]">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-primary)] mb-5 pb-3 border-b border-[var(--color-border)] font-display">
             Career Preferences
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -672,7 +763,7 @@ export default function ProfilePage() {
             />
             
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">Preferred Work Mode</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5 font-display">Preferred Work Mode</label>
               <select 
                 name="workMode" 
                 value={data.workMode} 
@@ -690,7 +781,13 @@ export default function ProfilePage() {
 
         {/* ACTIONS */}
         <div className="flex justify-end gap-3 pt-2">
-          <Button variant="primary" onClick={handleSave} isLoading={isSaving} className="px-6">
+          <Button 
+            variant="primary" 
+            onClick={handleSave} 
+            isLoading={isSaving} 
+            disabled={!hasUnsavedChanges || isSaving}
+            className="px-6 shadow-brand font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Save Changes
           </Button>
         </div>

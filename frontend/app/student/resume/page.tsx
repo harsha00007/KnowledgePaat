@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StudentLayout } from '@/layouts/StudentLayout';
 import { Button } from '@/components/Button';
+import { UpgradeModal } from '@/components/UpgradeModal';
 import { 
   FileText, 
   UploadCloud, 
@@ -12,16 +13,42 @@ import {
   AlertCircle, 
   FileCheck, 
   Calendar, 
-  ShieldCheck 
+  ShieldCheck,
+  Download,
+  Lock,
+  Sparkles,
+  ShoppingBag,
+  CheckCircle2,
+  Filter,
+  Layers,
+  ArrowRight
 } from 'lucide-react';
+import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { useFeatureFlags } from '@/context/FeatureFlagContext';
 import { FeatureComingSoon } from '@/components/FeatureComingSoon';
+import { calculateUserAccess, UserAccess } from '@/lib/subscription';
+import { canStudentAccessResource, getStudentPurchasedResourceIds } from '@/lib/store';
+import { PLANS, normalizePlanId } from '@/config/plans';
 
 type ResumeData = {
   url: string | null;
   filename: string | null;
   uploadedAt: string | null;
+};
+
+export type ResumeTemplate = {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  file_url: string;
+  thumbnail_url: string | null;
+  minimum_plan: string;
+  price: number;
+  is_free: boolean;
+  is_active: boolean;
+  download_count?: number;
 };
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -36,17 +63,29 @@ export default function ResumePage() {
   const isResumeEnabled = isModuleEnabled('student_resume');
 
   const [resume, setResume] = useState<ResumeData>({ url: null, filename: null, uploadedAt: null });
+  const [templates, setTemplates] = useState<ResumeTemplate[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [userAccess, setUserAccess] = useState<UserAccess>(calculateUserAccess(null));
+  const [ownedProductIds, setOwnedProductIds] = useState<Set<string>>(new Set());
+
   const [isUploading, setIsUploading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [isFetchingTemplates, setIsFetchingTemplates] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Upgrade Modal State
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [modalRequiredPlan, setModalRequiredPlan] = useState<string>('starter');
+  const [upgradeFeatureTitle, setUpgradeFeatureTitle] = useState<string>('this resume template');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
   useEffect(() => {
     if (isResumeEnabled) {
-      fetchResume();
+      fetchResumeAndUserData();
+      fetchTemplates();
     } else {
       setIsFetching(false);
     }
@@ -57,17 +96,21 @@ export default function ResumePage() {
     setTimeout(() => setSuccessMsg(null), 4000);
   };
 
-  const fetchResume = async () => {
+  const fetchResumeAndUserData = async () => {
     setIsFetching(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('resume_url, resume_filename, resume_uploaded_at')
-        .eq('id', user.id)
-        .single();
+      const [
+        { data: profile, error: profileError },
+        { data: subscriptionData },
+        ownedIds
+      ] = await Promise.all([
+        supabase.from('profiles').select('resume_url, resume_filename, resume_uploaded_at').eq('id', user.id).single(),
+        supabase.from('subscriptions').select('*').eq('student_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+        getStudentPurchasedResourceIds(supabase, user.id)
+      ]);
 
       if (profileError && profileError.code !== 'PGRST116') {
         throw profileError;
@@ -82,10 +125,100 @@ export default function ResumePage() {
       } else {
         setResume({ url: null, filename: null, uploadedAt: null });
       }
+
+      setUserAccess(calculateUserAccess(subscriptionData));
+      setOwnedProductIds(ownedIds);
     } catch (err: any) {
-      console.error("Error fetching resume:", err);
+      console.error("Error fetching resume and user data:", err);
     } finally {
       setIsFetching(false);
+    }
+  };
+
+  const fetchTemplates = async () => {
+    setIsFetchingTemplates(true);
+    try {
+      const { data, error } = await supabase
+        .from('resume_templates')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true });
+
+      if (error && error.code !== '42P01') {
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        setTemplates(data as ResumeTemplate[]);
+      } else {
+        // Fallback default templates if database table is initializing
+        setTemplates([
+          {
+            id: 'tmpl-1',
+            title: 'Software Developer Fresher Resume',
+            description: 'Clean, single-column ATS-friendly LaTeX and Word layout tailored for Software Engineer & Full Stack roles.',
+            category: 'Software Development',
+            file_url: '/sample_templates/software_engineer_fresher.pdf',
+            thumbnail_url: null,
+            minimum_plan: 'free',
+            price: 0,
+            is_free: true,
+            is_active: true
+          },
+          {
+            id: 'tmpl-2',
+            title: 'Data Analyst & BI Specialist Resume',
+            description: 'Structured layout emphasizing SQL, Python, Tableau, and analytics project outcomes.',
+            category: 'Data & Analytics',
+            file_url: '/sample_templates/data_analyst_resume.pdf',
+            thumbnail_url: null,
+            minimum_plan: 'starter',
+            price: 49,
+            is_free: false,
+            is_active: true
+          },
+          {
+            id: 'tmpl-3',
+            title: 'Product & Business Analyst Resume',
+            description: 'Metrics-driven layout highlighting agile delivery, sprint management, and data-backed user stories.',
+            category: 'Product & Operations',
+            file_url: '/sample_templates/business_analyst_resume.pdf',
+            thumbnail_url: null,
+            minimum_plan: 'starter',
+            price: 49,
+            is_free: false,
+            is_active: true
+          },
+          {
+            id: 'tmpl-4',
+            title: 'Frontend React & UI/UX Developer Resume',
+            description: 'Portfolio-focused format highlighting component architecture, web performance, and modern design systems.',
+            category: 'Software Development',
+            file_url: '/sample_templates/frontend_developer_resume.pdf',
+            thumbnail_url: null,
+            minimum_plan: 'pro',
+            price: 79,
+            is_free: false,
+            is_active: true
+          },
+          {
+            id: 'tmpl-5',
+            title: 'HR & Talent Acquisition Executive Resume',
+            description: 'Professional standard highlighting campus hiring, onboarding pipelines, and employee relations.',
+            category: 'Human Resources',
+            file_url: '/sample_templates/hr_executive_resume.pdf',
+            thumbnail_url: null,
+            minimum_plan: 'starter',
+            price: 49,
+            is_free: false,
+            is_active: true
+          }
+        ]);
+      }
+    } catch (err) {
+      console.error("Error fetching resume templates:", err);
+    } finally {
+      setIsFetchingTemplates(false);
     }
   };
 
@@ -145,7 +278,7 @@ export default function ResumePage() {
 
       if (dbError) throw dbError;
 
-      await fetchResume();
+      await fetchResumeAndUserData();
       showSuccess("Resume uploaded successfully!");
     } catch (err: any) {
       console.error("Upload error:", err);
@@ -165,7 +298,6 @@ export default function ResumePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !resume.url) return;
 
-      // Step 1: Delete from storage. If this fails, DB record is NOT touched.
       const { error: deleteError } = await supabase
         .storage
         .from('resumes')
@@ -173,15 +305,9 @@ export default function ResumePage() {
 
       if (deleteError) {
         console.error("Storage delete error:", deleteError);
-        // Provide a meaningful message — storage 403 means missing RLS DELETE policy
-        throw new Error(
-          deleteError.message?.includes('403') || deleteError.message?.toLowerCase().includes('unauthorized')
-            ? "Permission denied. Please contact support if this persists."
-            : "Failed to delete resume file. Please try again."
-        );
+        throw new Error("Failed to delete resume file. Please try again.");
       }
 
-      // Step 2: Only clear the DB reference after confirmed storage deletion
       const { error: dbError } = await supabase
         .from('profiles')
         .update({
@@ -191,11 +317,7 @@ export default function ResumePage() {
         })
         .eq('id', user.id);
 
-      if (dbError) {
-        // File was deleted from storage but DB update failed — log for support
-        console.error("Profile update error after storage delete:", dbError);
-        throw new Error("Resume file was removed but profile could not be updated. Please refresh the page.");
-      }
+      if (dbError) throw dbError;
 
       setResume({ url: null, filename: null, uploadedAt: null });
       showSuccess("Resume deleted successfully.");
@@ -206,7 +328,6 @@ export default function ResumePage() {
       setIsUploading(false);
     }
   };
-
 
   const handleView = async () => {
     if (!resume.url) return;
@@ -223,6 +344,34 @@ export default function ResumePage() {
     } catch (err: any) {
       console.error("Error viewing resume:", err);
       setError("Failed to generate view link.");
+    }
+  };
+
+  const handleDownloadTemplate = async (template: ResumeTemplate) => {
+    const isAccessible = template.is_free || canStudentAccessResource(template.minimum_plan, userAccess, ownedProductIds, template.id);
+    
+    if (!isAccessible) {
+      setModalRequiredPlan(template.minimum_plan || 'starter');
+      setUpgradeFeatureTitle(template.title);
+      setIsUpgradeModalOpen(true);
+      return;
+    }
+
+    if (template.file_url.startsWith('http') || template.file_url.startsWith('/')) {
+      window.open(template.file_url, '_blank');
+    } else {
+      try {
+        const bucket = template.file_url.startsWith('notes/') ? 'notes' : 'resumes';
+        const cleanPath = template.file_url.replace(/^(resumes\/|notes\/)/, '');
+        const { data, error } = await supabase.storage.from(bucket).createSignedUrl(cleanPath, 60);
+        if (error || !data?.signedUrl) {
+          window.open(template.file_url, '_blank');
+        } else {
+          window.open(data.signedUrl, '_blank');
+        }
+      } catch {
+        window.open(template.file_url, '_blank');
+      }
     }
   };
 
@@ -245,6 +394,13 @@ export default function ResumePage() {
     }
   };
 
+  const categories = ['all', ...Array.from(new Set(templates.map(t => t.category)))];
+
+  const filteredTemplates = templates.filter(t => {
+    if (selectedCategory === 'all') return true;
+    return t.category === selectedCategory;
+  });
+
   if (!isResumeEnabled) {
     return (
       <StudentLayout>
@@ -260,13 +416,13 @@ export default function ResumePage() {
 
   return (
     <StudentLayout>
-      <div className="max-w-4xl mx-auto space-y-6 pb-12">
+      <div className="max-w-6xl mx-auto space-y-8 pb-12">
         
         {/* HEADER */}
         <div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">My Resume</h1>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)] font-display">Resume Center</h1>
           <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 font-medium">
-            Upload and manage your primary resume to apply directly to verified job postings.
+            Upload your master resume for job applications and explore ATS-optimized resume templates.
           </p>
         </div>
 
@@ -287,12 +443,13 @@ export default function ResumePage() {
           </div>
         )}
 
+        {/* ── SECTION 1: STUDENT PRIMARY RESUME UPLOAD ─────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
           
           {/* UPLOAD BOX (2 COLS) */}
           <div className="md:col-span-2 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-xs)]">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-primary)] mb-4">
-              {resume.url ? 'Replace Current Resume' : 'Upload Resume'}
+            <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-primary)] mb-4 font-display">
+              {resume.url ? 'Replace Current Resume' : 'Upload Master Resume'}
             </h2>
             
             <div 
@@ -338,13 +495,13 @@ export default function ResumePage() {
 
             <div className="mt-4 flex items-center gap-2 text-xs text-[var(--color-text-tertiary)]">
               <ShieldCheck className="w-4 h-4 text-[var(--color-brand-500)]" />
-              <span>Your resume is encrypted and only shared with companies you explicitly apply to.</span>
+              <span>Your resume is encrypted and only shared with employers you apply to.</span>
             </div>
           </div>
 
           {/* STATUS / PREVIEW CARD (1 COL) */}
           <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-xs)]">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-primary)] mb-4">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-primary)] mb-4 font-display">
               Resume Status
             </h2>
             
@@ -355,7 +512,7 @@ export default function ResumePage() {
                     <div className="h-12 w-12 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full flex items-center justify-center mb-3">
                       <FileCheck className="h-6 w-6" />
                     </div>
-                    <span className="inline-block bg-emerald-50 text-emerald-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-emerald-200 mb-2">
+                    <span className="inline-block bg-emerald-50 text-emerald-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-emerald-200 mb-2 font-display">
                       Active Resume
                     </span>
                     <p className="text-sm font-bold text-[var(--color-text-primary)] truncate max-w-full px-1" title={resume.filename || ''}>
@@ -369,8 +526,8 @@ export default function ResumePage() {
                     <div className="w-full space-y-2">
                       <Button 
                         variant="outline" 
-                        size="sm"
-                        className="w-full justify-center text-xs" 
+                        size="sm" 
+                        className="w-full justify-center text-xs font-semibold" 
                         onClick={handleView}
                         disabled={isUploading}
                       >
@@ -378,8 +535,8 @@ export default function ResumePage() {
                       </Button>
                       <Button 
                         variant="ghost" 
-                        size="sm"
-                        className="w-full justify-center text-xs text-[var(--color-error)] hover:bg-red-50 hover:text-[var(--color-error)]" 
+                        size="sm" 
+                        className="w-full justify-center text-xs text-[var(--color-error)] hover:bg-red-50 hover:text-[var(--color-error)] font-semibold" 
                         onClick={handleDelete}
                         disabled={isUploading}
                       >
@@ -392,11 +549,11 @@ export default function ResumePage() {
                     <div className="h-12 w-12 bg-[var(--color-bg-muted)] text-[var(--color-text-tertiary)] border border-[var(--color-border)] rounded-full flex items-center justify-center mb-3">
                       <FileText className="h-6 w-6" />
                     </div>
-                    <span className="inline-block bg-gray-100 text-gray-600 text-xs font-bold px-2.5 py-0.5 rounded-full mb-2">
+                    <span className="inline-block bg-gray-100 text-gray-600 text-xs font-bold px-2.5 py-0.5 rounded-full mb-2 font-display">
                       No Resume Found
                     </span>
                     <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                      Upload your resume so employers can review your profile during job applications.
+                      Upload your resume so verified recruiters can review your profile during applications.
                     </p>
                   </>
                 )}
@@ -412,7 +569,150 @@ export default function ResumePage() {
           </div>
 
         </div>
+
+        {/* ── SECTION 2: SAMPLE RESUME TEMPLATES ───────────────────────── */}
+        <div className="space-y-4 pt-4 border-t border-[var(--color-border)]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[var(--color-brand-600)]" />
+                <h2 className="text-lg font-bold text-[var(--color-text-primary)] font-display">
+                  Sample Resume Templates
+                </h2>
+              </div>
+              <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+                ATS-optimized format templates for freshers, engineers, analysts, and business roles.
+              </p>
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex flex-wrap gap-1.5">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold capitalize transition-all font-display ${
+                    selectedCategory === cat
+                      ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-300)] shadow-xs'
+                      : 'bg-white text-[var(--color-text-secondary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-subtle)]'
+                  }`}
+                >
+                  {cat === 'all' ? 'All Roles' : cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* TEMPLATES GRID */}
+          {isFetchingTemplates ? (
+            <div className="flex justify-center items-center h-48">
+              <div className="animate-spin rounded-full h-7 w-7 border-2 border-[var(--color-brand-500)] border-t-transparent"></div>
+            </div>
+          ) : filteredTemplates.length === 0 ? (
+            <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-8 text-center">
+              <p className="text-xs text-[var(--color-text-secondary)]">No templates found for this role category.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredTemplates.map((template) => {
+                const isUnlocked = template.is_free || canStudentAccessResource(template.minimum_plan, userAccess, ownedProductIds, template.id);
+                const reqPlan = template.minimum_plan ? normalizePlanId(template.minimum_plan) : 'starter';
+                const planMeta = PLANS[reqPlan] || PLANS.starter;
+
+                return (
+                  <div
+                    key={template.id}
+                    className={`rounded-[var(--radius-xl)] border bg-white p-5 flex flex-col justify-between shadow-[var(--shadow-xs)] hover:border-[var(--color-brand-300)] transition-all ${
+                      isUnlocked ? 'border-[var(--color-border)]' : 'border-amber-200/80 bg-amber-50/10'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-200)] font-display">
+                          {template.category}
+                        </span>
+
+                        {template.is_free ? (
+                          <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            Free Template
+                          </span>
+                        ) : isUnlocked ? (
+                          <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Unlocked
+                          </span>
+                        ) : (
+                          <span className="bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Lock className="w-3 h-3 text-amber-600" /> {planMeta.name} Plan
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-sm font-bold text-[var(--color-text-primary)] leading-snug mb-1.5 font-display">
+                        {template.title}
+                      </h3>
+                      <p className="text-xs text-[var(--color-text-secondary)] line-clamp-3 leading-relaxed mb-4">
+                        {template.description}
+                      </p>
+                    </div>
+
+                    <div className="pt-3.5 border-t border-[var(--color-border)] flex items-center justify-between">
+                      <div>
+                        {template.is_free ? (
+                          <span className="text-xs font-bold text-emerald-700">Free Download</span>
+                        ) : (
+                          <span className="text-xs font-bold text-[var(--color-text-primary)]">
+                            ₹{template.price} <span className="text-[10px] font-normal text-[var(--color-text-tertiary)]">or with {planMeta.name}</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {isUnlocked ? (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleDownloadTemplate(template)}
+                          className="text-xs font-semibold shadow-xs"
+                        >
+                          <Download className="w-3.5 h-3.5 mr-1" /> Download
+                        </Button>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <Link href={`/student/store?category=resume_templates`}>
+                            <Button variant="outline" size="sm" className="text-xs px-2 text-[var(--color-brand-600)]">
+                              <ShoppingBag className="w-3.5 h-3.5 mr-1" /> Buy ₹{template.price}
+                            </Button>
+                          </Link>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => {
+                              setModalRequiredPlan(template.minimum_plan);
+                              setUpgradeFeatureTitle(template.title);
+                              setIsUpgradeModalOpen(true);
+                            }}
+                            className="text-xs font-bold px-2.5 shadow-xs"
+                          >
+                            Upgrade
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
       </div>
+
+      {/* ── UPGRADE PROMPT MODAL ─────────────────────────────────────── */}
+      <UpgradeModal 
+        isOpen={isUpgradeModalOpen} 
+        onClose={() => setIsUpgradeModalOpen(false)} 
+        requiredPlan={modalRequiredPlan}
+        featureTitle={upgradeFeatureTitle}
+      />
     </StudentLayout>
   );
 }
