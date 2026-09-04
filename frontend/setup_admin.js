@@ -5,22 +5,30 @@ const jwt = require('jsonwebtoken');
 dotenv.config({ path: '.env' });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const jwtSecret = "EFBJ6J6ZikTOgJGI0pYtO2QgnFY4R3/Rn6UYRR7PgFicJ7NINvkMEdOaigoY9NDZqvW39p4+6uQx/Sg+7W8Eyg==";
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const jwtSecret = process.env.SUPABASE_JWT_SECRET;
 
 if (!supabaseUrl) {
-  console.error('Missing Supabase credentials');
+  console.error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable');
   process.exit(1);
 }
 
-const payload = {
-  "role": "service_role",
-  "iss": "supabase",
-  "iat": Math.floor(Date.now() / 1000),
-  "exp": Math.floor(Date.now() / 1000) + (60 * 60),
-  "ref": "csjywuflkvohytbvglxf"
-};
+let serviceKey = supabaseServiceRoleKey;
+if (!serviceKey && jwtSecret) {
+  const payload = {
+    "role": "service_role",
+    "iss": "supabase",
+    "iat": Math.floor(Date.now() / 1000),
+    "exp": Math.floor(Date.now() / 1000) + (60 * 60)
+  };
+  serviceKey = jwt.sign(payload, jwtSecret);
+}
 
-const serviceKey = jwt.sign(payload, jwtSecret);
+if (!serviceKey) {
+  console.error('Missing SUPABASE_SERVICE_ROLE_KEY or SUPABASE_JWT_SECRET environment variable.');
+  process.exit(1);
+}
+
 const adminSupabase = createClient(supabaseUrl, serviceKey, {
   auth: {
     autoRefreshToken: false,
@@ -29,8 +37,13 @@ const adminSupabase = createClient(supabaseUrl, serviceKey, {
 });
 
 async function setupAdmin() {
-  const email = 'harshal.782002@gmail.com';
-  const password = 'Admin@123';
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!email || !password) {
+    console.error('Usage: Set ADMIN_EMAIL and ADMIN_PASSWORD environment variables.');
+    process.exit(1);
+  }
 
   console.log(`Configuring admin account: ${email}`);
 

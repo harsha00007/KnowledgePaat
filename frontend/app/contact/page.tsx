@@ -9,6 +9,7 @@ import { Mail, MessageSquare, MapPin, CheckCircle2, Send } from 'lucide-react';
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -17,13 +18,30 @@ export default function ContactPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    setErrorMsg(null);
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error || "We couldn't send your message right now. Please try again.");
+      }
+
       setSubmitted(true);
-    }, 600);
+    } catch (err: any) {
+      setErrorMsg(err.message || "We couldn't send your message right now. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -138,6 +156,12 @@ export default function ContactPage() {
                         onChange={e => setFormData({ ...formData, message: e.target.value })}
                       />
                     </div>
+
+                    {errorMsg && (
+                      <div className="rounded-lg bg-rose-50 border border-rose-200 p-3 text-xs font-medium text-rose-700">
+                        {errorMsg}
+                      </div>
+                    )}
 
                     <div className="pt-2">
                       <Button type="submit" className="w-full sm:w-auto px-8" isLoading={isSubmitting}>

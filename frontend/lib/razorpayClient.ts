@@ -128,20 +128,27 @@ export async function launchRazorpayCheckout(options: RazorpayCheckoutOptions): 
     return;
   }
 
-  // Fallback for environments where third-party scripts are blocked or during offline testing:
-  const confirmed = window.confirm(
-    `[RAZORPAY TEST MODE CHECKOUT — UPI & QR ONLY]\n\nProduct/Plan: ${options.description}\nAmount: ₹${options.amount / 100}\nPayment Method: UPI / QR Code\nOrder ID: ${options.order_id}\n\nClick OK to simulate successful UPI test payment, or Cancel to dismiss.`
-  );
+  // Fallback for development environments where third-party scripts are blocked or during offline testing:
+  if (process.env.NODE_ENV === 'development') {
+    const confirmed = window.confirm(
+      `[RAZORPAY TEST MODE CHECKOUT — UPI & QR ONLY]\n\nProduct/Plan: ${options.description}\nAmount: ₹${options.amount / 100}\nPayment Method: UPI / QR Code\nOrder ID: ${options.order_id}\n\nClick OK to simulate successful UPI test payment, or Cancel to dismiss.`
+    );
 
-  if (confirmed) {
-    const testPaymentId = `pay_test_${Math.random().toString(36).substring(2, 12)}`;
-    // The signature will be verified cryptographically on the server
-    options.handler({
-      razorpay_payment_id: testPaymentId,
-      razorpay_order_id: options.order_id,
-      razorpay_signature: `test_sig_${testPaymentId}`
-    });
-  } else if (options.modal?.ondismiss) {
+    if (confirmed) {
+      const testPaymentId = `pay_test_${Math.random().toString(36).substring(2, 12)}`;
+      // The signature will be verified cryptographically on the server
+      options.handler({
+        razorpay_payment_id: testPaymentId,
+        razorpay_order_id: options.order_id,
+        razorpay_signature: `test_sig_${testPaymentId}`
+      });
+      return;
+    }
+  } else {
+    alert("Unable to securely load Razorpay Checkout gateway. Please check your internet connection or disable ad-blockers and try again.");
+  }
+
+  if (options.modal?.ondismiss) {
     options.modal.ondismiss();
   }
 }

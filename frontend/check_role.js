@@ -5,20 +5,38 @@ const jwt = require('jsonwebtoken');
 dotenv.config({ path: '.env' });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const jwtSecret = "EFBJ6J6ZikTOgJGI0pYtO2QgnFY4R3/Rn6UYRR7PgFicJ7NINvkMEdOaigoY9NDZqvW39p4+6uQx/Sg+7W8Eyg==";
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const jwtSecret = process.env.SUPABASE_JWT_SECRET;
 
-const payload = {
-  "role": "service_role",
-  "iss": "supabase",
-  "iat": Math.floor(Date.now() / 1000),
-  "exp": Math.floor(Date.now() / 1000) + (60 * 60)
-};
+if (!supabaseUrl) {
+  console.error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable');
+  process.exit(1);
+}
 
-const serviceKey = jwt.sign(payload, jwtSecret);
+let serviceKey = supabaseServiceRoleKey;
+if (!serviceKey && jwtSecret) {
+  const payload = {
+    "role": "service_role",
+    "iss": "supabase",
+    "iat": Math.floor(Date.now() / 1000),
+    "exp": Math.floor(Date.now() / 1000) + (60 * 60)
+  };
+  serviceKey = jwt.sign(payload, jwtSecret);
+}
+
+if (!serviceKey) {
+  console.error('Missing SUPABASE_SERVICE_ROLE_KEY or SUPABASE_JWT_SECRET environment variable.');
+  process.exit(1);
+}
+
 const adminSupabase = createClient(supabaseUrl, serviceKey);
 
 async function checkRole() {
-  const email = 'harshal.782002@gmail.com';
+  const email = process.env.CHECK_EMAIL || process.env.ADMIN_EMAIL;
+  if (!email) {
+    console.error('Usage: Set CHECK_EMAIL environment variable.');
+    process.exit(1);
+  }
   
   // 1. Get User from Auth
   const { data: usersData, error: userError } = await adminSupabase.auth.admin.listUsers();

@@ -9,8 +9,13 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 async function testClientLogin() {
-  const email = 'harshal.782002@gmail.com';
-  const password = 'Admin@123';
+  const email = process.env.TEST_USER_EMAIL;
+  const password = process.env.TEST_USER_PASSWORD;
+
+  if (!email || !password) {
+    console.error('Usage: Set TEST_USER_EMAIL and TEST_USER_PASSWORD environment variables.');
+    process.exit(1);
+  }
 
   console.log('Signing in...');
   const { data, error } = await supabase.auth.signInWithPassword({

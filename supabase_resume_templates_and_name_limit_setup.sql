@@ -49,13 +49,3 @@ CREATE POLICY "Admins have full access to resume templates"
       WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
     )
   );
-
--- 5. Seed Initial Sample Resume Templates
-INSERT INTO public.resume_templates (title, description, category, file_url, minimum_plan, price, is_free, is_active)
-VALUES
-  ('Software Developer Fresher Resume', 'Clean, ATS-friendly LaTeX and Word format optimized for Software Engineer & Full Stack roles.', 'Software Development', '/sample_templates/software_engineer_fresher.pdf', 'free', 0.00, true, true),
-  ('Data Analyst & BI Specialist Resume', 'Structured template highlighting SQL, Python, Tableau and analytics project achievements.', 'Data & Analytics', '/sample_templates/data_analyst_resume.pdf', 'starter', 49.00, false, true),
-  ('Product & Business Analyst Resume', 'Metrics-driven layout emphasizing agile delivery, user stories, and cross-functional coordination.', 'Product & Operations', '/sample_templates/business_analyst_resume.pdf', 'starter', 49.00, false, true),
-  ('Frontend React & UI/UX Developer Resume', 'Portfolio-focused format highlighting component architecture, performance, and UI design skills.', 'Software Development', '/sample_templates/frontend_developer_resume.pdf', 'pro', 79.00, false, true),
-  ('HR & Talent Acquisition Executive Resume', 'Professional standard highlighting campus hiring, onboarding workflows, and employee relations.', 'Human Resources', '/sample_templates/hr_executive_resume.pdf', 'starter', 49.00, false, true)
-ON CONFLICT DO NOTHING;

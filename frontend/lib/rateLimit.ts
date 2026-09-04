@@ -213,4 +213,7 @@ export const RATE_LIMIT_POLICIES = {
   // Payment & Checkout Transactions (Razorpay Test Mode)
   PAYMENT_CREATE: { limit: 15, windowSeconds: 300 },      // 15 order creations per 5 mins
   PAYMENT_VERIFY: { limit: 20, windowSeconds: 300 },      // 20 verification attempts per 5 mins
+
+  // Public Inquiries
+  CONTACT_SUBMIT: { limit: 5, windowSeconds: 300 },       // 5 contact messages per 5 mins per IP
 };

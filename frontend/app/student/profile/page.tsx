@@ -501,7 +501,7 @@ export default function ProfilePage() {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-[var(--color-text-secondary)] mb-3">{data.email || 'student@example.com'}</p>
+              <p className="text-xs text-[var(--color-text-secondary)] mb-3">{data.email || 'No email specified'}</p>
               
               <div className="max-w-md w-full mx-auto sm:mx-0">
                 <div className="flex justify-between text-xs font-semibold mb-1.5 font-display">

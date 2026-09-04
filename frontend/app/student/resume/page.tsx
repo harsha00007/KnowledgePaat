@@ -149,74 +149,17 @@ export default function ResumePage() {
       }
 
       if (data && data.length > 0) {
-        setTemplates(data as ResumeTemplate[]);
+        // Filter out unmanaged legacy templates pointing to non-existent /sample_templates/ paths
+        const validTemplates = (data as ResumeTemplate[]).filter(
+          t => t.file_url && !t.file_url.startsWith('/sample_templates/')
+        );
+        setTemplates(validTemplates);
       } else {
-        // Fallback default templates if database table is initializing
-        setTemplates([
-          {
-            id: 'tmpl-1',
-            title: 'Software Developer Fresher Resume',
-            description: 'Clean, single-column ATS-friendly LaTeX and Word layout tailored for Software Engineer & Full Stack roles.',
-            category: 'Software Development',
-            file_url: '/sample_templates/software_engineer_fresher.pdf',
-            thumbnail_url: null,
-            minimum_plan: 'free',
-            price: 0,
-            is_free: true,
-            is_active: true
-          },
-          {
-            id: 'tmpl-2',
-            title: 'Data Analyst & BI Specialist Resume',
-            description: 'Structured layout emphasizing SQL, Python, Tableau, and analytics project outcomes.',
-            category: 'Data & Analytics',
-            file_url: '/sample_templates/data_analyst_resume.pdf',
-            thumbnail_url: null,
-            minimum_plan: 'starter',
-            price: 49,
-            is_free: false,
-            is_active: true
-          },
-          {
-            id: 'tmpl-3',
-            title: 'Product & Business Analyst Resume',
-            description: 'Metrics-driven layout highlighting agile delivery, sprint management, and data-backed user stories.',
-            category: 'Product & Operations',
-            file_url: '/sample_templates/business_analyst_resume.pdf',
-            thumbnail_url: null,
-            minimum_plan: 'starter',
-            price: 49,
-            is_free: false,
-            is_active: true
-          },
-          {
-            id: 'tmpl-4',
-            title: 'Frontend React & UI/UX Developer Resume',
-            description: 'Portfolio-focused format highlighting component architecture, web performance, and modern design systems.',
-            category: 'Software Development',
-            file_url: '/sample_templates/frontend_developer_resume.pdf',
-            thumbnail_url: null,
-            minimum_plan: 'pro',
-            price: 79,
-            is_free: false,
-            is_active: true
-          },
-          {
-            id: 'tmpl-5',
-            title: 'HR & Talent Acquisition Executive Resume',
-            description: 'Professional standard highlighting campus hiring, onboarding pipelines, and employee relations.',
-            category: 'Human Resources',
-            file_url: '/sample_templates/hr_executive_resume.pdf',
-            thumbnail_url: null,
-            minimum_plan: 'starter',
-            price: 49,
-            is_free: false,
-            is_active: true
-          }
-        ]);
+        setTemplates([]);
       }
     } catch (err) {
       console.error("Error fetching resume templates:", err);
+      setTemplates([]);
     } finally {
       setIsFetchingTemplates(false);
     }
@@ -610,7 +553,11 @@ export default function ResumePage() {
             </div>
           ) : filteredTemplates.length === 0 ? (
             <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-8 text-center">
-              <p className="text-xs text-[var(--color-text-secondary)]">No templates found for this role category.</p>
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                {templates.length === 0 
+                  ? "No resume templates are available right now. Please check back soon." 
+                  : "No templates found for this role category."}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

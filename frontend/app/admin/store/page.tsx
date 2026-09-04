@@ -64,6 +64,17 @@ const RESUME_TEMPLATE_CATEGORIES = [
   'Core Engineering'
 ];
 
+const PRODUCT_TYPE_FILTERS: { value: string; label: string }[] = [
+  { value: '', label: 'All Types' },
+  { value: 'note', label: 'Study Notes' },
+  { value: 'question_pack', label: 'Question Packs' },
+  { value: 'timed_assessment', label: 'Timed Assessments' },
+  { value: 'ai_mock_interview', label: 'AI Mock Interviews' },
+  { value: 'resume_template', label: 'Resume Templates' },
+  { value: 'note_bundle', label: 'Notes Bundles' },
+  { value: 'interview_bundle', label: 'Interview Master Bundles' },
+];
+
 const initialForm: Partial<StoreProduct> = {
   title: '',
   description: '',
@@ -90,6 +101,16 @@ export default function AdminStorePage() {
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [deleteModalState, setDeleteModalState] = useState<{
+    hasHistory: boolean;
+    checking: boolean;
+    orderCount: number;
+    purchaseCount: number;
+  }>({ hasHistory: false, checking: false, orderCount: 0, purchaseCount: 0 });
+  const [actionNotification, setActionNotification] = useState<{
+    type: 'success' | 'archived' | 'error';
+    message: string;
+  } | null>(null);
 
   // Form State
   const [formData, setFormData] = useState<Partial<StoreProduct>>(initialForm);
@@ -917,41 +938,93 @@ export default function AdminStorePage() {
     }
   };
 
+  const openDeleteModal = async (p: StoreProduct) => {
+    setSelectedProduct(p);
+    setIsDeleteModalOpen(true);
+    setDeleteModalState({
+      hasHistory: false,
+      checking: true,
+      orderCount: 0,
+      purchaseCount: 0
+    });
+
+    try {
+      const [orderItemsRes, purchasesRes] = await Promise.all([
+        supabase.from('order_items').select('id', { count: 'exact', head: true }).eq('product_id', p.id),
+        supabase.from('student_purchases').select('id', { count: 'exact', head: true }).eq('product_id', p.id)
+      ]);
+      const orderCount = orderItemsRes.count || 0;
+      const purchaseCount = purchasesRes.count || 0;
+      const hasHistory = orderCount > 0 || purchaseCount > 0;
+      setDeleteModalState({
+        hasHistory,
+        checking: false,
+        orderCount,
+        purchaseCount
+      });
+    } catch (checkErr) {
+      console.warn("Could not pre-check product dependencies:", checkErr);
+      setDeleteModalState({
+        hasHistory: false,
+        checking: false,
+        orderCount: 0,
+        purchaseCount: 0
+      });
+    }
+  };
+
   const handleDelete = async () => {
     if (!selectedProduct) return;
     setIsProcessing(true);
     try {
-      // 1. Delete junction links if any
-      try {
-        await supabase.from('store_product_notes').delete().eq('product_id', selectedProduct.id);
-      } catch {
-        // Table or row may not exist
+      const res = await fetch('/api/admin/store/delete-product', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: selectedProduct.id })
+      });
+
+      const result = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(result.error || 'Failed to remove product.');
       }
 
-      // 2. If this is a resume template with item_reference_id, soft-deactivate the template row to preserve buyer access
-      if (selectedProduct.product_type === 'resume_template' && selectedProduct.item_reference_id) {
-        try {
-          await supabase
-            .from('resume_templates')
-            .update({ is_active: false })
-            .eq('id', selectedProduct.item_reference_id);
-        } catch {
-          // Graceful fallback
-        }
+      if (result.action === 'archived') {
+        setActionNotification({
+          type: 'archived',
+          message: result.message || 'This product has existing order history, so it was archived instead of permanently deleted.'
+        });
+      } else {
+        setActionNotification({
+          type: 'success',
+          message: result.message || 'Product successfully deleted.'
+        });
       }
 
-      // 3. Delete product (cascades to store_product_notes, leaves public.notes intact)
-      const { error } = await supabase
-        .from('store_products')
-        .delete()
-        .eq('id', selectedProduct.id);
-      if (error) throw error;
-      
+      // Auto-stepback pagination if current page becomes empty
+      if (paginatedProducts.length === 1 && currentPage > 1) {
+        setCurrentPage(p => p - 1);
+      }
+
       await fetchProducts();
       setIsDeleteModalOpen(false);
     } catch (err: any) {
-      console.error("Error deleting product:", err);
-      alert(err.message || "Failed to delete product.");
+      console.error("Error deleting/archiving product:", err);
+      const rawMsg = err?.message || '';
+      const isDbFkError = rawMsg.toLowerCase().includes('violates foreign key constraint') ||
+        rawMsg.toLowerCase().includes('order_items') ||
+        rawMsg.toLowerCase().includes('student_purchases');
+
+      const userMessage = isDbFkError
+        ? 'This product has existing order history and cannot be permanently deleted. It has been archived instead.'
+        : rawMsg || 'Unable to remove this product right now. Please try again.';
+
+      setActionNotification({
+        type: 'error',
+        message: userMessage
+      });
+      setIsDeleteModalOpen(false);
+      await fetchProducts();
     } finally {
       setIsProcessing(false);
     }
@@ -988,54 +1061,106 @@ export default function AdminStorePage() {
           </Button>
         </div>
 
+        {/* NOTIFICATION FEEDBACK BANNER */}
+        {actionNotification && (
+          <div className={`p-4 rounded-[var(--radius-lg)] border flex items-center justify-between text-xs transition-all ${
+            actionNotification.type === 'archived' 
+              ? 'bg-amber-50 text-amber-950 border-amber-200' 
+              : actionNotification.type === 'error'
+              ? 'bg-red-50 text-red-950 border-red-200'
+              : 'bg-emerald-50 text-emerald-950 border-emerald-200'
+          }`}>
+            <div className="flex items-center gap-2.5">
+              {actionNotification.type === 'archived' ? (
+                <Info className="w-4 h-4 text-amber-600 shrink-0" />
+              ) : actionNotification.type === 'error' ? (
+                <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              )}
+              <span className="font-medium">{actionNotification.message}</span>
+            </div>
+            <button 
+              onClick={() => setActionNotification(null)}
+              className="p-1 hover:opacity-75 rounded transition-opacity"
+              title="Dismiss"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* SEARCH & FILTERS BAR */}
-        <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-xs)] flex flex-col lg:flex-row gap-3 items-center">
-          <div className="relative w-full lg:flex-1">
-            <Search className="w-4 h-4 text-[var(--color-text-tertiary)] absolute left-3 top-1/2 -translate-y-1/2" />
-            <input 
-              type="text" 
-              placeholder="Search by Product Title or Description..." 
-              value={searchQuery}
-              onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-9 pr-3 py-2 border border-[var(--color-border)] bg-white rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] shadow-xs transition-colors"
-            />
+        <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-xs)] space-y-3.5">
+          {/* ROW 1: SEARCH + ALL STATUSES + CLEAR FILTERS */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* Search Input */}
+            <div className="relative min-w-0 flex-1">
+              <Search className="w-4 h-4 text-[var(--color-text-tertiary)] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input 
+                type="text" 
+                placeholder="Search by Product Title or Description..." 
+                value={searchQuery}
+                onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                className="w-full pl-9 pr-3 py-2 border border-[var(--color-border)] bg-white rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] shadow-xs transition-colors"
+              />
+            </div>
+
+            {/* Status Dropdown & Clear Filters */}
+            <div className="flex items-center gap-2.5 shrink-0 justify-end">
+              <div className="w-full sm:w-36 shrink-0">
+                <select
+                  value={statusFilter}
+                  onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+                  className="w-full border border-[var(--color-border)] bg-white rounded-[var(--radius-md)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] shadow-xs"
+                >
+                  <option value="">All Statuses</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+
+              {(searchQuery || typeFilter || statusFilter) && (
+                <Button variant="outline" size="sm" onClick={resetFilters} className="text-xs shrink-0 py-2">
+                  Clear Filters
+                </Button>
+              )}
+            </div>
           </div>
 
-          <div className="flex flex-wrap sm:flex-nowrap gap-3 w-full lg:w-auto">
-            <div className="w-1/2 sm:w-44">
-              <select
-                value={typeFilter}
-                onChange={e => { setTypeFilter(e.target.value); setCurrentPage(1); }}
-                className="w-full border border-[var(--color-border)] bg-white rounded-[var(--radius-md)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] shadow-xs"
-              >
-                <option value="">All Types</option>
-                <option value="note">Study Note (PDF)</option>
-                <option value="question_pack">Question Pack</option>
-                <option value="timed_assessment">Timed Assessment</option>
-                <option value="ai_mock_interview">AI Mock Interview</option>
-                <option value="resume_template">Resume Template</option>
-                <option value="note_bundle">Notes Bundle</option>
-                <option value="interview_bundle">Interview Master Bundle</option>
-              </select>
+          {/* ROW 2: PRODUCT TYPE HORIZONTAL FILTER BUTTONS */}
+          <div className="pt-2.5 border-t border-[var(--color-border)]/60">
+            <div 
+              role="group" 
+              aria-label="Filter products by type"
+              className="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-1 max-w-full scrollbar-none touch-pan-x"
+            >
+              {PRODUCT_TYPE_FILTERS.map(f => {
+                const isSelected = typeFilter === f.value;
+                return (
+                  <button
+                    key={f.value || 'all'}
+                    type="button"
+                    role="button"
+                    aria-pressed={isSelected}
+                    onClick={() => {
+                      setTypeFilter(f.value);
+                      setCurrentPage(1);
+                    }}
+                    className={`
+                      px-3 py-1.5 rounded-[var(--radius-md)] text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer
+                      focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:ring-offset-1
+                      ${isSelected 
+                        ? 'bg-[var(--color-brand-500)] text-white shadow-xs border border-[var(--color-brand-600)] font-bold' 
+                        : 'bg-white text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-subtle)] border border-[var(--color-border)]'
+                      }
+                    `}
+                  >
+                    {f.label}
+                  </button>
+                );
+              })}
             </div>
-
-            <div className="w-1/2 sm:w-36">
-              <select
-                value={statusFilter}
-                onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-                className="w-full border border-[var(--color-border)] bg-white rounded-[var(--radius-md)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] shadow-xs"
-              >
-                <option value="">All Statuses</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-
-            {(searchQuery || typeFilter || statusFilter) && (
-              <Button variant="outline" size="sm" onClick={resetFilters} className="text-xs shrink-0">
-                Clear Filters
-              </Button>
-            )}
           </div>
         </div>
 
@@ -1122,7 +1247,7 @@ export default function AdminStorePage() {
                             <button onClick={() => { setSelectedProduct(p); setIsStatusModalOpen(true); }} className="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition-colors" title="Toggle Status">
                               <Power className="w-4 h-4" />
                             </button>
-                            <button onClick={() => { setSelectedProduct(p); setIsDeleteModalOpen(true); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">
+                            <button onClick={() => openDeleteModal(p)} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete or Archive Product">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </td>
@@ -1902,31 +2027,73 @@ export default function AdminStorePage() {
         )}
       </Modal>
 
-      {/* DELETE MODAL */}
-      <Modal isOpen={isDeleteModalOpen} onClose={() => !isProcessing && setIsDeleteModalOpen(false)} title="Delete Store Product">
+      {/* DELETE / ARCHIVE MODAL */}
+      <Modal 
+        isOpen={isDeleteModalOpen} 
+        onClose={() => !isProcessing && setIsDeleteModalOpen(false)} 
+        title={deleteModalState.hasHistory ? "Archive Store Product" : "Delete Store Product"}
+      >
         {selectedProduct && (
           <div className="space-y-4 text-xs">
-            <div className="flex items-start gap-3 bg-red-50 text-red-900 p-4 rounded-[var(--radius-lg)] border border-red-200">
-              <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold text-red-950">Warning: This action will remove this listing from the digital store.</p>
-                <p className="mt-1 leading-relaxed text-red-900">
-                  Are you sure you want to delete <strong>"{selectedProduct.title}"</strong>?
-                  Attached study notes will remain safely in the notes library for students with existing access.
-                </p>
+            {deleteModalState.checking ? (
+              <div className="flex items-center justify-center py-6 gap-2 text-[var(--color-text-secondary)]">
+                <RefreshCw className="w-4 h-4 animate-spin text-[var(--color-brand-600)]" />
+                <span>Checking product order and purchase history...</span>
               </div>
-            </div>
+            ) : deleteModalState.hasHistory ? (
+              <div className="flex items-start gap-3 bg-amber-50 text-amber-950 p-4 rounded-[var(--radius-lg)] border border-amber-200">
+                <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-amber-950">Archive Notice: Historical Records Protected</p>
+                  <p className="mt-1 leading-relaxed text-amber-900">
+                    This product has existing order or purchase history, so it cannot be permanently deleted. It will be removed from the active store instead.
+                  </p>
+                  <p className="mt-1.5 text-[11px] text-amber-800 font-medium">
+                    Order items and student purchases will remain fully intact, while preventing new purchases.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start gap-3 bg-red-50 text-red-950 p-4 rounded-[var(--radius-lg)] border border-red-200">
+                <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-red-950">Permanent Removal: No Dependencies Found</p>
+                  <p className="mt-1 leading-relaxed text-red-900">
+                    Are you sure you want to permanently delete <strong>"{selectedProduct.title}"</strong>?
+                    This product has no purchase or order history and can be permanently removed.
+                  </p>
+                  <p className="mt-1.5 text-[11px] text-red-800">
+                    Attached study notes will remain safely in the notes library.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end gap-2.5 pt-3 border-t border-[var(--color-border)]">
-              <Button variant="outline" size="sm" onClick={() => setIsDeleteModalOpen(false)} disabled={isProcessing}>Cancel</Button>
-              <Button 
-                variant="primary" 
-                size="sm"
-                className="bg-red-600 hover:bg-red-700 border-transparent text-white"
-                onClick={handleDelete} 
-                disabled={isProcessing}
-              >
-                {isProcessing ? 'Deleting...' : 'Yes, Delete Product'}
+              <Button variant="outline" size="sm" onClick={() => setIsDeleteModalOpen(false)} disabled={isProcessing}>
+                Cancel
               </Button>
+              {deleteModalState.hasHistory ? (
+                <Button 
+                  variant="primary" 
+                  size="sm"
+                  className="bg-amber-600 hover:bg-amber-700 border-transparent text-white"
+                  onClick={handleDelete} 
+                  disabled={isProcessing || deleteModalState.checking}
+                >
+                  {isProcessing ? 'Archiving...' : 'Archive Product'}
+                </Button>
+              ) : (
+                <Button 
+                  variant="primary" 
+                  size="sm"
+                  className="bg-red-600 hover:bg-red-700 border-transparent text-white"
+                  onClick={handleDelete} 
+                  disabled={isProcessing || deleteModalState.checking}
+                >
+                  {isProcessing ? 'Deleting...' : 'Delete'}
+                </Button>
+              )}
             </div>
           </div>
         )}

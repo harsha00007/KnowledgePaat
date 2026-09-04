@@ -85,8 +85,9 @@ export async function POST(req: NextRequest) {
         razorpay_signature
       });
 
-      // Allow test mode token fallback in local development testing
-      if (!isSignatureValid && razorpay_signature.startsWith('test_sig_')) {
+      // Allow test mode token fallback ONLY in local development when explicitly enabled
+      const isTestBypassAllowed = process.env.NODE_ENV === 'development' && process.env.ENABLE_TEST_PAYMENTS === 'true';
+      if (!isSignatureValid && isTestBypassAllowed && razorpay_signature.startsWith('test_sig_')) {
         isSignatureValid = true;
       }
     }

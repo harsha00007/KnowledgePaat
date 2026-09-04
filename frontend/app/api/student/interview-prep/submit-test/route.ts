@@ -21,28 +21,19 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient();
 
-    // 1. Get authenticated student user (or demo fallback)
-    const { data: { user } } = await supabase.auth.getUser();
+    // 1. Authenticate student user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized. Please sign in to submit assessments.' }, { status: 401 });
+    }
+
+    const studentId = user.id;
 
     // Enforce Rate Limit for Test Submission
-    const rateLimitKey = user ? `test_submit:${user.id}` : `test_submit_ip:${getRealClientIp(req)}`;
+    const rateLimitKey = `test_submit:${studentId}`;
     const rl = await checkRateLimit(rateLimitKey, RATE_LIMIT_POLICIES.TEST_SUBMIT);
     if (!rl.success) {
       return rateLimitResponse(rl);
-    }
-
-    let studentId = user?.id;
-
-    if (!studentId) {
-      // In guest or testing mode, fetch the first student profile or use a fallback
-      const { data: fallbackUser } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('role', 'student')
-        .limit(1)
-        .maybeSingle();
-
-      studentId = fallbackUser?.id || '00000000-0000-0000-0000-000000000000';
     }
 
     const body = await req.json();
