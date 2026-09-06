@@ -73,6 +73,13 @@ function emitLog(level: LogLevel, message: string, context?: LogContext, error?:
       message: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     };
+  } else if (error && typeof error === 'object') {
+    serializedError = {
+      message: (error as any).message || (error as any).error || JSON.stringify(error),
+      code: (error as any).code,
+      details: (error as any).details,
+      hint: (error as any).hint,
+    };
   } else if (error) {
     serializedError = { message: String(error) };
   }

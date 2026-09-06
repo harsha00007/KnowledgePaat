@@ -164,3 +164,39 @@ export async function callAIProvider(
 export function isAIConfigured(): boolean {
   return resolveAIConfig() !== null;
 }
+
+export interface AIConfigValidation {
+  configured: boolean;
+  provider: 'openai' | 'gemini' | 'custom' | 'none';
+  model: string;
+  hasCustomEndpoint: boolean;
+  isProductionReady: boolean;
+  warnings: string[];
+}
+
+/**
+ * Validate AI configuration safely without leaking any API keys.
+ * Reports provider, model, readiness status, and diagnostic warnings.
+ */
+export function validateAIConfig(): AIConfigValidation {
+  const config = resolveAIConfig();
+  if (!config) {
+    return {
+      configured: false,
+      provider: 'none',
+      model: 'deterministic_fallback',
+      hasCustomEndpoint: false,
+      isProductionReady: false,
+      warnings: ['No AI provider configured. Utilizing deterministic built-in fallback engine.'],
+    };
+  }
+
+  return {
+    configured: true,
+    provider: config.provider,
+    model: config.model,
+    hasCustomEndpoint: config.provider === 'custom',
+    isProductionReady: true,
+    warnings: [],
+  };
+}

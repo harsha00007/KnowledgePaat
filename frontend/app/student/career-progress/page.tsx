@@ -255,7 +255,7 @@ export default function CareerProgressPage() {
                   <span className="text-[10px] font-bold text-[var(--color-text-secondary)]">Profile</span>
                   <span className="font-extrabold text-[var(--color-text-primary)]">{breakdown.profileScore}/15</span>
                 </div>
-                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-200 dark:bg-[#163668] h-1.5 rounded-full overflow-hidden">
                   <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(breakdown.profileScore / 15) * 100}%` }} />
                 </div>
               </div>
@@ -265,7 +265,7 @@ export default function CareerProgressPage() {
                   <span className="text-[10px] font-bold text-[var(--color-text-secondary)]">Resume</span>
                   <span className="font-extrabold text-[var(--color-text-primary)]">{breakdown.resumeScore}/15</span>
                 </div>
-                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-200 dark:bg-[#163668] h-1.5 rounded-full overflow-hidden">
                   <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(breakdown.resumeScore / 15) * 100}%` }} />
                 </div>
               </div>
@@ -275,7 +275,7 @@ export default function CareerProgressPage() {
                   <span className="text-[10px] font-bold text-[var(--color-text-secondary)]">Interview</span>
                   <span className="font-extrabold text-[var(--color-text-primary)]">{breakdown.interviewScore}/25</span>
                 </div>
-                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-200 dark:bg-[#163668] h-1.5 rounded-full overflow-hidden">
                   <div className="h-full bg-purple-500 rounded-full" style={{ width: `${(breakdown.interviewScore / 25) * 100}%` }} />
                 </div>
               </div>
@@ -285,7 +285,7 @@ export default function CareerProgressPage() {
                   <span className="text-[10px] font-bold text-[var(--color-text-secondary)]">Practice</span>
                   <span className="font-extrabold text-[var(--color-text-primary)]">{breakdown.practiceScore}/15</span>
                 </div>
-                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-200 dark:bg-[#163668] h-1.5 rounded-full overflow-hidden">
                   <div className="h-full bg-amber-500 rounded-full" style={{ width: `${(breakdown.practiceScore / 15) * 100}%` }} />
                 </div>
               </div>
@@ -295,7 +295,7 @@ export default function CareerProgressPage() {
                   <span className="text-[10px] font-bold text-[var(--color-text-secondary)]">Skills</span>
                   <span className="font-extrabold text-[var(--color-text-primary)]">{breakdown.skillScore}/15</span>
                 </div>
-                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-200 dark:bg-[#163668] h-1.5 rounded-full overflow-hidden">
                   <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${(breakdown.skillScore / 15) * 100}%` }} />
                 </div>
               </div>
@@ -305,7 +305,7 @@ export default function CareerProgressPage() {
                   <span className="text-[10px] font-bold text-[var(--color-text-secondary)]">Engagement</span>
                   <span className="font-extrabold text-[var(--color-text-primary)]">{breakdown.engagementScore}/10</span>
                 </div>
-                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-200 dark:bg-[#163668] h-1.5 rounded-full overflow-hidden">
                   <div className="h-full bg-teal-500 rounded-full" style={{ width: `${(breakdown.engagementScore / 10) * 100}%` }} />
                 </div>
               </div>
@@ -362,7 +362,7 @@ export default function CareerProgressPage() {
                       <span className="font-extrabold text-sm text-[var(--color-text-primary)]">{item.score}%</span>
                     </div>
                   </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-100 dark:bg-[#163668] h-2 rounded-full overflow-hidden">
                     <div 
                       className={`h-full rounded-full transition-all duration-500 ${
                         item.score >= 75 ? 'bg-emerald-500' : item.score >= 60 ? 'bg-blue-500' : 'bg-amber-500'
@@ -663,7 +663,7 @@ export default function CareerProgressPage() {
                     <p className="text-[11px] text-[var(--color-text-secondary)] line-clamp-1">{ach.description}</p>
                     
                     {!ach.isUnlocked && (
-                      <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1">
+                      <div className="w-full bg-slate-200 dark:bg-[#163668] h-1.5 rounded-full overflow-hidden mt-1">
                         <div className="h-full bg-[var(--color-brand-500)] rounded-full" style={{ width: `${ach.progressPercent}%` }} />
                       </div>
                     )}

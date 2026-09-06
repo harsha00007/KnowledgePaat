@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { Button } from '@/components/Button';
-import { Check, Bot, Lock } from 'lucide-react';
+import { Check, Bot, Lock, ChevronDown, X } from 'lucide-react';
 import { PLANS_LIST } from '@/config/plans';
 import { useFeatureFlags } from '@/context/FeatureFlagContext';
 
@@ -31,7 +31,7 @@ export default function PricingPage() {
 
       {/* ── 4-TIER PRICING CARDS ──────────────────────────────────────── */}
       <section className="bg-[var(--color-bg-subtle)] py-16 flex-1">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
             {PLANS_LIST.map((plan) => {
               const isPopular = plan.popular;
@@ -39,7 +39,7 @@ export default function PricingPage() {
               return (
                 <div 
                   key={plan.id}
-                  className={`rounded-[var(--radius-xl)] bg-white p-6 sm:p-7 flex flex-col justify-between shadow-[var(--shadow-sm)] relative border transition-all ${
+                  className={`rounded-[var(--radius-xl)] bg-white p-4 sm:p-7 flex flex-col justify-between shadow-[var(--shadow-sm)] relative border transition-all ${
                     isPopular 
                       ? 'border-2 border-[var(--color-brand-500)] shadow-[var(--shadow-md)]' 
                       : 'border-[var(--color-border)] hover:border-[var(--color-brand-300)]'
@@ -113,6 +113,70 @@ export default function PricingPage() {
               );
             })}
           </div>
+
+          {/* ── PLAN FEATURE COMPARISON MATRIX ────────────────────────────── */}
+          <div className="mt-14 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-4 sm:p-6 shadow-[var(--shadow-xs)]">
+            <h2 className="text-base font-bold text-[var(--color-text-primary)] mb-1">Feature Comparison Matrix</h2>
+            <p className="text-xs text-[var(--color-text-secondary)] mb-6">Detailed entitlement breakdown by subscription tier.</p>
+
+            <div className="overflow-x-auto -mx-1 sm:mx-0">
+              <table className="w-full text-left text-xs border-collapse min-w-[540px]">
+                <thead>
+                  <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-[11px] uppercase font-bold text-[var(--color-text-tertiary)]">
+                    <th className="py-2.5 sm:py-3 px-2.5 sm:px-4">Feature / Resource</th>
+                    <th className="py-2.5 sm:py-3 px-2 sm:px-4 text-center">Free (₹0)</th>
+                    <th className="py-2.5 sm:py-3 px-2 sm:px-4 text-center">Starter (₹49)</th>
+                    <th className="py-2.5 sm:py-3 px-2 sm:px-4 text-center">Pro (₹99)</th>
+                    <th className="py-2.5 sm:py-3 px-2 sm:px-4 text-center">Premium (₹149)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--color-border)]">
+                  <tr>
+                    <td className="py-2.5 sm:py-3 px-2.5 sm:px-4 font-semibold text-[var(--color-text-primary)]">Verified Fresher Jobs</td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 sm:py-3 px-2.5 sm:px-4 font-semibold text-[var(--color-text-primary)]">Starter Tier Openings & Prep</td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 sm:py-3 px-2.5 sm:px-4 font-semibold text-[var(--color-text-primary)]">Pro Tier Content & Company Banks</td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 sm:py-3 px-2.5 sm:px-4 font-semibold text-[var(--color-text-primary)]">Premium Archive & Model Answers</td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 sm:py-3 px-2.5 sm:px-4 font-semibold text-[var(--color-text-primary)]">Monthly Mock Interview Credits</td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center font-bold text-slate-400">0</td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center font-bold text-blue-700">1 / month</td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center font-bold text-indigo-700">2 / month</td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center font-bold text-purple-700">4 / month</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 sm:py-3 px-2.5 sm:px-4 font-semibold text-[var(--color-text-primary)]">PDF Study Notes Downloads</td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center text-[11px] text-[var(--color-text-tertiary)]">Basic Only</td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center text-[11px] text-blue-700 font-medium">Starter + Basic</td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center text-[11px] text-indigo-700 font-medium">Pro + Starter + Basic</td>
+                    <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center text-[11px] text-purple-700 font-bold">All Notes (Unlimited)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -124,23 +188,46 @@ export default function PricingPage() {
             <p className="text-sm text-[var(--color-text-secondary)] mt-1">Everything you need to know about KnowledgePaat subscriptions.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-[var(--color-text-secondary)]">
-            <div className="p-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] space-y-1.5">
-              <h3 className="font-bold text-[var(--color-text-primary)] text-sm">Can I switch plans anytime?</h3>
-              <p className="leading-relaxed">Yes, you can upgrade or adjust your subscription tier anytime directly from your student portal dashboard.</p>
-            </div>
-            <div className="p-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] space-y-1.5">
-              <h3 className="font-bold text-[var(--color-text-primary)] text-sm">How do Mock Interview credits work?</h3>
-              <p className="leading-relaxed">Depending on your plan, credits are replenished each billing cycle for upcoming AI & panel interview prep rounds.</p>
-            </div>
-            <div className="p-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] space-y-1.5">
-              <h3 className="font-bold text-[var(--color-text-primary)] text-sm">Are there any hidden fees?</h3>
-              <p className="leading-relaxed">None at all. You pay the exact monthly amount listed with zero placement commissions or unexpected fees.</p>
-            </div>
-            <div className="p-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] space-y-1.5">
-              <h3 className="font-bold text-[var(--color-text-primary)] text-sm">What happens when my plan expires?</h3>
-              <p className="leading-relaxed">Your account seamlessly reverts to the Free tier. Your saved jobs, resume, and profile progress remain completely intact.</p>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-[var(--color-text-secondary)]">
+            <details className="group rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] p-4 transition-all duration-150 ease-out open:shadow-xs">
+              <summary className="font-bold text-[var(--color-text-primary)] text-sm cursor-pointer list-none flex items-center justify-between">
+                <span>Can I switch plans anytime?</span>
+                <ChevronDown className="w-4 h-4 text-slate-400 transition-transform duration-150 ease-out group-open:rotate-180 shrink-0 ml-2" />
+              </summary>
+              <p className="leading-relaxed mt-2.5 pt-2 border-t border-[var(--color-border)]/60">
+                Yes, you can upgrade or adjust your subscription tier anytime directly from your student portal dashboard.
+              </p>
+            </details>
+
+            <details className="group rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] p-4 transition-all duration-150 ease-out open:shadow-xs">
+              <summary className="font-bold text-[var(--color-text-primary)] text-sm cursor-pointer list-none flex items-center justify-between">
+                <span>How do Mock Interview credits work?</span>
+                <ChevronDown className="w-4 h-4 text-slate-400 transition-transform duration-150 ease-out group-open:rotate-180 shrink-0 ml-2" />
+              </summary>
+              <p className="leading-relaxed mt-2.5 pt-2 border-t border-[var(--color-border)]/60">
+                Depending on your plan, credits are replenished each billing cycle for upcoming AI & panel interview prep rounds.
+              </p>
+            </details>
+
+            <details className="group rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] p-4 transition-all duration-150 ease-out open:shadow-xs">
+              <summary className="font-bold text-[var(--color-text-primary)] text-sm cursor-pointer list-none flex items-center justify-between">
+                <span>Are there any hidden fees?</span>
+                <ChevronDown className="w-4 h-4 text-slate-400 transition-transform duration-150 ease-out group-open:rotate-180 shrink-0 ml-2" />
+              </summary>
+              <p className="leading-relaxed mt-2.5 pt-2 border-t border-[var(--color-border)]/60">
+                None at all. You pay the exact monthly amount listed with zero placement commissions or unexpected fees.
+              </p>
+            </details>
+
+            <details className="group rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)] p-4 transition-all duration-150 ease-out open:shadow-xs">
+              <summary className="font-bold text-[var(--color-text-primary)] text-sm cursor-pointer list-none flex items-center justify-between">
+                <span>What happens when my plan expires?</span>
+                <ChevronDown className="w-4 h-4 text-slate-400 transition-transform duration-150 ease-out group-open:rotate-180 shrink-0 ml-2" />
+              </summary>
+              <p className="leading-relaxed mt-2.5 pt-2 border-t border-[var(--color-border)]/60">
+                Your account seamlessly reverts to the Free tier. Your saved jobs, resume, and profile progress remain completely intact.
+              </p>
+            </details>
           </div>
         </div>
       </section>

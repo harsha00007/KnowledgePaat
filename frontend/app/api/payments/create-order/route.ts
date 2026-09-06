@@ -30,12 +30,40 @@ export async function POST(req: NextRequest) {
       // Note: Any client-supplied "amount" or "price" is intentionally ignored for security
     };
 
-    // Get user profile details for checkout prefill
-    const { data: profile } = await supabase
+    // Ensure student profile exists (required by fk_orders_profile foreign key constraint)
+    let { data: profile } = await supabase
       .from('profiles')
-      .select('full_name, email')
+      .select('id, full_name, email')
       .eq('id', user.id)
       .maybeSingle();
+
+    if (!profile) {
+      const fallbackName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Student';
+      const fallbackEmail = user.email || '';
+
+      const { data: createdProfile, error: profileErr } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          user_id: user.id,
+          email: fallbackEmail,
+          full_name: fallbackName,
+          role: 'student',
+          is_active: true,
+        }, { onConflict: 'id' })
+        .select('id, full_name, email')
+        .maybeSingle();
+
+      if (createdProfile) {
+        profile = createdProfile;
+      } else if (profileErr) {
+        logger.warn('Could not auto-provision profile for order checkout', {
+          module: 'payment',
+          userId: user.id,
+          error: profileErr
+        });
+      }
+    }
 
     const studentName = profile?.full_name || user.user_metadata?.full_name || 'Student';
     const studentEmail = profile?.email || user.email || '';
@@ -67,6 +95,7 @@ export async function POST(req: NextRequest) {
         .insert({
           student_id: user.id,
           total_amount: officialPrice,
+          status: 'pending',
           payment_status: 'pending',
           order_status: 'pending'
         })
@@ -74,8 +103,18 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (orderErr || !orderData) {
-        logger.error('Failed to create internal order record', orderErr, { module: 'payment', userId: user.id });
-        return NextResponse.json({ error: 'Unable to initialize order. Please try again.' }, { status: 500 });
+        logger.error('Failed to create internal order record', orderErr, {
+          module: 'payment',
+          userId: user.id,
+          code: (orderErr as any)?.code,
+          message: (orderErr as any)?.message,
+          details: (orderErr as any)?.details,
+          hint: (orderErr as any)?.hint
+        });
+        return NextResponse.json({
+          error: (orderErr as any)?.message || 'Unable to initialize order. Please try again.',
+          debug: process.env.NODE_ENV === 'development' ? orderErr : undefined
+        }, { status: 500 });
       }
 
       // Create Razorpay test order
@@ -153,6 +192,7 @@ export async function POST(req: NextRequest) {
         .insert({
           student_id: user.id,
           total_amount: officialTotal,
+          status: 'pending',
           payment_status: 'pending',
           order_status: 'pending'
         })
@@ -160,8 +200,18 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (orderErr || !orderData) {
-        logger.error('Failed to create internal order for store cart', orderErr, { module: 'payment', userId: user.id });
-        return NextResponse.json({ error: 'Unable to initialize checkout order.' }, { status: 500 });
+        logger.error('Failed to create internal order for store cart', orderErr, {
+          module: 'payment',
+          userId: user.id,
+          code: (orderErr as any)?.code,
+          message: (orderErr as any)?.message,
+          details: (orderErr as any)?.details,
+          hint: (orderErr as any)?.hint
+        });
+        return NextResponse.json({
+          error: (orderErr as any)?.message || 'Unable to initialize checkout order.',
+          debug: process.env.NODE_ENV === 'development' ? orderErr : undefined
+        }, { status: 500 });
       }
 
       // Create order items
@@ -171,7 +221,17 @@ export async function POST(req: NextRequest) {
         price: p.price
       }));
 
-      await supabase.from('order_items').insert(orderItems);
+      const { error: itemsErr } = await supabase.from('order_items').insert(orderItems);
+      if (itemsErr) {
+        logger.error('Failed to insert order items for store cart', itemsErr, {
+          module: 'payment',
+          userId: user.id,
+          orderId: orderData.id,
+          code: (itemsErr as any)?.code,
+          message: (itemsErr as any)?.message,
+          details: (itemsErr as any)?.details
+        });
+      }
 
       // Create Razorpay test order
       const razorpayOrder = await createRazorpayOrder({

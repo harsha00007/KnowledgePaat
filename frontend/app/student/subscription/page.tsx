@@ -294,59 +294,59 @@ export default function SubscriptionPage() {
           <h2 className="text-base font-bold text-[var(--color-text-primary)] mb-1">Feature Comparison Matrix</h2>
           <p className="text-xs text-[var(--color-text-secondary)] mb-6">Detailed entitlement breakdown by subscription tier.</p>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="overflow-x-auto -mx-1 sm:mx-0">
+            <table className="w-full text-left text-xs border-collapse min-w-[540px]">
               <thead>
                 <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-[11px] uppercase font-bold text-[var(--color-text-tertiary)]">
-                  <th className="py-3 px-4">Feature / Resource</th>
-                  <th className="py-3 px-4 text-center">Free (₹0)</th>
-                  <th className="py-3 px-4 text-center">Starter (₹49)</th>
-                  <th className="py-3 px-4 text-center">Pro (₹99)</th>
-                  <th className="py-3 px-4 text-center">Premium (₹149)</th>
+                  <th className="py-2.5 sm:py-3 px-2.5 sm:px-4">Feature / Resource</th>
+                  <th className="py-2.5 sm:py-3 px-2 sm:px-4 text-center">Free (₹0)</th>
+                  <th className="py-2.5 sm:py-3 px-2 sm:px-4 text-center">Starter (₹49)</th>
+                  <th className="py-2.5 sm:py-3 px-2 sm:px-4 text-center">Pro (₹99)</th>
+                  <th className="py-2.5 sm:py-3 px-2 sm:px-4 text-center">Premium (₹149)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border)]">
                 <tr>
-                  <td className="py-3 px-4 font-semibold text-[var(--color-text-primary)]">Verified Fresher Jobs</td>
-                  <td className="py-3 px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
-                  <td className="py-3 px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
-                  <td className="py-3 px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
-                  <td className="py-3 px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                  <td className="py-2.5 sm:py-3 px-2.5 sm:px-4 font-semibold text-[var(--color-text-primary)]">Verified Fresher Jobs</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
                 </tr>
                 <tr>
-                  <td className="py-3 px-4 font-semibold text-[var(--color-text-primary)]">Starter Tier Openings & Prep</td>
-                  <td className="py-3 px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
-                  <td className="py-3 px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
-                  <td className="py-3 px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
-                  <td className="py-3 px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                  <td className="py-2.5 sm:py-3 px-2.5 sm:px-4 font-semibold text-[var(--color-text-primary)]">Starter Tier Openings & Prep</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
                 </tr>
                 <tr>
-                  <td className="py-3 px-4 font-semibold text-[var(--color-text-primary)]">Pro Tier Content & Company Banks</td>
-                  <td className="py-3 px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
-                  <td className="py-3 px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
-                  <td className="py-3 px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
-                  <td className="py-3 px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                  <td className="py-2.5 sm:py-3 px-2.5 sm:px-4 font-semibold text-[var(--color-text-primary)]">Pro Tier Content & Company Banks</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
                 </tr>
                 <tr>
-                  <td className="py-3 px-4 font-semibold text-[var(--color-text-primary)]">Premium Archive & Advanced Model Answers</td>
-                  <td className="py-3 px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
-                  <td className="py-3 px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
-                  <td className="py-3 px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
-                  <td className="py-3 px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
+                  <td className="py-2.5 sm:py-3 px-2.5 sm:px-4 font-semibold text-[var(--color-text-primary)]">Premium Archive & Advanced Model Answers</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><X className="w-4 h-4 text-slate-300 inline" /></td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center"><Check className="w-4 h-4 text-emerald-600 inline" /></td>
                 </tr>
                 <tr>
-                  <td className="py-3 px-4 font-semibold text-[var(--color-text-primary)]">Monthly Mock Interview Credits</td>
-                  <td className="py-3 px-4 text-center font-bold text-slate-400">0</td>
-                  <td className="py-3 px-4 text-center font-bold text-blue-700">1 / month</td>
-                  <td className="py-3 px-4 text-center font-bold text-indigo-700">2 / month</td>
-                  <td className="py-3 px-4 text-center font-bold text-purple-700">4 / month</td>
+                  <td className="py-2.5 sm:py-3 px-2.5 sm:px-4 font-semibold text-[var(--color-text-primary)]">Monthly Mock Interview Credits</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center font-bold text-slate-400">0</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center font-bold text-blue-700">1 / month</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center font-bold text-indigo-700">2 / month</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center font-bold text-purple-700">4 / month</td>
                 </tr>
                 <tr>
-                  <td className="py-3 px-4 font-semibold text-[var(--color-text-primary)]">PDF Study Notes Downloads</td>
-                  <td className="py-3 px-4 text-center text-[11px] text-[var(--color-text-tertiary)]">Basic Only</td>
-                  <td className="py-3 px-4 text-center text-[11px] text-blue-700 font-medium">Starter + Basic</td>
-                  <td className="py-3 px-4 text-center text-[11px] text-indigo-700 font-medium">Pro + Starter + Basic</td>
-                  <td className="py-3 px-4 text-center text-[11px] text-purple-700 font-bold">All Notes (Unlimited)</td>
+                  <td className="py-2.5 sm:py-3 px-2.5 sm:px-4 font-semibold text-[var(--color-text-primary)]">PDF Study Notes Downloads</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center text-[11px] text-[var(--color-text-tertiary)]">Basic Only</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center text-[11px] text-blue-700 font-medium">Starter + Basic</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center text-[11px] text-indigo-700 font-medium">Pro + Starter + Basic</td>
+                  <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center text-[11px] text-purple-700 font-bold">All Notes (Unlimited)</td>
                 </tr>
               </tbody>
             </table>

@@ -154,7 +154,7 @@ export default function StudentDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
           {/* 1. Profile Completion */}
-          <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)] flex flex-col justify-between">
+          <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)] flex flex-col justify-between transition-transform duration-200 hover:-translate-y-0.5">
             <div>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">Profile Status</span>
@@ -177,7 +177,7 @@ export default function StudentDashboard() {
           </div>
 
           {/* 2. Resume Status */}
-          <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)] flex flex-col justify-between">
+          <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)] flex flex-col justify-between transition-transform duration-200 hover:-translate-y-0.5">
             <div>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">Resume Status</span>
@@ -200,7 +200,7 @@ export default function StudentDashboard() {
           </div>
 
           {/* 3. Membership Status */}
-          <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)] flex flex-col justify-between">
+          <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)] flex flex-col justify-between transition-transform duration-200 hover:-translate-y-0.5">
             <div>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">Membership</span>
@@ -228,7 +228,7 @@ export default function StudentDashboard() {
           </div>
 
           {/* 4. Mock Interview Status */}
-          <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)] flex flex-col justify-between">
+          <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)] flex flex-col justify-between transition-transform duration-200 hover:-translate-y-0.5">
             <div>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">Mock Interviews</span>

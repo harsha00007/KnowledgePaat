@@ -78,9 +78,9 @@ export async function POST(req: NextRequest) {
       await supabase
         .from('orders')
         .update({
+          status: 'completed',
           payment_status: 'paid',
-          order_status: 'completed',
-          updated_at: new Date().toISOString()
+          order_status: 'completed'
         })
         .eq('id', internalOrderId);
 
@@ -176,9 +176,9 @@ export async function POST(req: NextRequest) {
         await supabase
           .from('orders')
           .update({
+            status: 'cancelled',
             payment_status: 'refunded',
-            order_status: 'cancelled',
-            updated_at: new Date().toISOString()
+            order_status: 'cancelled'
           })
           .eq('id', internalOrderId);
 
@@ -240,8 +240,8 @@ export async function POST(req: NextRequest) {
         await supabase
           .from('orders')
           .update({
-            payment_status: 'failed',
-            updated_at: new Date().toISOString()
+            status: 'failed',
+            payment_status: 'failed'
           })
           .eq('id', internalOrderId);
 

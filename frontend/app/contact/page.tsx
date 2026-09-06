@@ -9,6 +9,7 @@ import { Mail, MessageSquare, MapPin, CheckCircle2, Send } from 'lucide-react';
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [referenceCode, setReferenceCode] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -36,6 +37,9 @@ export default function ContactPage() {
         throw new Error(data.error || "We couldn't send your message right now. Please try again.");
       }
 
+      if (data.referenceCode) {
+        setReferenceCode(data.referenceCode);
+      }
       setSubmitted(true);
     } catch (err: any) {
       setErrorMsg(err.message || "We couldn't send your message right now. Please try again.");
@@ -108,10 +112,15 @@ export default function ContactPage() {
                       <CheckCircle2 className="h-8 w-8" />
                     </div>
                     <h3 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">Message Received!</h3>
+                    {referenceCode && (
+                      <div className="inline-flex items-center gap-2 bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-200)] px-3.5 py-1 rounded-full text-xs font-mono font-bold mb-4 font-display">
+                        Reference: {referenceCode}
+                      </div>
+                    )}
                     <p className="text-sm text-[var(--color-text-secondary)] max-w-md mx-auto mb-6">
                       Thank you for reaching out. Our support team will review your message and reply to <strong>{formData.email || 'your email'}</strong> shortly.
                     </p>
-                    <Button variant="outline" onClick={() => setSubmitted(false)}>
+                    <Button variant="outline" onClick={() => { setSubmitted(false); setReferenceCode(null); }}>
                       Send Another Message
                     </Button>
                   </div>
@@ -164,8 +173,19 @@ export default function ContactPage() {
                     )}
 
                     <div className="pt-2">
-                      <Button type="submit" className="w-full sm:w-auto px-8" isLoading={isSubmitting}>
-                        <Send className="mr-2 h-4 w-4" /> Send Message
+                      <Button 
+                        type="submit" 
+                        className="w-full sm:w-auto px-8 min-w-[170px]" 
+                        isLoading={isSubmitting}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <span>Sending...</span>
+                        ) : (
+                          <>
+                            <Send className="mr-2 h-4 w-4" /> Send Message
+                          </>
+                        )}
                       </Button>
                     </div>
                   </form>

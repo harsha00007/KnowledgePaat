@@ -678,8 +678,9 @@ function NotesContent() {
 
                   {/* Footer metadata and download action */}
                   <div className="pt-3 border-t border-[var(--color-border)] flex items-center justify-between">
-                    <span className="text-[11px] text-[var(--color-text-tertiary)] font-medium">
-                      PDF • {note.file_size}
+                    <span className="inline-flex items-center gap-1.5 text-[11px] text-[var(--color-text-tertiary)] font-medium">
+                      <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                      <span>PDF • {note.file_size}</span>
                     </span>
 
                     {!isUnlocked ? (
@@ -757,8 +758,9 @@ function NotesContent() {
                 </div>
                 <h2 className="text-base font-bold text-[var(--color-text-primary)]">{selectedNote.title}</h2>
               </div>
-              <span className="text-xs font-semibold text-[var(--color-text-secondary)] bg-[var(--color-bg-subtle)] px-2.5 py-1 rounded border border-[var(--color-border)]">
-                {selectedNote.file_size}
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-secondary)] bg-[var(--color-bg-subtle)] px-2.5 py-1 rounded border border-[var(--color-border)]">
+                <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                <span>PDF • {selectedNote.file_size}</span>
               </span>
             </div>
 

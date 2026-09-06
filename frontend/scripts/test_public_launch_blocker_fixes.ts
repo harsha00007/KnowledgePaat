@@ -141,8 +141,13 @@ async function runPublicLaunchBlockerTestSuite() {
   // -------------------------------------------------------------
   console.log('\n--- TEST GROUP 5: Database Setup Script Cleanliness ---');
 
-  const jobsSqlPath = path.join(__dirname, '..', '..', 'supabase_jobs_setup.sql');
-  const notesSqlPath = path.join(__dirname, '..', '..', 'supabase_notes_setup.sql');
+  const jobsSqlPath = fs.existsSync(path.join(__dirname, '..', '..', 'supabase', 'migrations', 'supabase_jobs_setup.sql'))
+    ? path.join(__dirname, '..', '..', 'supabase', 'migrations', 'supabase_jobs_setup.sql')
+    : path.join(__dirname, '..', '..', 'supabase_jobs_setup.sql');
+
+  const notesSqlPath = fs.existsSync(path.join(__dirname, '..', '..', 'supabase', 'migrations', 'supabase_notes_setup.sql'))
+    ? path.join(__dirname, '..', '..', 'supabase', 'migrations', 'supabase_notes_setup.sql')
+    : path.join(__dirname, '..', '..', 'supabase_notes_setup.sql');
 
   const jobsSql = fs.readFileSync(jobsSqlPath, 'utf-8');
   const notesSql = fs.readFileSync(notesSqlPath, 'utf-8');

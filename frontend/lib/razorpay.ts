@@ -18,6 +18,66 @@ export interface RazorpayCredentials {
   webhookSecret: string;
 }
 
+export interface RazorpayConfigValidation {
+  status: 'production_ready' | 'test_mode' | 'unconfigured';
+  keyIdStatus: 'production_credential' | 'test_credential' | 'missing';
+  keySecretStatus: 'configured' | 'missing';
+  webhookSecretStatus: 'configured' | 'missing';
+  isProductionSafe: boolean;
+  warnings: string[];
+}
+
+/**
+ * Validate Razorpay configuration safely without leaking any secret values.
+ * Reports: configured, missing, test credential detected, production credential detected.
+ */
+export function validateRazorpayConfig(): RazorpayConfigValidation {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+
+  const warnings: string[] = [];
+
+  let keyIdStatus: 'production_credential' | 'test_credential' | 'missing' = 'missing';
+  if (!keyId) {
+    keyIdStatus = 'missing';
+    warnings.push('RAZORPAY_KEY_ID is missing from environment.');
+  } else if (keyId.startsWith('rzp_live_')) {
+    keyIdStatus = 'production_credential';
+  } else if (keyId.startsWith('rzp_test_')) {
+    keyIdStatus = 'test_credential';
+    if (process.env.NODE_ENV === 'production') {
+      warnings.push('UNSAFE FOR PRODUCTION: Sandbox key ID (rzp_test_...) detected in production environment.');
+    }
+  } else {
+    warnings.push('Unrecognized RAZORPAY_KEY_ID format (expected rzp_live_... for production).');
+  }
+
+  const keySecretStatus: 'configured' | 'missing' = keySecret ? 'configured' : 'missing';
+  const webhookSecretStatus: 'configured' | 'missing' = webhookSecret ? 'configured' : 'missing';
+
+  if (!keySecret) {
+    warnings.push('RAZORPAY_KEY_SECRET is missing.');
+  }
+  if (!webhookSecret) {
+    warnings.push('RAZORPAY_WEBHOOK_SECRET is missing.');
+  }
+
+  const isProductionSafe = keyIdStatus === 'production_credential' && keySecretStatus === 'configured' && webhookSecretStatus === 'configured';
+  const status: 'production_ready' | 'test_mode' | 'unconfigured' = isProductionSafe
+    ? 'production_ready'
+    : (keyIdStatus === 'test_credential' ? 'test_mode' : 'unconfigured');
+
+  return {
+    status,
+    keyIdStatus,
+    keySecretStatus,
+    webhookSecretStatus,
+    isProductionSafe,
+    warnings
+  };
+}
+
 export interface CreateOrderParams {
   amountInRupees: number;
   receipt: string;
@@ -78,10 +138,17 @@ export async function createRazorpayOrder(params: CreateOrderParams): Promise<Ra
     payment_capture: 1, // Auto-capture on success
     notes: {
       platform: 'KnowledgePaat',
-      environment: 'test_mode',
+      environment: keyId.startsWith('rzp_live_') ? 'production' : 'test_mode',
       ...notes
     }
   };
+
+  if (process.env.NODE_ENV === 'production' && keyId.startsWith('rzp_test_')) {
+    logger.warn('Razorpay order created with TEST credentials in production environment. Live credentials (rzp_live_...) required for real payments.', {
+      module: 'payment',
+      action: 'create_order_production_check'
+    });
+  }
 
   try {
     const basicAuth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');

@@ -1971,7 +1971,7 @@ export default function AdminStorePage() {
                 {viewAttachedNotes.length === 0 ? (
                   <p className="text-[11px] text-[var(--color-text-tertiary)] italic">No note files linked to this product.</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {viewAttachedNotes.map((note) => (
                       <div key={note.id} className="flex items-center justify-between p-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)]">
                         <div>

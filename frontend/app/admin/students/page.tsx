@@ -20,7 +20,8 @@ import {
   Calendar,
   Phone,
   MapPin,
-  Briefcase
+  Briefcase,
+  ArrowUpDown
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
@@ -50,6 +51,7 @@ export default function AdminStudentsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [subFilter, setSubFilter] = useState('');
   const [yearFilter, setYearFilter] = useState('');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
   // Modals
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -68,7 +70,7 @@ export default function AdminStudentsPage() {
 
   useEffect(() => {
     fetchStudents();
-  }, [currentPage, searchQuery, statusFilter, subFilter, yearFilter]);
+  }, [currentPage, searchQuery, statusFilter, subFilter, yearFilter, sortOrder]);
 
   const fetchStudents = async () => {
     setIsFetching(true);
@@ -91,7 +93,7 @@ export default function AdminStudentsPage() {
       const to = from + itemsPerPage - 1;
 
       const { data: studentProfiles, count, error: profErr } = await query
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: sortOrder === 'asc' })
         .range(from, to);
 
       if (profErr) throw profErr;
@@ -300,7 +302,22 @@ export default function AdminStudentsPage() {
                       <th className="px-5 py-3.5">College & Batch</th>
                       <th className="px-5 py-3.5">Plan</th>
                       <th className="px-5 py-3.5">Account Status</th>
-                      <th className="px-5 py-3.5">Registered</th>
+                      <th 
+                        className="px-5 py-3.5 cursor-pointer select-none hover:text-[var(--color-text-primary)] transition-colors group"
+                        onClick={() => {
+                          setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+                          setCurrentPage(1);
+                        }}
+                        title={`Sort by Registration Date (${sortOrder === 'desc' ? 'Newest first' : 'Oldest first'})`}
+                      >
+                        <div className="inline-flex items-center gap-1.5">
+                          <span>Registered</span>
+                          <ArrowUpDown className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
+                          <span className="text-[10px] font-bold text-[var(--color-brand-600)]">
+                            {sortOrder === 'desc' ? '↓' : '↑'}
+                          </span>
+                        </div>
+                      </th>
                       <th className="px-5 py-3.5 text-right">Actions</th>
                     </tr>
                   </thead>

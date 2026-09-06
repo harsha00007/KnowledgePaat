@@ -83,6 +83,22 @@ export function DatePicker({
   const [selectedIso, setSelectedIso] = useState<string>(value);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const [opensUpward, setOpensUpward] = useState(false);
+
+  // Boundary-aware popover position check (opens upward if space below is constrained)
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      // Popover height is approximately 350px
+      if (spaceBelow < 360 && spaceAbove > 360) {
+        setOpensUpward(true);
+      } else {
+        setOpensUpward(false);
+      }
+    }
+  }, [isOpen]);
 
   // Synchronize when external value changes
   useEffect(() => {
@@ -283,7 +299,9 @@ export function DatePicker({
 
       {/* Modern Popover Calendar */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 z-50 w-72 sm:w-80 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+        <div className={`absolute left-0 z-50 w-72 sm:w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl animate-in fade-in zoom-in-95 duration-150 ${
+          opensUpward ? 'bottom-full mb-2' : 'top-full mt-2'
+        }`}>
           
           {/* Header Month & Year Selectors with Steppers */}
           <div className="flex items-center justify-between gap-1 mb-3.5 pb-2.5 border-b border-slate-100">

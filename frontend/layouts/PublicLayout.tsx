@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, ArrowRight, Home, Briefcase, BookOpen, FileText, CreditCard, ChevronRight } from 'lucide-react';
+import { Menu, X, ArrowRight, Home, Briefcase, BookOpen, FileText, CreditCard, ChevronRight, Mail } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Logo } from '@/components/Logo';
 import { createClient } from '@/utils/supabase/client';
@@ -20,6 +20,7 @@ const NAV_LINKS = [
   { href: '/interview-preparation', label: 'Interview Prep', icon: BookOpen },
   { href: '/notes',                 label: 'Notes',          icon: FileText },
   { href: '/pricing',               label: 'Pricing',        icon: CreditCard },
+  { href: '/contact',               label: 'Contact',        icon: Mail },
 ];
 
 const FOOTER_PRODUCT = [
@@ -343,6 +344,14 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
                   {enabledSocialPlatforms.map((platform) => {
                     const linkConfig = socialLinks[platform.key];
+                    const hoverClasses = {
+                      linkedin: 'hover:text-[#0A66C2] hover:border-[#0A66C2]/60 hover:bg-[#0A66C2]/10 focus:ring-[#0A66C2]',
+                      youtube: 'hover:text-[#FF0000] hover:border-[#FF0000]/60 hover:bg-[#FF0000]/10 focus:ring-[#FF0000]',
+                      facebook: 'hover:text-[#1877F2] hover:border-[#1877F2]/60 hover:bg-[#1877F2]/10 focus:ring-[#1877F2]',
+                      instagram: 'hover:text-[#E4405F] hover:border-[#E4405F]/60 hover:bg-[#E4405F]/10 focus:ring-[#E4405F]',
+                      x: 'hover:text-white hover:border-slate-500 hover:bg-slate-800 focus:ring-slate-400',
+                    }[platform.key] || 'hover:text-[#00C2CB] hover:border-[#00C2CB]/60 hover:bg-slate-800 focus:ring-[#00C2CB]';
+
                     return (
                       <a
                         key={platform.key}
@@ -350,7 +359,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={platform.label}
-                        className="flex items-center justify-center h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-[#00C2CB] hover:border-[#00C2CB]/60 hover:bg-slate-800 transition-all focus:outline-none focus:ring-2 focus:ring-[#00C2CB]"
+                        className={`flex items-center justify-center h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300 transition-all focus:outline-none focus:ring-2 ${hoverClasses}`}
                       >
                         <SocialIcon platformKey={platform.key} />
                       </a>

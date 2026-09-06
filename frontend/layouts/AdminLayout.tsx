@@ -18,7 +18,8 @@ import {
   ShieldCheck,
   Bot,
   ChevronRight,
-  Settings
+  Settings,
+  HelpCircle
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -34,6 +35,7 @@ const NAV_ITEMS = [
   { name: 'Store Products',      href: '/admin/store',                icon: ShoppingBag },
   { name: 'Orders',              href: '/admin/orders',               icon: Receipt },
   { name: 'Subscriptions',       href: '/admin/subscriptions',        icon: CreditCard },
+  { name: 'Contact Monitoring',  href: '/admin/contacts',             icon: HelpCircle },
   { name: 'Settings',            href: '/admin/settings',             icon: Settings },
 ];
 
@@ -93,7 +95,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
         {/* NAV - INDEPENDENT SCROLL */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-2 scroll-smooth" aria-label="Admin Navigation">
-          <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)]">
+          <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] dark:text-slate-400">
             Management
           </p>
           <ul className="space-y-0.5">

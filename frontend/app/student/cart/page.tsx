@@ -98,7 +98,10 @@ export default function StudentCartPage() {
                           Permanent Access
                         </span>
                       </div>
-                      <h3 className="text-sm font-bold text-[var(--color-text-primary)] leading-snug">
+                      <h3 
+                        className="text-sm font-bold text-[var(--color-text-primary)] leading-snug line-clamp-2 md:line-clamp-none"
+                        title={product.title}
+                      >
                         {product.title}
                       </h3>
                       <p className="text-xs text-[var(--color-text-secondary)] line-clamp-1">

@@ -364,7 +364,7 @@ export default function JobBulkImportPage() {
                         ? 'border-indigo-500 bg-indigo-50/50 scale-[0.99]'
                         : selectedFile
                         ? 'border-emerald-300 bg-emerald-50/30'
-                        : 'border-slate-300 hover:border-indigo-400 bg-slate-50/40 hover:bg-indigo-50/20'
+                        : 'border-slate-300 dark:border-slate-600 hover:border-[var(--color-brand-500)] dark:hover:border-[var(--color-brand-400)] bg-slate-50/50 dark:bg-slate-900/30 hover:bg-blue-50/30 dark:hover:bg-blue-950/20'
                     }`}
                   >
                     <input

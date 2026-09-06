@@ -57,11 +57,23 @@ export default function LoginPage() {
     }
 
     if (data.user) {
-      const { data: profile } = await supabase
+      let { data: profile } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
         .maybeSingle();
+
+      if (!profile) {
+        // Auto-provision profile row for authenticated student if missing
+        await supabase.from('profiles').upsert({
+          id: data.user.id,
+          user_id: data.user.id,
+          email: data.user.email || '',
+          full_name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'Student',
+          role: 'student',
+          is_active: true,
+        }, { onConflict: 'id' });
+      }
 
       const role = profile?.role || 'student';
       if (role === 'admin') {

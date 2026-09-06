@@ -22,7 +22,8 @@ import {
   Sparkles,
   TrendingUp,
   ChevronRight,
-  Lock
+  Lock,
+  HelpCircle
 } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Logo } from '@/components/Logo';
@@ -313,6 +314,15 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
                     >
                       <User className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
                       <span>My Profile</span>
+                    </Link>
+
+                    <Link
+                      href="/student/contact-support"
+                      onClick={() => setIsProfileMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-subtle)] hover:text-[var(--color-brand-600)] rounded-[var(--radius-sm)] transition-colors"
+                    >
+                      <HelpCircle className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
+                      <span>Contact Support</span>
                     </Link>
 
                     <Link
