@@ -17,7 +17,6 @@ import {
   Zap,
   ChevronDown,
   GraduationCap,
-  Sparkles,
   Lock
 } from 'lucide-react';
 import { useFeatureFlags } from '@/context/FeatureFlagContext';
@@ -64,7 +63,7 @@ export default function Home() {
               {/* Trust Pill */}
               <div className="inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200/90 px-3 py-1 sm:px-3.5 sm:py-1.5 text-[11px] sm:text-xs font-semibold text-[#2563EB] mb-4 sm:mb-6 shadow-2xs font-display max-w-full text-center">
                 <span className="flex h-2 w-2 rounded-full bg-[#22D3A2] shrink-0" />
-                <span className="truncate">From Knowledge to Opportunity • India's Career Platform</span>
+                <span className="truncate">From Knowledge to Opportunity • India&apos;s Career Platform</span>
               </div>
 
               {/* Main Headline */}
@@ -81,12 +80,12 @@ export default function Home() {
               {/* Dual Action CTAs */}
               <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-3.5 w-full">
                 <Link href="/register" className="w-full sm:w-auto">
-                  <Button size="lg" className="w-full sm:w-auto shadow-brand gap-2 font-bold px-6 sm:px-7 text-sm sm:text-base justify-center">
+                  <Button size="lg" className="w-full sm:w-auto">
                     Start Your Career Journey <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href="/jobs" className="w-full sm:w-auto">
-                  <Button variant="secondary" size="lg" className="w-full sm:w-auto font-semibold px-6 sm:px-7 border-slate-300 text-sm sm:text-base justify-center">
+                  <Button variant="secondary" size="lg" className="w-full sm:w-auto">
                     Explore Verified Jobs
                   </Button>
                 </Link>
@@ -115,7 +114,7 @@ export default function Home() {
                       <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5" />
                     </div>
                     <div className="min-w-0">
-                      <h3 className="font-display text-xs sm:text-sm font-bold text-[#0B1D3A] truncate">Career Readiness Score</h3>
+                      <h2 className="font-display text-xs sm:text-sm font-bold text-[#0B1D3A] truncate">Career Readiness Score</h2>
                       <p className="text-[10px] sm:text-xs text-slate-500 truncate">Live Placement Indicator</p>
                     </div>
                   </div>
@@ -215,8 +214,8 @@ export default function Home() {
       >
         <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center mb-6 sm:mb-10">
-            <p className="text-xs font-bold uppercase tracking-widest text-[#2563EB] mb-1.5 sm:mb-2 font-display">
-              Comprehensive Platform
+            <p className="text-xs font-bold tracking-wide text-[#2563EB] mb-1.5 sm:mb-2 font-display">
+              Comprehensive platform
             </p>
             <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[#0B1D3A]">
               Everything You Need From Prep To Hired
@@ -492,12 +491,12 @@ export default function Home() {
               </p>
               <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-3.5 w-full">
                 <Link href="/register" className="w-full sm:w-auto">
-                  <Button size="lg" className="w-full sm:w-auto shadow-brand font-bold px-6 sm:px-8 text-sm sm:text-base justify-center">
+                  <Button size="lg" className="w-full sm:w-auto">
                     Get Started Free <ArrowRight className="h-4 w-4 ml-1" />
                   </Button>
                 </Link>
                 <Link href="/jobs" className="w-full sm:w-auto">
-                  <Button variant="secondary" size="lg" className="w-full sm:w-auto font-semibold px-6 sm:px-8 border-slate-300 text-sm sm:text-base justify-center">
+                  <Button variant="secondary" size="lg" className="w-full sm:w-auto">
                     Browse Verified Jobs
                   </Button>
                 </Link>
@@ -575,7 +574,7 @@ function TestimonialCard({
           <Star key={i} className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-amber-400 text-amber-400" />
         ))}
       </div>
-      <p className="text-xs sm:text-sm text-[#475569] leading-relaxed mb-4 sm:mb-5 italic">"{quote}"</p>
+      <p className="text-xs sm:text-sm text-[#475569] leading-relaxed mb-4 sm:mb-5 italic">&ldquo;{quote}&rdquo;</p>
       <div className="flex items-center gap-3">
         <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-blue-50 text-[#2563EB] border border-blue-200 flex items-center justify-center text-xs font-bold shrink-0">
           {initial}
@@ -607,14 +606,14 @@ function PricingCard({
       }`}>
       {isPopular && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="inline-block bg-[#2563EB] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full shadow-2xs font-display">
+          <span className="inline-block bg-[#2563EB] text-white text-xs font-bold tracking-wide px-3 py-0.5 rounded-full shadow-2xs font-display">
             Most Popular
           </span>
         </div>
       )}
       {isPremium && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="inline-block bg-[#7C3AED] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full shadow-2xs font-display">
+          <span className="inline-block bg-[#7C3AED] text-white text-xs font-bold tracking-wide px-3 py-0.5 rounded-full shadow-2xs font-display">
             Career Accelerator
           </span>
         </div>
@@ -659,15 +658,7 @@ function PricingCard({
         {isPopular ? (
           <Button
             variant="primary"
-            className="w-full justify-center text-xs sm:text-sm font-bold shadow-brand"
-            size="md"
-          >
-            {cta}
-          </Button>
-        ) : isPremium ? (
-          <Button
-            variant="primary"
-            className="w-full justify-center text-xs sm:text-sm font-bold bg-[#7C3AED] hover:bg-[#6d28d9] text-white border-transparent shadow-xs"
+            className="w-full"
             size="md"
           >
             {cta}
@@ -675,7 +666,7 @@ function PricingCard({
         ) : (
           <Button
             variant="secondary"
-            className="w-full justify-center text-xs sm:text-sm font-bold border-slate-300 text-[#0B1D3A] hover:bg-slate-50"
+            className="w-full"
             size="md"
           >
             {cta}

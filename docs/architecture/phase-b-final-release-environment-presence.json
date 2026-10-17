@@ -1,0 +1,21 @@
+{
+  "checked": "2026-10-07",
+  "presence": {
+    "NEXT_PUBLIC_SUPABASE_URL": "PRESENT",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "PRESENT",
+    "SUPABASE_SERVICE_ROLE_KEY": "MISSING",
+    "SUPABASE_STAGING_URL": "MISSING",
+    "SUPABASE_STAGING_ANON_KEY": "MISSING",
+    "SUPABASE_STAGING_SERVICE_ROLE_KEY": "MISSING",
+    "STAGING_DATABASE_URL": "MISSING",
+    "SUPABASE_DEV_URL": "MISSING",
+    "SUPABASE_DEV_ANON_KEY": "MISSING",
+    "SUPABASE_DEV_SERVICE_ROLE_KEY": "MISSING",
+    "DEV_DATABASE_URL": "MISSING",
+    "TEST_USER_EMAIL": "MISSING",
+    "TEST_USER_PASSWORD": "MISSING",
+    "TEST_ADMIN_EMAIL": "MISSING",
+    "TEST_ADMIN_PASSWORD": "MISSING"
+  },
+  "note": "Presence only. Values are neither printed nor stored. Default target is not identified as authorized staging. No remote database or Supabase Auth request was made."
+}

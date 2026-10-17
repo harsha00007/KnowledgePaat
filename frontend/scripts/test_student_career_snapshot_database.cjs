@@ -1,0 +1,24 @@
+const {spawnSync}=require('node:child_process'),path=require('node:path'),assert=require('node:assert/strict');
+require('./run_test.cjs');
+const {serializeStudentSnapshot}=require('../lib/studentCareerSnapshot.ts');
+const connection=process.env.PHASE_A_TEST_DATABASE_URL;
+if(!connection){console.log('BLOCKED: dedicated local database configuration missing');process.exit(2);}
+const url=new URL(connection);
+if(!['localhost','127.0.0.1','[::1]'].includes(url.hostname)||url.pathname!=='/knowledgepaat_phase_a_test')throw Error('Dedicated local test database required; production forbidden');
+const env={...process.env,PGDATABASE:url.pathname.slice(1),PGHOST:url.hostname.replace(/^\[|\]$/g,''),PGPORT:url.port||'5432',PGUSER:decodeURIComponent(url.username),PGPASSWORD:decodeURIComponent(url.password)};
+const result=spawnSync('psql',['-X','-w','-q','-t','-A','-v','ON_ERROR_STOP=1','-f',path.resolve(__dirname,'../../supabase/tests/student_career_skill_snapshot.sql')],{env,encoding:'utf8',timeout:120000,maxBuffer:8*1024*1024});
+assert.equal(result.status,0,result.error?.message||result.stderr);
+const lines=result.stderr.split(/\r?\n/).filter(l=>l.includes('NOTICE:  PASS '));
+console.log(lines.join('\n'));
+const snapshots=result.stdout.split(/\r?\n/).filter(l=>l.startsWith('{')).map(l=>JSON.parse(l));
+const snapshot=snapshots[0];
+const projected=serializeStudentSnapshot(snapshot,'c2000000-0000-0000-0000-000000000001');
+assert.equal(projected.skills.length,3);
+assert.equal(projected.skills[0].id,'c1000000-0000-0000-0000-000000000001');
+console.log('PASS actual SQL snapshot through shared TypeScript graph reader and serializer');
+const deep=serializeStudentSnapshot(snapshots[1],'c2000000-0000-0000-0000-000000000005');
+assert.equal(deep.skills.length,1201);
+assert.equal(deep.skills[0].slug,'snapshot-deep-1');
+assert.equal(deep.skills[1200].slug,'snapshot-deep-1201');
+console.log('PASS deep SQL snapshot through shared TypeScript ordering with complete prerequisites');
+console.log(`STUDENT SNAPSHOT DATABASE: ${lines.length+2} groups passed / 0 failed; local auth scaffold, not Supabase Auth/PostgREST`);

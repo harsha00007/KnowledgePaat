@@ -17,7 +17,6 @@ import {
   ShoppingCart,
   Menu,
   X,
-  GraduationCap,
   Bot,
   Sparkles,
   TrendingUp,
@@ -25,7 +24,6 @@ import {
   Lock,
   HelpCircle
 } from 'lucide-react';
-import { Button } from '@/components/Button';
 import { Logo } from '@/components/Logo';
 import { createClient } from '@/utils/supabase/client';
 import { useCart } from '@/hooks/useCart';
@@ -37,7 +35,7 @@ import { FeatureKey } from '@/lib/featureFlags';
 interface NavLinkItem {
   name: string;
   href: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   featureKey: FeatureKey;
 }
 
@@ -104,6 +102,8 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
   }, [supabase]);
 
   useEffect(() => {
+    // Reset mobile navigation & profile dropdown on route change
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMobileMenuOpen(false);
     setIsProfileMenuOpen(false);
   }, [pathname]);
@@ -187,12 +187,13 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
                     <li key={link.href}>
                       <Link
                         href={link.href}
+                        aria-disabled={!isEnabled ? 'true' : undefined}
                         className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-[var(--radius-sm)] transition-colors group ${
                           active
                             ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-600)]'
                             : isEnabled
                             ? 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-subtle)] hover:text-[var(--color-text-primary)]'
-                            : 'text-slate-400 hover:bg-amber-50/50 hover:text-slate-600'
+                            : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
                         }`}
                       >
                         <Icon className={`w-4 h-4 shrink-0 ${
@@ -201,17 +202,17 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
                             : isEnabled 
                             ? 'text-[var(--color-text-tertiary)]' 
                             : 'text-slate-300'
-                        }`} />
+                        }`} aria-hidden="true" />
                         <span className="flex-1 truncate">{link.name}</span>
                         
                         {!isEnabled && (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200/80 px-1.5 py-0.5 rounded font-display">
-                            <Lock className="w-2.5 h-2.5 text-amber-600" />
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200/80 px-1.5 py-0.5 rounded">
+                            <Lock className="w-2.5 h-2.5 text-slate-400" aria-hidden="true" />
                             Soon
                           </span>
                         )}
 
-                        {isEnabled && active && <ChevronRight className="w-3.5 h-3.5 text-[var(--color-brand-400)]" />}
+                        {isEnabled && active && <ChevronRight className="w-3.5 h-3.5 text-[var(--color-brand-400)]" aria-hidden="true" />}
                       </Link>
                     </li>
                   );
@@ -230,7 +231,7 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-[var(--color-text-primary)] truncate">{studentName}</p>
               {studentEmail && (
-                <p className="text-[10px] text-[var(--color-text-tertiary)] truncate">{studentEmail}</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] truncate" title={studentEmail}>{studentEmail}</p>
               )}
             </div>
             <button
@@ -302,7 +303,7 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
                   <div className="px-3 py-2 border-b border-[var(--color-border)] mb-1">
                     <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">{studentName}</p>
                     {studentEmail && (
-                      <p className="text-[10px] text-[var(--color-text-secondary)] truncate">{studentEmail}</p>
+                      <p className="text-xs text-[var(--color-text-secondary)] truncate" title={studentEmail}>{studentEmail}</p>
                     )}
                   </div>
 

@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StudentLayout } from '@/layouts/StudentLayout';
-import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { PremiumBadge } from '@/components/PremiumBadge';
 import { 
@@ -14,18 +13,9 @@ import {
   FileText,
   CreditCard,
   Users,
-  Code,
   Brain,
-  Building,
-  Terminal,
   Code2,
-  CheckCircle2,
-  Sparkles,
   Bot,
-  Calendar,
-  Play,
-  Zap,
-  Target,
   Lock
 } from 'lucide-react';
 import Link from 'next/link';
@@ -37,6 +27,36 @@ import { CompanyNameGate } from '@/components/CompanyNameGate';
 import { UpgradeModal } from '@/components/UpgradeModal';
 import { useFeatureFlags } from '@/context/FeatureFlagContext';
 import { FeatureComingSoon } from '@/components/FeatureComingSoon';
+import { NextActionWidget } from '@/components/NextActionWidget';
+import { TargetCareerModal } from '@/components/TargetCareerModal';
+import type { PersonalizedRoadmap } from '@/types/personalizedRoadmap';
+
+interface TargetCareerInfo {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface StudentProfile {
+  id?: string;
+  full_name?: string | null;
+  email?: string | null;
+  target_career_id?: string | null;
+  preferred_role?: string | null;
+  resume_url?: string | null;
+  resume_filename?: string | null;
+  role?: string;
+}
+
+interface JobListing {
+  id: string;
+  title: string;
+  company_name: string;
+  location: string;
+  employment_type: string;
+  minimum_plan?: string;
+  access_type?: string;
+}
 
 export default function StudentDashboard() {
   const { isModuleEnabled } = useFeatureFlags();
@@ -44,10 +64,8 @@ export default function StudentDashboard() {
   const isJobsEnabled = isModuleEnabled('student_jobs');
   const isMockEnabled = isModuleEnabled('student_mock_interviews');
   const isIntelEnabled = isModuleEnabled('student_career_intelligence');
-  const isPrepEnabled = isModuleEnabled('student_interview_prep');
-  const isNotesEnabled = isModuleEnabled('student_notes');
 
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [access, setAccess] = useState<UserAccess>(calculateUserAccess(null));
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [modalRequiredPlan, setModalRequiredPlan] = useState<string>('pro');
@@ -62,65 +80,137 @@ export default function StudentDashboard() {
     subscriptionEndDate: null,
     isEligible: false
   });
-  const [careerPlan, setCareerPlan] = useState<any>(null);
-  const [recentJobs, setRecentJobs] = useState<any[]>([]);
+  const [recentJobs, setRecentJobs] = useState<JobListing[]>([]);
   const [isFetching, setIsFetching] = useState(true);
+
+  // ── PHASE C.3 STATE ────────────────────────────────────────────────────────
+  const [targetCareer, setTargetCareer] = useState<TargetCareerInfo | null>(null);
+  const [roadmapData, setRoadmapData] = useState<PersonalizedRoadmap | null>(null);
+  const [isLoadingRoadmap, setIsLoadingRoadmap] = useState(false);
+  const [roadmapError, setRoadmapError] = useState<{ code: string; message: string } | null>(null);
+  const [isTargetCareerModalOpen, setIsTargetCareerModalOpen] = useState(false);
 
   const supabase = createClient();
 
-  useEffect(() => {
-    if (isDashboardEnabled) {
-      fetchDashboardData();
-    } else {
-      setIsFetching(false);
-    }
-  }, [isDashboardEnabled, isJobsEnabled, isMockEnabled, isIntelEnabled]);
-
-  const fetchDashboardData = async () => {
-    setIsFetching(true);
+  const fetchPersonalizedRoadmap = useCallback(async () => {
+    setIsLoadingRoadmap(true);
+    setRoadmapError(null);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Parallel fetch: Profile, Subscription, Career Plan, Recent Jobs
-        const [
-          { data: profileData },
-          { data: subData },
-          { data: planData },
-          { data: jobsData }
-        ] = await Promise.all([
-          supabase.from('profiles').select('*').eq('id', user.id).single(),
-          supabase.from('subscriptions').select('*').eq('student_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
-          isIntelEnabled
-            ? supabase.from('career_improvement_plans').select('*').eq('student_id', user.id).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle()
-            : Promise.resolve({ data: null }),
-          isJobsEnabled
-            ? supabase.from('jobs').select('*').eq('status', 'Active').order('posted_at', { ascending: false }).limit(4)
-            : Promise.resolve({ data: null })
-        ]);
+      const res = await fetch('/api/student/personalized-roadmap', {
+        headers: { 'Cache-Control': 'no-cache' }
+      });
 
-        if (profileData) setProfile(profileData);
-        if (planData) setCareerPlan(planData);
-        if (jobsData && jobsData.length > 0) setRecentJobs(jobsData);
+      if (!res.ok) {
+        const errorData = (await res.json().catch(() => ({}))) as { code?: string; error?: string; message?: string };
+        const code = errorData.code || (res.status === 404 ? 'ROADMAP_UNAVAILABLE' : 'API_ERROR');
+        setRoadmapError({
+          code,
+          message: errorData.error || errorData.message || 'Unable to load personalized roadmap.'
+        });
+        setRoadmapData(null);
+        return;
+      }
 
-        const userAccessCalc = calculateUserAccess(subData);
-        setAccess(userAccessCalc);
-
-        // Fetch consumed credits count & stats (only if mock interviews enabled)
-        if (isMockEnabled) {
-          const stats = await getConsumedSessionsCount(supabase, user.id, userAccessCalc.startDate);
-          const creds = calculateMockCreditStatus(userAccessCalc, stats.usedCount, stats.completedCount, stats.averageScore);
-          setCreditStatus(creds);
-        }
+      const data: PersonalizedRoadmap = await res.json();
+      setRoadmapData(data);
+      if (data.career) {
+        setTargetCareer(data.career);
       }
     } catch (err) {
-      console.error("Error loading dashboard data:", err);
+      const msg = err instanceof Error ? err.message : 'Network error while loading roadmap.';
+      setRoadmapError({
+        code: 'NETWORK_ERROR',
+        message: msg
+      });
+      setRoadmapData(null);
     } finally {
-      setIsFetching(false);
+      setIsLoadingRoadmap(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!isDashboardEnabled) return;
+    let isMounted = true;
+
+    async function loadDashboard() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && isMounted) {
+          // Parallel fetch: Profile, Subscription, Recent Jobs
+          const [
+            { data: profileData },
+            { data: subData },
+            { data: jobsData }
+          ] = await Promise.all([
+            supabase.from('profiles').select('*').eq('id', user.id).single(),
+            supabase.from('subscriptions').select('*').eq('student_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+            isJobsEnabled
+              ? supabase.from('jobs').select('*').eq('status', 'Active').order('posted_at', { ascending: false }).limit(4)
+              : Promise.resolve({ data: null })
+          ]);
+
+          if (profileData && isMounted) {
+            setProfile(profileData as StudentProfile);
+
+            // ── EVALUATE TARGET CAREER GATE ──────────────────────────────
+            if (profileData.target_career_id && isIntelEnabled) {
+              // Fetch career title/slug from catalog
+              const { data: careerData } = await supabase
+                .from('career_catalog')
+                .select('id, name, slug')
+                .eq('id', profileData.target_career_id)
+                .maybeSingle();
+
+              if (careerData && isMounted) {
+                setTargetCareer(careerData as TargetCareerInfo);
+              }
+
+              // Request Phase C.3 personalized roadmap
+              await fetchPersonalizedRoadmap();
+            } else if (isIntelEnabled) {
+              setTargetCareer(null);
+              setRoadmapData(null);
+              setRoadmapError({
+                code: 'TARGET_CAREER_REQUIRED',
+                message: 'Select a target career first.'
+              });
+              setIsLoadingRoadmap(false);
+            }
+          }
+
+          if (jobsData && jobsData.length > 0 && isMounted) {
+            setRecentJobs(jobsData as JobListing[]);
+          }
+
+          if (isMounted) {
+            const userAccessCalc = calculateUserAccess(subData);
+            setAccess(userAccessCalc);
+
+            // Fetch consumed credits count & stats (only if mock interviews enabled)
+            if (isMockEnabled) {
+              const stats = await getConsumedSessionsCount(supabase, user.id, userAccessCalc.startDate);
+              const creds = calculateMockCreditStatus(userAccessCalc, stats.usedCount, stats.completedCount, stats.averageScore);
+              setCreditStatus(creds);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error loading dashboard data:", err);
+      } finally {
+        if (isMounted) {
+          setIsFetching(false);
+        }
+      }
+    }
+
+    void loadDashboard();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [supabase, isDashboardEnabled, isJobsEnabled, isMockEnabled, isIntelEnabled, fetchPersonalizedRoadmap]);
 
   const hasResume = Boolean(profile?.resume_url);
-  const currentPlan = PLANS[access.effectivePlan];
 
   if (!isDashboardEnabled) {
     return (
@@ -141,7 +231,7 @@ export default function StudentDashboard() {
       <div className="max-w-7xl mx-auto space-y-6 pb-12">
         
         {/* WELCOME BANNER */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
           <div>
             <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Student Dashboard</h1>
             <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 font-medium">
@@ -150,14 +240,26 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {/* ── ROW 1: FOUR SUMMARY CARDS ────────────────────────────────── */}
+        {/* ── PHASE C.3 NEXT ACTION / TARGET CAREER HERO CARD ──────────── */}
+        {isIntelEnabled && (
+          <NextActionWidget
+            targetCareer={targetCareer}
+            roadmapData={roadmapData}
+            isLoading={isLoadingRoadmap || isFetching}
+            error={roadmapError}
+            onOpenCareerModal={() => setIsTargetCareerModalOpen(true)}
+            onRetry={() => void fetchPersonalizedRoadmap()}
+          />
+        )}
+
+        {/* ── ROW 1: QUICK STATUS TILES ───────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
-          {/* 1. Profile Completion */}
+          {/* 1. Profile Status */}
           <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)] flex flex-col justify-between transition-transform duration-200 hover:-translate-y-0.5">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">Profile Status</span>
+                <span className="text-xs font-bold tracking-wide text-[var(--color-text-tertiary)]">Profile Status</span>
                 <div className="h-8 w-8 rounded-[var(--radius-md)] bg-[var(--color-brand-50)] text-[var(--color-brand-600)] flex items-center justify-center">
                   <UserCheck className="w-4 h-4" />
                 </div>
@@ -170,7 +272,7 @@ export default function StudentDashboard() {
               </p>
             </div>
             <Link href="/student/profile" className="block w-full">
-              <Button variant="outline" size="sm" className="w-full justify-center text-xs">
+              <Button variant="outline" size="sm" className="w-full">
                 {profile?.full_name ? 'Edit Profile' : 'Complete Profile'}
               </Button>
             </Link>
@@ -180,7 +282,7 @@ export default function StudentDashboard() {
           <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)] flex flex-col justify-between transition-transform duration-200 hover:-translate-y-0.5">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">Resume Status</span>
+                <span className="text-xs font-bold tracking-wide text-[var(--color-text-tertiary)]">Resume Status</span>
                 <div className={`h-8 w-8 rounded-[var(--radius-md)] flex items-center justify-center ${hasResume ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
                   <FileText className="w-4 h-4" />
                 </div>
@@ -193,7 +295,7 @@ export default function StudentDashboard() {
               </p>
             </div>
             <Link href="/student/resume" className="block w-full">
-              <Button variant={hasResume ? "outline" : "primary"} size="sm" className="w-full justify-center text-xs">
+              <Button variant={hasResume ? "outline" : "primary"} size="sm" className="w-full">
                 {hasResume ? 'View Resume' : 'Upload Resume'}
               </Button>
             </Link>
@@ -203,7 +305,7 @@ export default function StudentDashboard() {
           <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)] flex flex-col justify-between transition-transform duration-200 hover:-translate-y-0.5">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">Membership</span>
+                <span className="text-xs font-bold tracking-wide text-[var(--color-text-tertiary)]">Membership</span>
                 <div className="h-8 w-8 rounded-[var(--radius-md)] bg-[var(--color-brand-50)] text-[var(--color-brand-600)] flex items-center justify-center">
                   <CreditCard className="w-4 h-4" />
                 </div>
@@ -221,7 +323,7 @@ export default function StudentDashboard() {
               </p>
             </div>
             <Link href="/student/subscription" className="block w-full">
-              <Button variant="outline" size="sm" className="w-full justify-center text-xs">
+              <Button variant="outline" size="sm" className="w-full">
                 {access.isSubscriptionActive ? 'Manage Subscription' : 'Upgrade Plan'}
               </Button>
             </Link>
@@ -231,7 +333,7 @@ export default function StudentDashboard() {
           <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-xs)] flex flex-col justify-between transition-transform duration-200 hover:-translate-y-0.5">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">Mock Interviews</span>
+                <span className="text-xs font-bold tracking-wide text-[var(--color-text-tertiary)]">Mock Interviews</span>
                 <div className="h-8 w-8 rounded-[var(--radius-md)] bg-[var(--color-brand-50)] text-[var(--color-brand-600)] flex items-center justify-center">
                   <Bot className="w-4 h-4" />
                 </div>
@@ -251,7 +353,7 @@ export default function StudentDashboard() {
               <Button 
                 variant={creditStatus.isEligible ? "primary" : "outline"} 
                 size="sm" 
-                className="w-full justify-center text-xs shadow-xs"
+                className="w-full"
               >
                 {creditStatus.isEligible ? 'Start Mock Interview' : 'View Credits'}
               </Button>
@@ -260,56 +362,21 @@ export default function StudentDashboard() {
 
         </div>
 
-        {/* ── CAREER INTELLIGENCE COMPACT WIDGET ───────────────────────── */}
-        <div className="rounded-[var(--radius-xl)] border border-[var(--color-brand-200)] bg-gradient-to-r from-white via-white to-[var(--color-brand-50)]/50 p-6 shadow-[var(--shadow-xs)] flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex items-start sm:items-center gap-4">
-            <div className="h-14 w-14 rounded-full bg-[var(--color-brand-50)] border-2 border-[var(--color-brand-500)] text-[var(--color-brand-600)] flex flex-col items-center justify-center shrink-0 shadow-xs">
-              <span className="text-lg font-extrabold leading-none">
-                {careerPlan?.career_readiness_score ? Math.round(careerPlan.career_readiness_score) : 70}
-              </span>
-              <span className="text-[8px] font-bold text-[var(--color-text-tertiary)] uppercase">Score</span>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--color-brand-600)] flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" /> Career Intelligence & Roadmap
-                </span>
-                <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.2 rounded-full font-semibold">
-                  Target: {careerPlan?.target_role || profile?.preferred_role || 'Software Engineer'}
-                </span>
-              </div>
-              <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
-                {careerPlan?.ai_insight?.nextBestAction?.title || 'Personalized Improvement Roadmap Active'}
-              </h3>
-              <p className="text-xs text-[var(--color-text-secondary)] line-clamp-1 max-w-xl">
-                {careerPlan?.ai_insight?.nextBestAction?.reason || 'Follow your daily plan to close skill gaps and improve your hiring readiness.'}
-              </p>
-            </div>
-          </div>
-
-          <Link href="/student/career-intelligence" className="shrink-0 w-full md:w-auto">
-            <Button variant="primary" size="sm" className="w-full md:w-auto text-xs shadow-xs">
-              View Career Plan <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-            </Button>
-          </Link>
-        </div>
-
         {/* ── ROW 2: RECOMMENDED JOBS & PREPARATION ────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Recommended Jobs (2 cols on lg) */}
           <div className="lg:col-span-2 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-xs)]">
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center justify-between gap-3 mb-5">
               <div>
                 <h2 className="text-base font-bold text-[var(--color-text-primary)]">Recommended Jobs</h2>
                 <p className="text-xs text-[var(--color-text-secondary)] font-medium">Verified fresher opportunities</p>
               </div>
               <Link 
                 href="/student/jobs" 
-                className="text-xs font-semibold text-[var(--color-brand-600)] hover:text-[var(--color-brand-700)] flex items-center gap-1 transition-colors"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-brand-600)] hover:text-[var(--color-brand-700)] transition-colors shrink-0"
               >
-                View All <ArrowRight className="w-3.5 h-3.5" />
+                View All <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
               </Link>
             </div>
 
@@ -324,13 +391,13 @@ export default function StudentDashboard() {
                     key={job.id} 
                     className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-[var(--radius-lg)] border border-[var(--color-border)] hover:border-[var(--color-brand-300)] hover:bg-[var(--color-bg-subtle)] transition-all gap-3"
                   >
-                    <div className="flex items-start gap-3 min-w-0">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
                       <div className="h-10 w-10 rounded-[var(--radius-md)] bg-[var(--color-bg-muted)] border border-[var(--color-border)] flex items-center justify-center shrink-0">
                         <Building2 className="h-5 w-5 text-[var(--color-text-tertiary)]" />
                       </div>
-                      <div className="min-w-0 truncate">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-semibold text-[var(--color-text-primary)] truncate">{job.title}</h3>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start gap-2">
+                          <h3 className="text-sm font-semibold leading-snug text-[var(--color-text-primary)] line-clamp-2">{job.title}</h3>
                           <PremiumBadge minimumPlan={reqPlan} />
                         </div>
                         <div className="mt-0.5">
@@ -344,32 +411,35 @@ export default function StudentDashboard() {
                             }}
                           />
                         </div>
-                        <div className="flex items-center gap-3 mt-1.5 text-[11px] text-[var(--color-text-tertiary)]">
-                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.location}</span>
-                          <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" /> {job.employment_type}</span>
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-text-secondary)]">
+                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-[var(--color-text-tertiary)]" aria-hidden="true" /> {job.location}</span>
+                          <span className="flex items-center gap-1"><Briefcase className="w-3 h-3 text-[var(--color-text-tertiary)]" aria-hidden="true" /> {job.employment_type}</span>
                         </div>
                       </div>
                     </div>
 
-                    {!isUnlocked ? (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => {
-                          setModalRequiredPlan(reqPlan);
-                          setIsUpgradeModalOpen(true);
-                        }}
-                        className="self-end sm:self-center shrink-0 text-xs text-[var(--color-brand-600)] border-[var(--color-brand-200)] hover:bg-[var(--color-brand-50)]"
-                      >
-                        <Lock className="w-3 h-3 mr-1 text-[var(--color-brand-600)]" /> {planMeta.name} Required
-                      </Button>
-                    ) : (
-                      <Link href={`/student/jobs`} className="self-end sm:self-center shrink-0">
-                        <Button variant="outline" size="sm" className="text-xs">
-                          View Job
+                    <div className="w-full sm:w-36 shrink-0 flex items-center sm:justify-end">
+                      {!isUnlocked ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => {
+                            setModalRequiredPlan(reqPlan);
+                            setIsUpgradeModalOpen(true);
+                          }}
+                          className="w-full text-slate-700 border-slate-300 hover:bg-slate-50 hover:text-[#2563EB] hover:border-[#2563EB]"
+                        >
+                          <Lock className="w-3 h-3 mr-1 text-slate-400 shrink-0" aria-hidden="true" />
+                          <span className="truncate">Upgrade to {planMeta.name}</span>
                         </Button>
-                      </Link>
-                    )}
+                      ) : (
+                        <Link href={`/student/jobs`} className="w-full">
+                          <Button variant="outline" size="sm" className="w-full">
+                            View Job
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -406,7 +476,7 @@ export default function StudentDashboard() {
                       </div>
                       <div>
                         <h3 className="text-xs font-bold text-[var(--color-text-primary)]">HR Interview</h3>
-                        <p className="text-[11px] text-[var(--color-text-secondary)]">Behavioral & Cultural fit</p>
+                        <p className="text-xs text-[var(--color-text-secondary)]">Behavioral & Cultural fit</p>
                       </div>
                     </div>
                     <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
@@ -427,7 +497,7 @@ export default function StudentDashboard() {
                       </div>
                       <div>
                         <h3 className="text-xs font-bold text-[var(--color-text-primary)]">Technical Core</h3>
-                        <p className="text-[11px] text-[var(--color-text-secondary)]">DSA, APIs, Database & System</p>
+                        <p className="text-xs text-[var(--color-text-secondary)]">DSA, APIs, Database & System</p>
                       </div>
                     </div>
                     <PremiumBadge minimumPlan="starter" />
@@ -446,7 +516,7 @@ export default function StudentDashboard() {
                       </div>
                       <div>
                         <h3 className="text-xs font-bold text-[var(--color-text-primary)]">Managerial Track</h3>
-                        <p className="text-[11px] text-[var(--color-text-secondary)]">Ownership, Conflict & STAR</p>
+                        <p className="text-xs text-[var(--color-text-secondary)]">Ownership, Conflict & STAR</p>
                       </div>
                     </div>
                     <PremiumBadge minimumPlan="pro" />
@@ -469,6 +539,18 @@ export default function StudentDashboard() {
         </div>
 
       </div>
+
+      {/* TARGET CAREER SELECTION MODAL */}
+      <TargetCareerModal
+        isOpen={isTargetCareerModalOpen}
+        onClose={() => setIsTargetCareerModalOpen(false)}
+        currentCareerId={targetCareer?.id}
+        onCareerSelected={async (selected) => {
+          setTargetCareer(selected);
+          setProfile((prev) => (prev ? { ...prev, target_career_id: selected.id } : null));
+          await fetchPersonalizedRoadmap();
+        }}
+      />
 
       {/* UPGRADE PROMPT MODAL */}
       <UpgradeModal 

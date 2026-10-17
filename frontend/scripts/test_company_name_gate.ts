@@ -15,6 +15,7 @@ function assert(condition: boolean, message: string) {
     passCount++;
   } else {
     console.error(`❌ FAIL: ${message}`);
+    process.exitCode = 1;
   }
 }
 
@@ -76,6 +77,24 @@ console.log('\n--- TEST 6: CANCELLED PREMIUM SUBSCRIPTION ---');
 const cancelledAccess = calculateUserAccess({ plan: 'premium', status: 'cancelled' });
 assert(cancelledAccess.effectivePlan === 'free', 'Cancelled subscription effectivePlan drops to free');
 assert(canViewCompanyName(cancelledAccess, 'premium') === false, 'Cancelled user CANNOT view Premium job company');
+assert(cancelledAccess.status === 'cancelled' && !cancelledAccess.isSubscriptionActive, 'Cancellation without an expiry preserves status and disables paid subscription');
+for (const expiryField of ['end_date', 'expires_at', 'current_period_end']) {
+  const remaining = calculateUserAccess({ plan: 'premium', status: 'cancelled', [expiryField]: new Date(Date.now() + 86400000).toISOString() });
+  assert(remaining.effectivePlan === 'premium' && canViewCompanyName(remaining, 'premium'), `Cancelled subscription retains paid access through valid ${expiryField}`);
+  const elapsed = calculateUserAccess({ plan: 'premium', status: 'cancelled', [expiryField]: new Date(Date.now() - 86400000).toISOString() });
+  assert(elapsed.isExpired && !canViewCompanyName(elapsed, 'premium'), `Cancelled subscription loses paid access after ${expiryField}`);
+  const invalid = calculateUserAccess({ plan: 'premium', status: 'cancelled', [expiryField]: 'invalid-date' });
+  assert(invalid.effectivePlan === 'free' && !canViewCompanyName(invalid, 'premium'), `Cancelled subscription with invalid ${expiryField} cannot expose paid company names`);
+}
+const originalNow = Date.now;
+try {
+  const boundary = originalNow();
+  Date.now = () => boundary;
+  const atExpiry = calculateUserAccess({ plan: 'premium', status: 'cancelled', end_date: new Date(boundary).toISOString() });
+  assert(atExpiry.isExpired && atExpiry.effectivePlan === 'free', 'Access expires at the exact paid-period boundary');
+} finally {
+  Date.now = originalNow;
+}
 
 // -----------------------------------------------------------------------------
 // TEST 7 — SEARCH LEAKAGE PROTECTION

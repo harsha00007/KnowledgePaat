@@ -1,0 +1,60 @@
+require('./run_test.cjs');
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const Module = require('node:module');
+let calls = [], rpcResult, response, admin = true;
+function query(table) {
+  const filters=[]; const q={};
+  for(const method of ['select','eq','neq','in','or','order','range','insert','update','delete','single','maybeSingle']) q[method]=(...args)=>{calls.push([table,method,...args]);filters.push([method,...args]);return q};
+  q.then=(resolve,reject)=>Promise.resolve(typeof response==='function'?response(table,filters):response).then(resolve,reject);
+  return q;
+}
+const client={from:query,rpc:async(name,args)=>{calls.push(['rpc',name,args]);return rpcResult},auth:{getUser:async()=>({data:{user:admin?{id:'admin'}:null}})}};
+const load=Module._load;
+Module._load=function(request,parent,...rest){
+ if(request==='@/utils/supabase/server')return {createClient:async()=>client};
+ return load.call(this,request,parent,...rest);
+};
+const graph=require('../lib/skillGraph.ts');
+const careers=require('../lib/careerCatalog.ts');
+const catalog=require('../lib/catalogIntegrity.ts');
+const roadmaps=require('../lib/roadmap.ts');
+let passed=0;
+async function test(name,fn){calls=[];await fn();passed++;console.log('PASS '+name)}
+(async()=>{
+ await test('cycle RPC rejects database failures',async()=>{rpcResult={data:null,error:{code:'timeout'}};await assert.rejects(()=>graph.wouldCreatePrerequisiteCycle('a','b'));});
+ await test('cycle RPC rejects malformed result',async()=>{rpcResult={data:[],error:null};await assert.rejects(()=>graph.wouldCreatePrerequisiteCycle('a','b'));});
+ await test('cycle precheck uses database traversal',async()=>{rpcResult={data:true,error:null};assert.equal(await graph.wouldCreatePrerequisiteCycle('a','b'),true);assert.equal(calls.some(c=>c[0]==='skill_relationships'),false);});
+ await test('failed validation never inserts',async()=>{rpcResult={data:null,error:{code:'42501'}};await assert.rejects(()=>graph.createSkillRelationship({source_skill_id:'a',target_skill_id:'b',relationship_type:'prerequisite'}));assert.equal(calls.some(c=>c[1]==='insert'),false);});
+ await test('valid prerequisite insertion',async()=>{rpcResult={data:false,error:null};response={data:{id:'edge'},error:null};assert.equal((await graph.createSkillRelationship({source_skill_id:'a',target_skill_id:'b',relationship_type:'prerequisite'})).success,true);});
+ await test('self edge rejected',async()=>assert.equal((await graph.createSkillRelationship({source_skill_id:'a',target_skill_id:'a',relationship_type:'related'})).success,false));
+ await test('public graph explicitly filters both endpoints for elevated sessions',async()=>{response={data:[],error:null,count:0};await graph.getSkillRelationships('a',true);assert(calls.some(c=>c[1]==='eq'&&c[2]==='source_skill.status'&&c[3]==='published'));assert(calls.some(c=>c[1]==='eq'&&c[2]==='target_skill.status'&&c[3]==='published'));});
+ await test('admin relationship query retains unpublished inspection',async()=>{response={data:[],error:null,count:0};await graph.getSkillRelationships('a');assert(!calls.some(c=>c[1]==='eq'&&String(c[2]).endsWith('.status')));});
+ await test('relationships include reverse associative and directed dependents',async()=>{response={data:[{id:'1',source_skill_id:'b',target_skill_id:'a',relationship_type:'related'},{id:'2',source_skill_id:'a',target_skill_id:'c',relationship_type:'prerequisite'}],error:null,count:2};const r=await graph.getSkillRelationships('a');assert.equal(r.related.length,1);assert.equal(r.dependents.length,1);assert.equal(r.prerequisites.length,0);});
+ await test('relationship page advances beyond row limits',async()=>{response={data:[],error:null,count:1200};const r=await graph.getSkillRelationships('a',true,12);assert.equal(r.totalPages,12);assert(calls.some(c=>c[1]==='range'&&c[2]===1100&&c[3]===1199));});
+ await test('parent scoped deletion',async()=>{response={data:[],error:null};assert.equal((await graph.deleteSkillRelationship('edge','a')).success,false);assert(calls.some(c=>c[1]==='or'&&c[2].includes('target_skill_id.eq.a')));});
+ await test('published create requires draft workflow',async()=>{assert.equal((await careers.createCareer({name:'Python Developer',status:'published'})).success,false);assert.equal(calls.length,0);});
+ await test('draft-only requirements cannot publish',async()=>{const quality=careers.evaluateCareerQuality({name:'Career',slug:'career',short_description:'A meaningful role description',description:'A complete career detail description.',skills:[{importance:'required',skill:{status:'draft'}}]});assert.equal(quality.isPublishable,false);});
+ await test('published skill permits valid publication',async()=>assert.equal(careers.evaluateCareerQuality({name:'Career',slug:'career',short_description:'A meaningful role description',description:'A complete career detail description.',skills:[{importance:'recommended',skill:{status:'published'}}]}).isPublishable,true));
+ await test('catalog failures are not empty lists',async()=>{response={data:null,error:{code:'failure'}};await assert.rejects(()=>careers.getPublicCareers());});
+ await test('health failures never report healthy',async()=>{rpcResult={data:null,error:{code:'failure'}};await assert.rejects(()=>careers.runCareerCatalogHealthCheck());});
+ await test('health preserves explicit errors',async()=>{rpcResult={data:{status:'ERROR',issues:['cycle'],stats:{}},error:null};assert.equal((await careers.runCareerCatalogHealthCheck()).status,'ERROR');});
+ await test('invalid pagination rejected',async()=>{assert.throws(()=>catalog.catalogPage(NaN));assert.throws(()=>catalog.catalogPage(-1));assert.throws(()=>catalog.catalogPage(1,Infinity));});
+ await test('batch fetch traverses 1201 records',async()=>{const all=Array.from({length:1201},(_,id)=>({id}));const rows=await catalog.readCatalogRows((from,to)=>Promise.resolve({data:all.slice(from,to+1),error:null}));assert.equal(rows.length,1201);});
+ await test('batch query failure rejects partial success',async()=>{await assert.rejects(()=>catalog.readCatalogRows(()=>Promise.resolve({data:null,error:{code:'failure'}})));});
+ await test('inactive database roadmap suppresses static detail',async()=>{rpcResult={data:[{slug:'python-developer',is_active:false}],error:null};assert.equal(await roadmaps.getPublicRoadmapBySlug('python-developer'),null);});
+ await test('absent database roadmap permits static detail',async()=>{rpcResult={data:[],error:null};response={data:null,error:null};const r=await roadmaps.getPublicRoadmapBySlug('python-developer');assert(r);assert(r.roadmap.id.startsWith('rm-'));});
+ await test('roadmap precedence failure is fail closed',async()=>{rpcResult={data:null,error:{code:'failure'}};await assert.rejects(()=>roadmaps.getPublicRoadmapBySlug('python-developer'));});
+ await test('active database identity wins',async()=>{rpcResult={data:[{slug:'python-developer',is_active:true}],error:null};response=(table)=>({data:table==='career_roadmaps'?{id:'db-id',slug:'python-developer',is_active:true}:table==='career_roadmap_sections'?[{id:'sec',roadmap_id:'db-id'}]:[],error:null});const r=await roadmaps.getPublicRoadmapBySlug('python-developer');assert.equal(r.roadmap.id,'db-id');});
+ const routes=require('../app/api/admin/skills/[id]/relationships/route.ts');
+ await test('admin relationship API rejects unrelated parent',async()=>{admin=true;response={data:{role:'admin'},error:null};const r=await routes.POST({json:async()=>({source_skill_id:'00000000-0000-0000-0000-000000000002',target_skill_id:'00000000-0000-0000-0000-000000000003',relationship_type:'related'})},{params:Promise.resolve({id:'00000000-0000-0000-0000-000000000001'})});assert.equal(r.status,400);assert(!calls.some(c=>c[1]==='insert'));});
+ await test('anonymous relationship mutation denied',async()=>{admin=false;const r=await routes.POST({json:async()=>({})},{params:Promise.resolve({id:'a'})});assert.equal(r.status,403);});
+ await test('student relationship mutation denied',async()=>{admin=true;response={data:{role:'student'},error:null};const r=await routes.POST({json:async()=>({})},{params:Promise.resolve({id:'a'})});assert.equal(r.status,403);});
+ await test('incoming relationship direction retained for URL target',async()=>{admin=true;response=(table)=>({data:table==='profiles'?{role:'admin'}:{id:'edge'},error:null});const a='00000000-0000-0000-0000-000000000001',b='00000000-0000-0000-0000-000000000002';const r=await routes.POST({json:async()=>({source_skill_id:b,target_skill_id:a,relationship_type:'related'})},{params:Promise.resolve({id:a})});assert.equal(r.status,201);assert(calls.some(c=>c[1]==='insert'&&c[2].source_skill_id===b));});
+ await test('public serializer removes archived neighbor even for admin',async()=>{response={data:[{source_skill_id:'a',target_skill_id:'b',source_skill:{status:'published'},target_skill:{status:'archived'},relationship_type:'related'}],error:null,count:1};const r=await graph.getSkillRelationships('a',true);assert.equal(r.related.length,0);});
+ await test('published update merges metadata before validation',async()=>{response=(table)=>({data:table==='career_catalog'?{id:'a',name:'Career',slug:'career',status:'published',short_description:'A meaningful career description',description:'Valid career details'}:[{importance:'required',skill:{status:'published'}}],error:null});const r=await careers.updateCareer('a',{short_description:'bad'});assert.equal(r.success,false);assert(!calls.some(c=>c[1]==='update'));});
+ await test('invalid health RPC shape rejected',async()=>{rpcResult={data:{status:'PASS'},error:null};await assert.rejects(()=>careers.runCareerCatalogHealthCheck());});
+ await test('missing roadmap returns null',async()=>{rpcResult={data:[],error:null};response={data:null,error:null};assert.equal(await roadmaps.getPublicRoadmapBySlug('missing-career'),null);});
+ await test('generated seed preserves existing data and contains no schema DDL',async()=>{const fs=require('node:fs');const sql=fs.readFileSync(require('node:path').resolve(__dirname,'../../supabase/migrations/career_skill_graph_seed_phase_a.sql'),'utf8');assert(!/CREATE\s+TABLE|DO\s+UPDATE/i.test(sql));assert(/DO NOTHING/i.test(sql));const careers=sql.split('INSERT INTO public.career_catalog')[1]?.split('INSERT INTO')[0]||sql.split('INSERT INTO career_catalog')[1]?.split('INSERT INTO')[0];assert(careers);assert(!/'published'/.test(careers));assert(/'draft'/.test(careers));});
+ console.log(`${passed} passed / 0 failed. This mock suite does not verify database/RLS/concurrency; run test_phase_a_database.cjs separately.`);
+})().catch(e=>{console.error(e);process.exitCode=1});

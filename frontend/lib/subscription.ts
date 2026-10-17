@@ -54,11 +54,12 @@ export function calculateUserAccess(subscription: any | null): UserAccess {
 
   const normalizedPlan = normalizePlanId(rawPlan);
 
-  // Check expiration
+  // Check expiration and require a known remaining period after cancellation.
+  const now = Date.now();
+  const expiryTime = endDate ? new Date(endDate).getTime() : NaN;
   let isExpired = false;
   if (endDate) {
-    const expiryTime = new Date(endDate).getTime();
-    if (!isNaN(expiryTime) && expiryTime < Date.now()) {
+    if (!isNaN(expiryTime) && expiryTime <= now) {
       isExpired = true;
     }
   }
@@ -70,9 +71,10 @@ export function calculateUserAccess(subscription: any | null): UserAccess {
     effectiveStatus = 'expired';
   }
 
-  // A paid plan is active if status is active (or cancelled but not yet expired)
+  // Cancellation retains access only through a valid, unexpired paid period.
   const isPaid = normalizedPlan !== 'free';
-  const isActivePaid = isPaid && (rawStatus === 'active' || rawStatus === 'cancelled') && !isExpired;
+  const hasRemainingPaidPeriod = Number.isFinite(expiryTime) && expiryTime > now;
+  const isActivePaid = isPaid && (rawStatus === 'active' || (rawStatus === 'cancelled' && hasRemainingPaidPeriod)) && !isExpired;
 
   // Effective plan drops to 'free' once expired
   const effectivePlan: PlanId = isActivePaid ? normalizedPlan : 'free';

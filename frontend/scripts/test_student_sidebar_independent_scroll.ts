@@ -2,6 +2,7 @@ export {};
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as ts from 'typescript';
 
 console.log('====================================================');
 console.log('GRADZENX: STUDENT SIDEBAR INDEPENDENT SCROLL SUITE');
@@ -29,6 +30,30 @@ const studentLayoutContent = fs.readFileSync(studentLayoutPath, 'utf8');
 const adminLayoutContent = fs.readFileSync(adminLayoutPath, 'utf8');
 const globalsCssContent = fs.readFileSync(globalsCssPath, 'utf8');
 
+// Inspect containment in the JSX tree, including conditional portal children.
+// Literal substring checks miss parenthesized children and relocated menu links.
+function inspectContentAndProfile(source: string) {
+  const tree = ts.createSourceFile('StudentLayout.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  function contains(node: ts.Node, predicate: (node: ts.Node) => boolean): boolean {
+    return predicate(node) || node.getChildren(tree).some(child => contains(child, predicate));
+  }
+  function attribute(node: ts.JsxElement, name: string): string | undefined {
+    const attr = node.openingElement.attributes.properties.find(prop => ts.isJsxAttribute(prop) && prop.name.getText(tree) === name);
+    return attr && ts.isJsxAttribute(attr) && attr.initializer && ts.isStringLiteral(attr.initializer) ? attr.initializer.text : undefined;
+  }
+  const content = contains(tree, node => ts.isJsxElement(node) && node.openingElement.tagName.getText(tree) === 'main' &&
+    contains(node, child => ts.isJsxElement(child) && (attribute(child, 'className') || '').split(/\s+/).includes('overflow-y-auto') &&
+      (attribute(child, 'className') || '').split(/\s+/).includes('flex-1') &&
+      contains(child, expression => ts.isIdentifier(expression) && expression.text === 'children' &&
+        (ts.isJsxExpression(expression.parent) || ts.isParenthesizedExpression(expression.parent)))));
+  const profile = contains(tree, node => ts.isJsxExpression(node) && !!node.expression && ts.isBinaryExpression(node.expression) &&
+    node.expression.left.getText(tree) === 'isProfileMenuOpen' && node.expression.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken &&
+    contains(node, child => ts.isJsxElement(child) && child.openingElement.tagName.getText(tree) === 'Link' &&
+      attribute(child, 'href') === '/student/profile' && contains(child, text => ts.isJsxText(text) && text.text.trim() === 'My Profile')));
+  return { content, profile };
+}
+const layoutContracts = inspectContentAndProfile(studentLayoutContent);
+
 // ── TEST 1: Student Layout Root Viewport Shell ─────────────────────────────
 console.log('--- TEST 1: Student Layout Root Viewport Shell ---');
 assert(studentLayoutContent.includes('h-screen') && studentLayoutContent.includes('overflow-hidden'), 'StudentLayout root shell restricts height to viewport and hides window-level overflow');
@@ -44,7 +69,7 @@ assert(studentLayoutContent.includes('overflow-x-hidden'), 'Sidebar nav prevents
 // ── TEST 3: Main Content Independent Vertical Scroll ───────────────────────
 console.log('\n--- TEST 3: Main Content Independent Vertical Scroll ---');
 assert(studentLayoutContent.includes('min-w-0') && studentLayoutContent.includes('flex-1'), 'Main area has min-w-0 to prevent flex blowout and flex-1 to fill space');
-assert(studentLayoutContent.includes('overflow-y-auto') && studentLayoutContent.includes('{children}'), 'Page content wrapper contains {children} within an independent overflow-y-auto container');
+assert(layoutContracts.content, 'Main page content renders children inside its independent overflow-y-auto container');
 
 // ── TEST 4: Navigation Item Completeness & Accessibility ───────────────────
 console.log('\n--- TEST 4: Navigation Item Completeness & Accessibility ---');
@@ -64,8 +89,16 @@ const requiredNavItems = [
 ];
 
 requiredNavItems.forEach(item => {
-  assert(studentLayoutContent.includes(`name: '${item}'`) || studentLayoutContent.includes(`'${item}'`), `Nav includes "${item}" item`);
+  const exists = item === 'My Profile' ? layoutContracts.profile : studentLayoutContent.includes(`name: '${item}'`) || studentLayoutContent.includes(`'${item}'`);
+  assert(exists, `Navigation includes "${item}" with its existing menu contract`);
 });
+assert(fs.existsSync(path.resolve(__dirname, '../app/student/profile/page.tsx')), 'My Profile navigation resolves to an existing student route');
+
+// Negative controls ensure the corrected checks still detect broken behavior.
+assert(!inspectContentAndProfile(studentLayoutContent.replace(/overflow-y-auto/g, 'overflow-y-hidden')).content, 'Content contract rejects removal of independent vertical scrolling');
+assert(!inspectContentAndProfile(studentLayoutContent.replace(/\bchildren\b/g, 'removedContent')).content, 'Content contract rejects removal of rendered children');
+assert(!inspectContentAndProfile(studentLayoutContent.replace('href="/student/profile"', 'href="/student/incorrect"')).profile, 'Profile contract rejects an incorrect destination');
+assert(!inspectContentAndProfile(studentLayoutContent.replace('<span>My Profile</span>', '<span>Removed</span>')).profile, 'Profile contract rejects a missing profile label');
 
 // ── TEST 5: Admin Layout Independent Scrolling Consistency ─────────────────
 console.log('\n--- TEST 5: Admin Layout Independent Scrolling Consistency ---');

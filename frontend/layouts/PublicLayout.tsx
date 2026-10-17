@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, ArrowRight, Home, Briefcase, BookOpen, FileText, CreditCard, ChevronRight, Mail } from 'lucide-react';
+import { Menu, X, ArrowRight, Home, Briefcase, BookOpen, FileText, CreditCard, ChevronRight, Mail, Route } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Logo } from '@/components/Logo';
 import { createClient } from '@/utils/supabase/client';
@@ -16,6 +16,7 @@ import {
 
 const NAV_LINKS = [
   { href: '/',                      label: 'Home',           icon: Home },
+  { href: '/roadmaps',              label: 'Roadmaps',       icon: Route },
   { href: '/jobs',                  label: 'Jobs',           icon: Briefcase },
   { href: '/interview-preparation', label: 'Interview Prep', icon: BookOpen },
   { href: '/notes',                 label: 'Notes',          icon: FileText },
@@ -24,6 +25,9 @@ const NAV_LINKS = [
 ];
 
 const FOOTER_PRODUCT = [
+  { href: '/roadmaps',              label: 'Career Roadmaps'     },
+  { href: '/careers',               label: 'Career Catalog'      },
+  { href: '/skills',                label: 'Skill Catalog'       },
   { href: '/jobs',                  label: 'Find Jobs'           },
   { href: '/interview-preparation', label: 'Interview Prep'      },
   { href: '/notes',                 label: 'Study Notes'         },

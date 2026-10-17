@@ -1,0 +1,127 @@
+DO
+      tablename      |                         policyname                          |  cmd   |      roles      |                                                                    qual                                                                    |                with_check                 
+---------------------+-------------------------------------------------------------+--------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------
+ career_catalog      | admin_full_access_careers                                   | ALL    | {public}        | (EXISTS ( SELECT 1                                                                                                                        +| 
+                     |                                                             |        |                 |    FROM profiles                                                                                                                          +| 
+                     |                                                             |        |                 |   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))                                                                 | 
+ career_catalog      | public_read_published_careers                               | SELECT | {public}        | (status = 'published'::text)                                                                                                               | 
+ career_skill_map    | admin_full_access_career_skills                             | ALL    | {public}        | (EXISTS ( SELECT 1                                                                                                                        +| 
+                     |                                                             |        |                 |    FROM profiles                                                                                                                          +| 
+                     |                                                             |        |                 |   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))                                                                 | 
+ career_skill_map    | public_read_published_career_skills                         | SELECT | {public}        | ((EXISTS ( SELECT 1                                                                                                                       +| 
+                     |                                                             |        |                 |    FROM career_catalog                                                                                                                    +| 
+                     |                                                             |        |                 |   WHERE ((career_catalog.id = career_skill_map.career_id) AND (career_catalog.status = 'published'::text)))) AND (EXISTS ( SELECT 1       +| 
+                     |                                                             |        |                 |    FROM skill_catalog                                                                                                                     +| 
+                     |                                                             |        |                 |   WHERE ((skill_catalog.id = career_skill_map.skill_id) AND (skill_catalog.status = 'published'::text)))))                                 | 
+ profiles            | Admins can delete profiles                                  | DELETE | {authenticated} | phase_a_is_admin()                                                                                                                         | 
+ profiles            | Users can insert their own profile.                         | INSERT | {public}        |                                                                                                                                            | (auth.uid() = id)
+ profiles            | Users can update own profile.                               | UPDATE | {public}        | (auth.uid() = id)                                                                                                                          | 
+ profiles            | Users can update their own profile or admins can update all | UPDATE | {authenticated} | ((id = auth.uid()) OR phase_a_is_admin())                                                                                                  | ((id = auth.uid()) OR phase_a_is_admin())
+ profiles            | Users can view their own profile or admins can view all     | SELECT | {authenticated} | ((id = auth.uid()) OR phase_a_is_admin())                                                                                                  | 
+ skill_catalog       | admin_full_access_skills                                    | ALL    | {public}        | (EXISTS ( SELECT 1                                                                                                                        +| 
+                     |                                                             |        |                 |    FROM profiles                                                                                                                          +| 
+                     |                                                             |        |                 |   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))                                                                 | 
+ skill_catalog       | public_read_published_skills                                | SELECT | {public}        | (status = 'published'::text)                                                                                                               | 
+ skill_relationships | admin_full_access_skill_relationships                       | ALL    | {public}        | (EXISTS ( SELECT 1                                                                                                                        +| 
+                     |                                                             |        |                 |    FROM profiles                                                                                                                          +| 
+                     |                                                             |        |                 |   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))                                                                 | 
+ skill_relationships | public_read_published_skill_relationships                   | SELECT | {public}        | ((EXISTS ( SELECT 1                                                                                                                       +| 
+                     |                                                             |        |                 |    FROM skill_catalog                                                                                                                     +| 
+                     |                                                             |        |                 |   WHERE ((skill_catalog.id = skill_relationships.source_skill_id) AND (skill_catalog.status = 'published'::text)))) AND (EXISTS ( SELECT 1+| 
+                     |                                                             |        |                 |    FROM skill_catalog                                                                                                                     +| 
+                     |                                                             |        |                 |   WHERE ((skill_catalog.id = skill_relationships.target_skill_id) AND (skill_catalog.status = 'published'::text)))))                       | 
+(13 rows)
+
+           proname            | prosecdef |                 proconfig                  |                             proacl                             
+------------------------------+-----------+--------------------------------------------+----------------------------------------------------------------
+ phase_a_check_edge           | t         | {"search_path=\"\""}                       | 
+ phase_a_check_publication    | t         | {"search_path=\"\""}                       | 
+ phase_a_health               | t         | {"search_path=\"\"",statement_timeout=10s} | {postgres=X/postgres,authenticated=X/postgres}
+ phase_a_is_admin             | t         | {"search_path=\"\""}                       | {postgres=X/postgres,anon=X/postgres,authenticated=X/postgres}
+ phase_a_lock_mutations       | t         | {"search_path=\"\""}                       | 
+ phase_a_protect_profile_role | t         | {"search_path=\"\""}                       | 
+ phase_a_roadmap_overrides    | t         | {"search_path=\"\""}                       | {postgres=X/postgres,anon=X/postgres,authenticated=X/postgres}
+ phase_a_would_cycle          | t         | {"search_path=\"\""}                       | {postgres=X/postgres,authenticated=X/postgres}
+(8 rows)
+
+     table_name      |    grantee    | privilege_type 
+---------------------+---------------+----------------
+ career_catalog      | anon          | DELETE
+ career_catalog      | anon          | INSERT
+ career_catalog      | anon          | SELECT
+ career_catalog      | anon          | UPDATE
+ career_catalog      | authenticated | DELETE
+ career_catalog      | authenticated | INSERT
+ career_catalog      | authenticated | SELECT
+ career_catalog      | authenticated | UPDATE
+ career_catalog      | service_role  | DELETE
+ career_catalog      | service_role  | INSERT
+ career_catalog      | service_role  | SELECT
+ career_catalog      | service_role  | UPDATE
+ career_skill_map    | anon          | DELETE
+ career_skill_map    | anon          | INSERT
+ career_skill_map    | anon          | SELECT
+ career_skill_map    | anon          | UPDATE
+ career_skill_map    | authenticated | DELETE
+ career_skill_map    | authenticated | INSERT
+ career_skill_map    | authenticated | SELECT
+ career_skill_map    | authenticated | UPDATE
+ career_skill_map    | service_role  | DELETE
+ career_skill_map    | service_role  | INSERT
+ career_skill_map    | service_role  | SELECT
+ career_skill_map    | service_role  | UPDATE
+ profiles            | anon          | DELETE
+ profiles            | anon          | INSERT
+ profiles            | anon          | SELECT
+ profiles            | anon          | UPDATE
+ profiles            | authenticated | DELETE
+ profiles            | authenticated | INSERT
+ profiles            | authenticated | SELECT
+ profiles            | authenticated | UPDATE
+ profiles            | service_role  | DELETE
+ profiles            | service_role  | INSERT
+ profiles            | service_role  | SELECT
+ profiles            | service_role  | UPDATE
+ skill_catalog       | anon          | DELETE
+ skill_catalog       | anon          | INSERT
+ skill_catalog       | anon          | SELECT
+ skill_catalog       | anon          | UPDATE
+ skill_catalog       | authenticated | DELETE
+ skill_catalog       | authenticated | INSERT
+ skill_catalog       | authenticated | SELECT
+ skill_catalog       | authenticated | UPDATE
+ skill_catalog       | service_role  | DELETE
+ skill_catalog       | service_role  | INSERT
+ skill_catalog       | service_role  | SELECT
+ skill_catalog       | service_role  | UPDATE
+ skill_relationships | anon          | DELETE
+ skill_relationships | anon          | INSERT
+ skill_relationships | anon          | SELECT
+ skill_relationships | anon          | UPDATE
+ skill_relationships | authenticated | DELETE
+ skill_relationships | authenticated | INSERT
+ skill_relationships | authenticated | SELECT
+ skill_relationships | authenticated | UPDATE
+ skill_relationships | service_role  | DELETE
+ skill_relationships | service_role  | INSERT
+ skill_relationships | service_role  | SELECT
+ skill_relationships | service_role  | UPDATE
+(60 rows)
+
+       tgrelid       |               tgname               |                                                                                             pg_get_triggerdef                                                                                             
+---------------------+------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ career_catalog      | trg_career_catalog_updated_at      | CREATE TRIGGER trg_career_catalog_updated_at BEFORE UPDATE ON public.career_catalog FOR EACH ROW EXECUTE FUNCTION update_career_catalog_updated_at()
+ skill_catalog       | trg_skill_catalog_updated_at       | CREATE TRIGGER trg_skill_catalog_updated_at BEFORE UPDATE ON public.skill_catalog FOR EACH ROW EXECUTE FUNCTION update_skill_catalog_updated_at()
+ career_skill_map    | trg_career_skill_map_updated_at    | CREATE TRIGGER trg_career_skill_map_updated_at BEFORE UPDATE ON public.career_skill_map FOR EACH ROW EXECUTE FUNCTION update_career_skill_map_updated_at()
+ skill_relationships | trg_skill_relationships_updated_at | CREATE TRIGGER trg_skill_relationships_updated_at BEFORE UPDATE ON public.skill_relationships FOR EACH ROW EXECUTE FUNCTION update_skill_relationships_updated_at()
+ career_catalog      | phase_a_serialize                  | CREATE TRIGGER phase_a_serialize BEFORE INSERT OR DELETE OR UPDATE ON public.career_catalog FOR EACH STATEMENT EXECUTE FUNCTION phase_a_lock_mutations()
+ skill_catalog       | phase_a_serialize                  | CREATE TRIGGER phase_a_serialize BEFORE INSERT OR DELETE OR UPDATE ON public.skill_catalog FOR EACH STATEMENT EXECUTE FUNCTION phase_a_lock_mutations()
+ career_skill_map    | phase_a_serialize                  | CREATE TRIGGER phase_a_serialize BEFORE INSERT OR DELETE OR UPDATE ON public.career_skill_map FOR EACH STATEMENT EXECUTE FUNCTION phase_a_lock_mutations()
+ skill_relationships | phase_a_serialize                  | CREATE TRIGGER phase_a_serialize BEFORE INSERT OR DELETE OR UPDATE ON public.skill_relationships FOR EACH STATEMENT EXECUTE FUNCTION phase_a_lock_mutations()
+ skill_relationships | phase_a_prerequisite_guard         | CREATE TRIGGER phase_a_prerequisite_guard BEFORE INSERT OR UPDATE ON public.skill_relationships FOR EACH ROW EXECUTE FUNCTION phase_a_check_edge()
+ career_catalog      | phase_a_career_publication         | CREATE CONSTRAINT TRIGGER phase_a_career_publication AFTER INSERT OR UPDATE ON public.career_catalog DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION phase_a_check_publication()
+ career_skill_map    | phase_a_mapping_publication        | CREATE CONSTRAINT TRIGGER phase_a_mapping_publication AFTER INSERT OR DELETE OR UPDATE ON public.career_skill_map DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION phase_a_check_publication()
+ skill_catalog       | phase_a_skill_publication          | CREATE CONSTRAINT TRIGGER phase_a_skill_publication AFTER DELETE OR UPDATE ON public.skill_catalog DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION phase_a_check_publication()
+ profiles            | phase_a_profile_role               | CREATE TRIGGER phase_a_profile_role BEFORE INSERT OR UPDATE OF role ON public.profiles FOR EACH ROW EXECUTE FUNCTION phase_a_protect_profile_role()
+(13 rows)
+

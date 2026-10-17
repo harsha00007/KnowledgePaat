@@ -1,0 +1,238 @@
+{
+  "passed": 29,
+  "failed": 0,
+  "blocked": 2,
+  "results": [
+    {
+      "name": "test_admin_bulk_delete.ts",
+      "status": "BLOCKED",
+      "reason": "Configured remote target is production; no authorized staging integration environment."
+    },
+    {
+      "name": "test_admin_bulk_delete_logic.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": [
+        "TEST RESULTS: 18 / 18 PASSED (100%)"
+      ]
+    },
+    {
+      "name": "test_admin_feature_controls_and_login.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": [
+        "TEST SUMMARY: 49 / 49 tests passed (100%)"
+      ]
+    },
+    {
+      "name": "test_admin_orders_selection_and_delete.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": [
+        "TEST RESULTS: 33 PASSED, 0 FAILED"
+      ]
+    },
+    {
+      "name": "test_career_roadmap_engine.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_career_roadmap_phase3.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_career_roadmap_platform_expansion.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_career_roadmap_resource_engine.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_career_roadmap_visual_redesign.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_career_skill_graph_phase_a.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": [
+        "PHASE A TEST RESULTS: 32 PASSED, 0 FAILED"
+      ]
+    },
+    {
+      "name": "test_company_name_gate.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_deep_security_audit.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_footer_and_social_settings.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_google_analytics.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": [
+        "GA4 TEST RESULTS: 11 PASSED, 0 FAILED"
+      ]
+    },
+    {
+      "name": "test_hardening_auth_theme_visibility.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_interview_prep_admin_control.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": [
+        "TEST RESULTS: 18 PASSED, 0 FAILED"
+      ]
+    },
+    {
+      "name": "test_mcq_assessment_system.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": [
+        "TEST RESULTS: 14 PASSED, 0 FAILED"
+      ]
+    },
+    {
+      "name": "test_normal_and_mcq_separation.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_profile_and_store_enhancements.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_profile_validation.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_public_launch_blocker_fixes.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": [
+        "TEST SUMMARY: 27 / 27 passed (100.0%)"
+      ]
+    },
+    {
+      "name": "test_purchased_notes_navigation.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_razorpay_integration.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_resume_template_store_management.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": [
+        "TEST SUMMARY: 21 / 21 passed (100.0%)"
+      ]
+    },
+    {
+      "name": "test_seo_indexing_audit.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_store_edit_and_replace_flow.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_store_notes_content_attachment.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_store_safe_delete_and_archive.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_student_assessment_e2e.ts",
+      "status": "BLOCKED",
+      "reason": "Configured remote target is production; no authorized staging integration environment."
+    },
+    {
+      "name": "test_student_practice_normal_only.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    },
+    {
+      "name": "test_student_sidebar_independent_scroll.ts",
+      "status": "PASS",
+      "exit": 0,
+      "failures": [],
+      "summary": []
+    }
+  ]
+}

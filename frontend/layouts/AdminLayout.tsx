@@ -19,7 +19,12 @@ import {
   Bot,
   ChevronRight,
   Settings,
-  HelpCircle
+  HelpCircle,
+  Route,
+  Library,
+  Compass,
+  Cpu,
+  GitBranch,
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -27,6 +32,11 @@ import { Logo } from '@/components/Logo';
 
 const NAV_ITEMS = [
   { name: 'Dashboard',           href: '/admin/dashboard',            icon: LayoutDashboard },
+  { name: 'Career Catalog',      href: '/admin/careers',              icon: Compass, matchPrefix: '/admin/careers' },
+  { name: 'Skill Catalog',       href: '/admin/skills',               icon: Cpu, matchPrefix: '/admin/skills' },
+  { name: 'Skill Graph',         href: '/admin/skills/graph',         icon: GitBranch, matchPrefix: '/admin/skills/graph' },
+  { name: 'Career Roadmaps',     href: '/admin/roadmaps',             icon: Route, matchPrefix: '/admin/roadmaps' },
+  { name: 'Resource Library',    href: '/admin/resources',            icon: Library, matchPrefix: '/admin/resources' },
   { name: 'Students',            href: '/admin/students',             icon: Users },
   { name: 'Jobs',                href: '/admin/jobs',                 icon: Briefcase },
   { name: 'Interview Prep',      href: '/admin/interview-questions',  icon: MessageSquare, matchPrefix: '/admin/interview' },
