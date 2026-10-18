@@ -11,6 +11,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: [
           '/admin/',
           '/student/',
+          '/read/',
           '/api/',
           '/_next/',
           '/forgot-password',

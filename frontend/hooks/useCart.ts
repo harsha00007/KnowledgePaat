@@ -28,7 +28,10 @@ export function useCart() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error("Error fetching cart items:", error);
+        if (error.code !== 'PGRST205') {
+          console.error("Error fetching cart items:", error);
+        }
+        setCartItems([]);
       } else if (data) {
         setCartItems(data as CartItem[]);
       }

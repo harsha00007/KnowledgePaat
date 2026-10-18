@@ -150,7 +150,9 @@ export async function getConsumedSessionsCount(
 
     const { data, error } = await query;
     if (error) {
-      console.error('Error fetching mock session stats:', error);
+      if (error.code !== 'PGRST205') {
+        console.error('Error fetching mock session stats:', error);
+      }
       return { usedCount: 0, completedCount: 0, averageScore: 0 };
     }
 

@@ -50,6 +50,13 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true, note: 'No internal order reference' });
       }
 
+      // Delegate eBook order webhook processing to dedicated idempotent handler
+      if (notes.orderType === 'ebook') {
+        const { handleEBookWebhook } = await import('@/lib/ebook/orders');
+        const ebookResult = await handleEBookWebhook(rawBody, signature);
+        return NextResponse.json({ received: true, ebook: ebookResult });
+      }
+
       // Check existing order status for Idempotency
       const { data: order } = await supabase
         .from('orders')

@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { FeatureFlagProvider } from "@/context/FeatureFlagContext";
+import { EBookCartProvider } from "@/lib/ebook/cartContext";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 
 const inter = Inter({
@@ -156,7 +157,9 @@ export default function RootLayout({
         <GoogleAnalytics />
         <ThemeProvider>
           <FeatureFlagProvider>
-            {children}
+            <EBookCartProvider>
+              {children}
+            </EBookCartProvider>
           </FeatureFlagProvider>
         </ThemeProvider>
       </body>

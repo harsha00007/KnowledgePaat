@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+import { sanitizeInternalRedirectUrl } from '@/lib/safeRedirect'
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -8,7 +10,7 @@ export async function updateSession(request: NextRequest) {
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)!,
     {
       cookies: {
         getAll() {
@@ -57,18 +59,36 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
+    // Unauthenticated visitor trying to access protected customer eBook routes
+    const isCustomerProtectedRoute = 
+      pathname.startsWith('/my-books') ||
+      pathname.startsWith('/checkout') ||
+      pathname.startsWith('/read');
+
+    if (isCustomerProtectedRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      url.searchParams.set('redirectTo', pathname);
+      return NextResponse.redirect(url);
+    }
+
     // Allow public pages and /admin/login
     return supabaseResponse
   }
 
   // 2. User is authenticated: Verify role
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle()
+  // Check via is_admin RPC first (immune to recursive profile RLS policy)
+  const { data: isAdminRpc } = await supabase.rpc('is_admin');
+  let role = isAdminRpc ? 'admin' : null;
 
-  const role = profile?.role || 'student'
+  if (!role) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+    role = profile?.role || 'student';
+  }
 
   // Admin user routing
   if (role === 'admin') {
@@ -91,9 +111,20 @@ export async function updateSession(request: NextRequest) {
 
   // Student user routing (role === 'student' or default)
   if (isRootRoute || isStudentAuthRoute) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/student/dashboard'
-    return NextResponse.redirect(url)
+    if (isStudentAuthRoute) {
+      const rawRedirect = request.nextUrl.searchParams.get('redirectTo');
+      if (rawRedirect) {
+        const safeTarget = sanitizeInternalRedirectUrl(rawRedirect, '/student/dashboard');
+        if (safeTarget !== '/student/dashboard') {
+          const url = new URL(safeTarget, request.url);
+          return NextResponse.redirect(url);
+        }
+      }
+    }
+
+    const url = request.nextUrl.clone();
+    url.pathname = '/student/dashboard';
+    return NextResponse.redirect(url);
   }
 
   // Student trying to access admin portal or admin login

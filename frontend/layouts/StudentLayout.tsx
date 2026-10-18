@@ -75,6 +75,7 @@ const NAV_GROUPS: NavGroupItem[] = [
     links: [
       { name: 'Store', href: '/student/store', icon: ShoppingBag, featureKey: 'student_store' },
       { name: 'My Purchases', href: '/student/purchases', icon: PackageCheck, featureKey: 'student_purchases' },
+      { name: 'My Books', href: '/my-books', icon: BookOpen, featureKey: 'ebook_my_books' },
       { name: 'Subscription', href: '/student/subscription', icon: CreditCard, featureKey: 'student_subscription' },
     ],
   },

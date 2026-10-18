@@ -1,15 +1,22 @@
 import { MetadataRoute } from 'next';
+import { createClient } from '@/utils/supabase/server';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://knowledgepaat.com';
   const currentDate = new Date().toISOString();
 
-  return [
+  const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: `${baseUrl}/`,
       lastModified: currentDate,
       changeFrequency: 'daily',
       priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/e-books`,
+      lastModified: currentDate,
+      changeFrequency: 'daily',
+      priority: 0.9,
     },
     {
       url: `${baseUrl}/jobs`,
@@ -48,4 +55,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     },
   ];
+
+  try {
+    const supabase = await createClient();
+    const { data: publishedBooks } = await supabase
+      .from('ebooks')
+      .select('id, slug, updated_at')
+      .eq('status', 'published');
+
+    const bookRoutes: MetadataRoute.Sitemap = (publishedBooks || []).map((b) => ({
+      url: `${baseUrl}/e-books/${b.slug || b.id}`,
+      lastModified: b.updated_at || currentDate,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    }));
+
+    return [...staticRoutes, ...bookRoutes];
+  } catch (err) {
+    console.warn('Could not fetch published books for sitemap:', err);
+    return staticRoutes;
+  }
 }

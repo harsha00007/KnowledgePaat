@@ -54,13 +54,16 @@ export function validateRazorpayConfig(): RazorpayConfigValidation {
   }
 
   const keySecretStatus: 'configured' | 'missing' = keySecret ? 'configured' : 'missing';
-  const webhookSecretStatus: 'configured' | 'missing' = webhookSecret ? 'configured' : 'missing';
+  const isWebhookConfigured = Boolean(
+    webhookSecret && webhookSecret !== '...' && !webhookSecret.includes('placeholder')
+  );
+  const webhookSecretStatus: 'configured' | 'missing' = isWebhookConfigured ? 'configured' : 'missing';
 
   if (!keySecret) {
     warnings.push('RAZORPAY_KEY_SECRET is missing.');
   }
-  if (!webhookSecret) {
-    warnings.push('RAZORPAY_WEBHOOK_SECRET is missing.');
+  if (!isWebhookConfigured) {
+    warnings.push('RAZORPAY_WEBHOOK_SECRET is missing or unconfigured placeholder.');
   }
 
   const isProductionSafe = keyIdStatus === 'production_credential' && keySecretStatus === 'configured' && webhookSecretStatus === 'configured';
@@ -110,9 +113,16 @@ export interface WebhookSignatureParams {
  * Retrieve server-side Razorpay test mode credentials
  */
 export function getRazorpayCredentials(): RazorpayCredentials {
-  const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_knowledgepaat';
-  const keySecret = process.env.RAZORPAY_KEY_SECRET || 'test_secret_knowledgepaat_sec_2026';
-  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || 'test_webhook_secret_kp_2026';
+  const rawKeyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_knowledgepaat';
+  const keyId = rawKeyId.split('#')[0].trim();
+  const rawKeySecret = process.env.RAZORPAY_KEY_SECRET || 'test_secret_knowledgepaat_sec_2026';
+  const keySecret = rawKeySecret.split('#')[0].trim();
+  const rawWebhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || '';
+  const cleanedWebhookSecret = rawWebhookSecret.split('#')[0].trim();
+  const webhookSecret =
+    !cleanedWebhookSecret || cleanedWebhookSecret === '...' || cleanedWebhookSecret.includes('placeholder')
+      ? ''
+      : cleanedWebhookSecret;
 
   return { keyId, keySecret, webhookSecret };
 }
@@ -250,6 +260,7 @@ export function generateTestPaymentSignature(orderId: string, paymentId: string)
 /**
  * Verify Razorpay Webhook Signature
  * HMAC-SHA256(rawBody, webhookSecret) == x-razorpay-signature
+ * Strictly fails closed when webhookSecret is unconfigured or empty.
  */
 export function verifyRazorpayWebhookSignature(params: WebhookSignatureParams): boolean {
   const { rawBody, signature } = params;
@@ -258,6 +269,13 @@ export function verifyRazorpayWebhookSignature(params: WebhookSignatureParams): 
   }
 
   const { webhookSecret } = getRazorpayCredentials();
+  if (!webhookSecret) {
+    logger.warn('Webhook signature check rejected: RAZORPAY_WEBHOOK_SECRET is missing or unconfigured', {
+      module: 'payment',
+      action: 'verify_webhook_signature',
+    });
+    return false;
+  }
 
   try {
     const expectedSignature = crypto
@@ -281,3 +299,378 @@ export function verifyRazorpayWebhookSignature(params: WebhookSignatureParams): 
     return false;
   }
 }
+
+export interface RazorpayPaymentDetails {
+  id: string;
+  order_id: string;
+  amount: number; // in paise
+  currency: string;
+  status: 'created' | 'authorized' | 'captured' | 'refunded' | 'failed';
+  method?: string;
+  captured: boolean;
+  email?: string;
+  contact?: string;
+  error_code?: string | null;
+  error_description?: string | null;
+}
+
+/**
+ * Fetch authoritative payment details from Razorpay Gateway API on the server.
+ */
+export async function fetchRazorpayPayment(paymentId: string): Promise<RazorpayPaymentDetails | null> {
+  const { keyId, keySecret } = getRazorpayCredentials();
+  if (!keyId || !keySecret) {
+    throw new Error('Razorpay credentials not configured.');
+  }
+
+  try {
+    const basicAuth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+    const res = await fetch(`https://api.razorpay.com/v1/payments/${paymentId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${basicAuth}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      logger.warn('Failed to fetch payment details from Razorpay Gateway API', {
+        module: 'payment_gateway',
+        paymentId,
+        status: res.status,
+        error: errorText.slice(0, 200),
+      });
+      return null;
+    }
+
+    const data = await res.json();
+    return {
+      id: data.id,
+      order_id: data.order_id,
+      amount: data.amount,
+      currency: data.currency,
+      status: data.status,
+      method: data.method,
+      captured: Boolean(data.captured || data.status === 'captured'),
+      email: data.email,
+      contact: data.contact,
+      error_code: data.error_code,
+      error_description: data.error_description,
+    };
+  } catch (err: any) {
+    logger.error('Network exception calling Razorpay Gateway API for payment', err, {
+      module: 'payment_gateway',
+      paymentId,
+    });
+    return null;
+  }
+}
+
+/**
+ * Fetch all payments associated with a Razorpay Order ID.
+ */
+export async function fetchRazorpayOrderPayments(gatewayOrderId: string): Promise<RazorpayPaymentDetails[]> {
+  const { keyId, keySecret } = getRazorpayCredentials();
+  if (!keyId || !keySecret) {
+    throw new Error('Razorpay credentials not configured.');
+  }
+
+  try {
+    const basicAuth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+    const res = await fetch(`https://api.razorpay.com/v1/orders/${gatewayOrderId}/payments`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${basicAuth}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      logger.warn('Failed to fetch order payments from Razorpay Gateway API', {
+        module: 'payment_gateway',
+        gatewayOrderId,
+        status: res.status,
+        error: errorText.slice(0, 200),
+      });
+      return [];
+    }
+
+    const data = await res.json();
+    const items = Array.isArray(data.items) ? data.items : [];
+    return items.map((p: any) => ({
+      id: p.id,
+      order_id: p.order_id,
+      amount: p.amount,
+      currency: p.currency,
+      status: p.status,
+      method: p.method,
+      captured: Boolean(p.captured || p.status === 'captured'),
+      email: p.email,
+      contact: p.contact,
+      error_code: p.error_code,
+      error_description: p.error_description,
+    }));
+  } catch (err: any) {
+    logger.error('Network exception calling Razorpay Gateway API for order payments', err, {
+      module: 'payment_gateway',
+      gatewayOrderId,
+    });
+    return [];
+  }
+}
+
+export interface RazorpayRefundResult {
+  id: string;
+  entity: 'refund';
+  amount: number; // in paise
+  currency: string;
+  payment_id: string;
+  receipt?: string;
+  status: 'pending' | 'processed' | 'failed';
+  speed_processed?: string;
+  speed_requested?: string;
+  created_at: number;
+  notes?: Record<string, string>;
+  error?: {
+    code: string;
+    description: string;
+    source?: string;
+    step?: string;
+    reason?: string;
+  };
+}
+
+export interface CreateRefundParams {
+  paymentId: string;
+  amountInPaise?: number;
+  receipt?: string;
+  notes?: Record<string, string>;
+  idempotencyKey?: string;
+}
+
+/**
+ * Execute a provider-backed refund using official Razorpay Refunds API.
+ * Uses stable idempotency key to prevent double refunds upon retries.
+ */
+export async function createRazorpayRefund(params: CreateRefundParams): Promise<RazorpayRefundResult> {
+  const { paymentId, amountInPaise, receipt, notes = {}, idempotencyKey } = params;
+  const { keyId, keySecret } = getRazorpayCredentials();
+
+  if (!keyId || !keySecret) {
+    throw new Error('Razorpay credentials not configured.');
+  }
+
+  const payload: Record<string, any> = {
+    notes: {
+      platform: 'KnowledgePaat',
+      ...notes,
+    },
+  };
+
+  if (typeof amountInPaise === 'number' && amountInPaise > 0) {
+    payload.amount = amountInPaise;
+  }
+
+  if (receipt) {
+    payload.receipt = receipt.slice(0, 40);
+  }
+
+  const headers: Record<string, string> = {
+    'Authorization': `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString('base64')}`,
+    'Content-Type': 'application/json',
+  };
+
+  if (idempotencyKey) {
+    // Official Razorpay documented refund idempotency header
+    headers['X-Refund-Idempotency'] = idempotencyKey;
+    headers['X-Razorpay-Idempotency-Key'] = idempotencyKey;
+  }
+
+  try {
+    const res = await fetch(`https://api.razorpay.com/v1/payments/${paymentId}/refund`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      const errorMsg = data?.error?.description || `Razorpay refund failed with status ${res.status}`;
+      logger.warn('Razorpay refund request returned non-OK status', {
+        module: 'payment_refund',
+        paymentId,
+        status: res.status,
+        error: data?.error,
+      });
+      const refundErr: any = new Error(errorMsg);
+      refundErr.code = data?.error?.code || (res.status >= 500 ? 'GATEWAY_SERVER_ERROR' : 'REFUND_FAILED');
+      refundErr.details = data?.error;
+      refundErr.statusCode = res.status;
+      refundErr.isUncertain = res.status >= 500;
+      throw refundErr;
+    }
+
+    logger.info('Razorpay refund processed successfully', {
+      module: 'payment_refund',
+      refundId: data.id,
+      paymentId: data.payment_id,
+      amount: data.amount,
+      status: data.status,
+    });
+
+    return data as RazorpayRefundResult;
+  } catch (err: any) {
+    if (err.statusCode) {
+      // HTTP response received (4xx client rejection or 5xx server error already tagged with isUncertain)
+      throw err;
+    }
+    logger.error('Network exception calling Razorpay Refund API', err, {
+      module: 'payment_refund',
+      paymentId,
+    });
+    const networkErr: any = new Error(`Payment gateway network error: ${err.message}`);
+    networkErr.code = 'GATEWAY_NETWORK_ERROR';
+    networkErr.isTimeout = true;
+    networkErr.isUncertain = true;
+    networkErr.originalError = err;
+    throw networkErr;
+  }
+}
+
+/**
+ * Fetch refund details by refund ID from Razorpay API.
+ */
+export async function fetchRazorpayRefund(refundId: string): Promise<RazorpayRefundResult | null> {
+  const { keyId, keySecret } = getRazorpayCredentials();
+  if (!keyId || !keySecret) {
+    throw new Error('Razorpay credentials not configured.');
+  }
+
+  try {
+    const basicAuth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+    const res = await fetch(`https://api.razorpay.com/v1/refunds/${refundId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${basicAuth}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      logger.warn('Failed to fetch refund details from Razorpay', {
+        module: 'payment_refund',
+        refundId,
+        status: res.status,
+        error: errorText.slice(0, 200),
+      });
+      return null;
+    }
+
+    return (await res.json()) as RazorpayRefundResult;
+  } catch (err: any) {
+    logger.error('Network exception fetching Razorpay refund', err, {
+      module: 'payment_refund',
+      refundId,
+    });
+    return null;
+  }
+}
+
+/**
+ * Fetch all refunds for a specific payment from Razorpay API with pagination support.
+ */
+export async function fetchRazorpayPaymentRefunds(
+  paymentId: string,
+  options?: { count?: number; skip?: number; fetchAllPages?: boolean }
+): Promise<RazorpayRefundResult[]> {
+  const { keyId, keySecret } = getRazorpayCredentials();
+  if (!keyId || !keySecret) {
+    throw new Error('Razorpay credentials not configured.');
+  }
+
+  const basicAuth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+  const allRefunds: RazorpayRefundResult[] = [];
+  let skip = options?.skip || 0;
+  const pageSize = Math.min(options?.count || 100, 100);
+  const fetchAll = options?.fetchAllPages ?? true;
+
+  try {
+    while (true) {
+      const url = `https://api.razorpay.com/v1/payments/${paymentId}/refunds?count=${pageSize}&skip=${skip}`;
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${basicAuth}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        logger.warn('Failed to fetch payment refunds from Razorpay', {
+          module: 'payment_refund',
+          paymentId,
+          status: res.status,
+          error: errorText.slice(0, 200),
+        });
+        break;
+      }
+
+      const data = await res.json();
+      const items: RazorpayRefundResult[] = Array.isArray(data.items) ? data.items : [];
+      allRefunds.push(...items);
+
+      if (items.length < pageSize || !fetchAll || allRefunds.length >= (data.count || 0)) {
+        break;
+      }
+      skip += items.length;
+    }
+
+    return allRefunds;
+  } catch (err: any) {
+    logger.error('Network exception fetching Razorpay payment refunds', err, {
+      module: 'payment_refund',
+      paymentId,
+    });
+    return allRefunds.length > 0 ? allRefunds : [];
+  }
+}
+
+/**
+ * Fetch settlements from Razorpay API for reconciliation.
+ */
+export async function fetchRazorpaySettlements(): Promise<{ items: any[]; total: number }> {
+  const { keyId, keySecret } = getRazorpayCredentials();
+  if (!keyId || !keySecret) {
+    return { items: [], total: 0 };
+  }
+
+  try {
+    const basicAuth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+    const res = await fetch('https://api.razorpay.com/v1/settlements?count=10', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${basicAuth}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      return { items: [], total: 0 };
+    }
+
+    const data = await res.json();
+    return {
+      items: Array.isArray(data.items) ? data.items : [],
+      total: data.count || 0,
+    };
+  } catch {
+    return { items: [], total: 0 };
+  }
+}
+
+

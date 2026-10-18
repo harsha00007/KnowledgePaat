@@ -65,4 +65,7 @@ Thumbs.db
 /KnowledgePaat_Manual_E2E_Test_Cases.xlsx
 
 # Local document-generation scripts
-/scripts/
+/scripts/frontend/scripts/dist/
+supabase/.branches/
+supabase/.temp/
+frontend/scripts/dist/

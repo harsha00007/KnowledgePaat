@@ -1,17 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { FeatureComingSoon } from '@/components/FeatureComingSoon';
 import { useFeatureFlags } from '@/context/FeatureFlagContext';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { AlertCircle, CheckCircle2, Eye, EyeOff, ArrowRight, UserPlus } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Eye, EyeOff, ArrowRight, UserPlus, Loader2 } from 'lucide-react';
+import { sanitizeInternalRedirectUrl } from '@/lib/safeRedirect';
 
-export default function RegisterPage() {
+function RegisterForm() {
   const { isFeatureEnabled } = useFeatureFlags();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -26,7 +27,13 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false);
   
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  const rawRedirect = searchParams.get('redirectTo');
+  const loginHref = rawRedirect
+    ? `/login?redirectTo=${encodeURIComponent(rawRedirect)}`
+    : '/login';
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -39,11 +46,13 @@ export default function RegisterPage() {
           .eq('id', user.id)
           .maybeSingle();
         const role = profile?.role || 'student';
-        router.replace(role === 'admin' ? '/admin/dashboard' : '/student/dashboard');
+        const fallback = role === 'admin' ? '/admin/dashboard' : '/student/dashboard';
+        const destination = sanitizeInternalRedirectUrl(rawRedirect, fallback);
+        router.replace(destination);
       }
     };
     checkSession();
-  }, [router, supabase]);
+  }, [router, supabase, rawRedirect]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,24 +167,21 @@ export default function RegisterPage() {
   // Feature Flag: Student Registration Gating
   if (!isFeatureEnabled('student_registration')) {
     return (
-      <PublicLayout>
-        <section className="flex-1 flex items-center justify-center bg-[var(--color-bg-subtle)] py-16 px-4">
-          <FeatureComingSoon
-            title="Registration Coming Soon"
-            description="New student registrations are temporarily unavailable while we prepare the next phase of KnowledgePaat. If you already have an account, please sign in."
-            icon={UserPlus}
-            backHref="/"
-            backLabel="Back to Home"
-            badgeText="Registration Paused"
-          />
-        </section>
-      </PublicLayout>
+      <section className="flex-1 flex items-center justify-center bg-[var(--color-bg-subtle)] py-16 px-4">
+        <FeatureComingSoon
+          title="Registration Coming Soon"
+          description="New student registrations are temporarily unavailable while we prepare the next phase of KnowledgePaat. If you already have an account, please sign in."
+          icon={UserPlus}
+          backHref="/"
+          backLabel="Back to Home"
+          badgeText="Registration Paused"
+        />
+      </section>
     );
   }
 
   return (
-    <PublicLayout>
-      <section className="flex-1 flex items-center justify-center bg-[var(--color-bg-subtle)] py-16 px-4 sm:px-6 lg:px-8">
+    <section className="flex-1 flex items-center justify-center bg-[var(--color-bg-subtle)] py-16 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight font-display">
@@ -196,7 +202,7 @@ export default function RegisterPage() {
                 <p className="text-sm text-[var(--color-text-secondary)] mb-6 leading-relaxed">
                   We've sent a verification link to <strong className="text-[var(--color-text-primary)] font-semibold">{email}</strong>. Please check your inbox to confirm your account and sign in.
                 </p>
-                <Link href="/login" className="block w-full">
+                <Link href={loginHref} className="block w-full">
                   <Button className="w-full justify-center">Go to Sign in</Button>
                 </Link>
               </div>
@@ -210,7 +216,7 @@ export default function RegisterPage() {
                     </div>
                     {isAlreadyRegistered && (
                       <div className="pt-1">
-                        <Link href="/login">
+                        <Link href={loginHref}>
                           <Button variant="primary" size="sm" className="w-full justify-center text-xs">
                             Go to Login <ArrowRight className="w-3.5 h-3.5 ml-1" />
                           </Button>
@@ -314,7 +320,7 @@ export default function RegisterPage() {
             {!success && (
               <div className="mt-6 pt-6 border-t border-[var(--color-border)] text-center text-xs text-[var(--color-text-secondary)]">
                 Already have an account?{' '}
-                <Link href="/login" className="font-semibold text-[var(--color-brand-600)] hover:text-[var(--color-brand-700)] transition-colors">
+                <Link href={loginHref} className="font-semibold text-[var(--color-brand-600)] hover:text-[var(--color-brand-700)] transition-colors">
                   Sign in here
                 </Link>
               </div>
@@ -322,6 +328,21 @@ export default function RegisterPage() {
           </div>
         </div>
       </section>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <PublicLayout>
+      <Suspense
+        fallback={
+          <div className="min-h-[50vh] flex items-center justify-center py-20 text-slate-400">
+            <Loader2 className="w-8 h-8 animate-spin text-[#2563EB]" />
+          </div>
+        }
+      >
+        <RegisterForm />
+      </Suspense>
     </PublicLayout>
   );
 }

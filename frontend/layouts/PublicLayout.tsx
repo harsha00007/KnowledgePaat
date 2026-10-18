@@ -3,10 +3,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, ArrowRight, Home, Briefcase, BookOpen, FileText, CreditCard, ChevronRight, Mail } from 'lucide-react';
+import { Menu, X, ArrowRight, Home, Briefcase, BookOpen, FileText, CreditCard, ChevronRight, Mail, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Logo } from '@/components/Logo';
 import { createClient } from '@/utils/supabase/client';
+import { useEBookCart } from '@/lib/ebook/cartContext';
 import {
   fetchSocialLinks,
   SocialLinksSettings,
@@ -16,6 +17,7 @@ import {
 
 const NAV_LINKS = [
   { href: '/',                      label: 'Home',           icon: Home },
+  { href: '/e-books',               label: 'eBooks',         icon: BookOpen },
   { href: '/jobs',                  label: 'Jobs',           icon: Briefcase },
   { href: '/interview-preparation', label: 'Interview Prep', icon: BookOpen },
   { href: '/notes',                 label: 'Notes',          icon: FileText },
@@ -24,6 +26,7 @@ const NAV_LINKS = [
 ];
 
 const FOOTER_PRODUCT = [
+  { href: '/e-books',               label: 'eBooks Bookstore'    },
   { href: '/jobs',                  label: 'Find Jobs'           },
   { href: '/interview-preparation', label: 'Interview Prep'      },
   { href: '/notes',                 label: 'Study Notes'         },
@@ -36,6 +39,7 @@ const FOOTER_COMPANY = [
 ];
 
 const FOOTER_ACCOUNT = [
+  { href: '/my-books', label: 'My Books' },
   { href: '/login',    label: 'Log In'   },
   { href: '/register', label: 'Register' },
   { href: '/admin/login', label: 'Admin Login →' },
@@ -53,6 +57,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router   = useRouter();
   const supabase = createClient();
+  const { cartCount } = useEBookCart();
 
   // Close menu on route change
   useEffect(() => { setIsMenuOpen(false); }, [pathname]);
@@ -234,10 +239,29 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               </Link>
             </div>
 
-            {/* ── RIGHT: Log In & Get Started Free CTA ── */}
+            {/* ── RIGHT: Cart Icon + Log In & Get Started Free CTA ── */}
             <div className="relative z-20 flex items-center gap-1.5 xs:gap-2 sm:gap-3.5 shrink-0">
+              {/* eBook Shopping Cart Icon Link */}
+              <Link
+                href="/cart"
+                className="relative flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-xl text-[#0B1D3A] hover:bg-slate-100 hover:text-[#2563EB] transition-colors border border-slate-200/90 shadow-2xs mr-0.5"
+                aria-label="Shopping Cart"
+              >
+                <ShoppingCart className="h-4.5 w-4.5 stroke-[2.2]" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#2563EB] text-[10px] font-bold text-white shadow-2xs animate-in zoom-in-75">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+
               {user ? (
                 <>
+                  <Link href="/my-books">
+                    <Button variant="ghost" size="sm" className="font-semibold text-xs sm:text-sm px-2 sm:px-2.5 text-[#0B1D3A] hover:text-[#2563EB]">
+                      My Books
+                    </Button>
+                  </Link>
                   <Link href={dashboardHref}>
                     <Button variant="outline" size="sm" className="font-semibold text-xs sm:text-sm px-2.5 sm:px-3">
                       Dashboard

@@ -14,7 +14,11 @@ export type FeatureKey =
   | 'student_subscription'
   | 'student_login'
   | 'student_registration'
-  | 'blur_homepage_pricing';
+  | 'blur_homepage_pricing'
+  | 'ebook_checkout'
+  | 'ebook_my_books'
+  | 'ebook_reader'
+  | 'ebook_pdf_download';
 
 export type FeatureCategory = 'core' | 'tools' | 'prep' | 'store' | 'auth';
 
@@ -164,6 +168,38 @@ export const FEATURE_METADATA: FeatureFlagMeta[] = [
     routePrefix: '/register',
     defaultEnabled: true,
   },
+  {
+    key: 'ebook_checkout',
+    label: 'eBook Digital Checkout & Payments',
+    category: 'store',
+    description: 'Enables live payment capture and automated digital entitlement unlocking for eBooks.',
+    routePrefix: '/checkout',
+    defaultEnabled: true,
+  },
+  {
+    key: 'ebook_my_books',
+    label: 'eBook Customer Digital Library (My Books)',
+    category: 'store',
+    description: 'Enables customer digital library access to view owned books, access tiers, and reading status.',
+    routePrefix: '/my-books',
+    defaultEnabled: true,
+  },
+  {
+    key: 'ebook_reader',
+    label: 'Protected Online eBook Reader',
+    category: 'store',
+    description: 'Online distraction-free reading experience for entitled customers.',
+    routePrefix: '/read',
+    defaultEnabled: true,
+  },
+  {
+    key: 'ebook_pdf_download',
+    label: 'eBook PDF Secure Download Delivery',
+    category: 'store',
+    description: 'Phase 7 secure signed URL PDF downloads for Read + Download customers.',
+    routePrefix: '/api/ebooks/download',
+    defaultEnabled: true,
+  },
 ];
 
 export const DEFAULT_FEATURE_FLAGS: Record<FeatureKey, boolean> = {
@@ -183,6 +219,10 @@ export const DEFAULT_FEATURE_FLAGS: Record<FeatureKey, boolean> = {
   student_login: true,
   student_registration: true,
   blur_homepage_pricing: true,
+  ebook_checkout: true,
+  ebook_my_books: true,
+  ebook_reader: true,
+  ebook_pdf_download: true,
 };
 
 export const CATEGORY_LABELS: Record<FeatureCategory, string> = {

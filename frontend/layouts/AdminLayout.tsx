@@ -28,6 +28,9 @@ import { Logo } from '@/components/Logo';
 const NAV_ITEMS = [
   { name: 'Dashboard',           href: '/admin/dashboard',            icon: LayoutDashboard },
   { name: 'Students',            href: '/admin/students',             icon: Users },
+  { name: 'eBooks',              href: '/admin/e-books',              icon: BookOpen, matchPrefix: '/admin/e-books' },
+  { name: 'eBook Customers',     href: '/admin/e-book-customers',     icon: Users },
+  { name: 'eBook Orders',        href: '/admin/e-book-orders',        icon: Receipt },
   { name: 'Jobs',                href: '/admin/jobs',                 icon: Briefcase },
   { name: 'Interview Prep',      href: '/admin/interview-questions',  icon: MessageSquare, matchPrefix: '/admin/interview' },
   { name: 'Notes',               href: '/admin/notes',                icon: BookOpen },

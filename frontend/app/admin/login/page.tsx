@@ -34,13 +34,18 @@ export default function AdminLoginPage() {
     const checkSession = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .maybeSingle();
+        // Verify user role using is_admin RPC first (bypasses recursive RLS policy on profiles)
+        const { data: isAdminRpc } = await supabase.rpc('is_admin');
+        let role = isAdminRpc ? 'admin' : null;
+        if (!role) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .maybeSingle();
+          role = profile?.role || 'student';
+        }
 
-        const role = profile?.role || 'student';
         if (role === 'admin') {
           router.replace('/admin/dashboard');
         } else {
@@ -69,14 +74,17 @@ export default function AdminLoginPage() {
       }
 
       if (data.user) {
-        // Critical: Verify user role from profiles
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.user.id)
-          .maybeSingle();
-
-        const role = profile?.role;
+        // Critical: Verify user role using is_admin RPC first (immune to recursive profiles RLS)
+        const { data: isAdminRpc } = await supabase.rpc('is_admin');
+        let role = isAdminRpc ? 'admin' : null;
+        if (!role) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .maybeSingle();
+          role = profile?.role;
+        }
 
         if (role === 'admin') {
           router.replace('/admin/dashboard');

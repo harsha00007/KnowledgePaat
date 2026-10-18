@@ -216,4 +216,8 @@ export const RATE_LIMIT_POLICIES = {
 
   // Public Inquiries
   CONTACT_SUBMIT: { limit: 5, windowSeconds: 300 },       // 5 contact messages per 5 mins per IP
+
+  // eBook Downloads & Upgrades (Phase 7)
+  EBOOK_DOWNLOAD: { limit: 15, windowSeconds: 60 },       // 15 download link requests per minute
+  EBOOK_UPGRADE: { limit: 10, windowSeconds: 300 },       // 10 upgrade quotes/orders per 5 mins
 };
