@@ -233,7 +233,7 @@ export async function getAuthorizedDownloadUrl(
 export async function getUpgradeQuote(
   bookId: string,
   editionId?: string | null,
-  explicitCustomer?: VerifiedCustomer
+  explicitCustomer?: VerifiedCustomer | { userId: string; email?: string }
 ): Promise<EBookUpgradeQuote> {
   let customer = explicitCustomer;
   if (!customer) {

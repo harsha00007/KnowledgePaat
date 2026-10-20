@@ -7,10 +7,19 @@ import {
   grantComplimentaryAccess 
 } from '@/lib/ebook/accessManagement';
 import { UUID_REGEX } from '@/lib/ebook/validation';
+import { verifyAdminRequest } from '@/lib/ebook/adminAuth';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
-async function verifyAdminAuth() {
+async function verifyAdminAuth(req?: NextRequest) {
+  if (req) {
+    const authRes = await verifyAdminRequest(req, 'admin_customers');
+    if (authRes.authorized && authRes.user) {
+      return { authorized: true, user: authRes.user, supabase: authRes.supabase };
+    }
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -27,7 +36,7 @@ async function verifyAdminAuth() {
 
 export async function GET(req: NextRequest) {
   try {
-    const auth = await verifyAdminAuth();
+    const auth = await verifyAdminAuth(req);
     if (!auth.authorized) {
       return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
     }
@@ -130,13 +139,36 @@ export async function GET(req: NextRequest) {
           action,
           entity_type,
           entity_id,
+          actor_id,
           metadata,
-          created_at,
-          actor:profiles!ebook_audit_logs_actor_id_fkey (full_name, email)
+          created_at
         `)
         .or(`metadata->>customer_id.eq.${customerId},metadata->>target_customer_id.eq.${customerId}`)
         .order('created_at', { ascending: false })
         .limit(20);
+
+      // Resolve actor names
+      const actorIds = Array.from(new Set((auditLogs || []).map((l: any) => l.actor_id).filter(Boolean)));
+      const actorsMap = new Map<string, { full_name: string | null; email: string | null }>();
+      if (actorIds.length > 0) {
+        const { data: actorProfiles } = await adminClient
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', actorIds);
+        for (const ap of (actorProfiles || [])) {
+          actorsMap.set(ap.id, { full_name: ap.full_name, email: ap.email });
+        }
+      }
+
+      const formattedAuditLogs = (auditLogs || []).map((log: any) => ({
+        id: log.id,
+        action: log.action,
+        entity_type: log.entity_type,
+        entity_id: log.entity_id,
+        metadata: log.metadata,
+        created_at: log.created_at,
+        actor: actorsMap.get(log.actor_id) || { full_name: 'Administrator', email: null },
+      }));
 
       // Fetch available catalogue books for complimentary grant selector
       const { data: publishedBooks } = await adminClient
@@ -182,7 +214,8 @@ export async function GET(req: NextRequest) {
     let profilesQuery = adminClient
       .from('profiles')
       .select('id, email, full_name, created_at, role, is_active', { count: 'exact' })
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true });
 
     if (search) {
       profilesQuery = profilesQuery.or(`email.ilike.%${search}%,full_name.ilike.%${search}%`);
@@ -193,6 +226,24 @@ export async function GET(req: NextRequest) {
     const { data: profiles, count, error: listErr } = await profilesQuery;
 
     if (listErr) {
+      if (listErr.code === 'PGRST103' || String(listErr.message || '').toLowerCase().includes('range')) {
+        const { count: exactTotal } = await adminClient
+          .from('profiles')
+          .select('id', { count: 'exact', head: true });
+        const total = exactTotal || 0;
+        const totalPages = Math.ceil(total / limit) || 1;
+        return NextResponse.json({
+          success: true,
+          customers: [],
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasMore: false,
+          }
+        });
+      }
       console.error('Error querying customer profiles:', listErr);
       return NextResponse.json({ success: false, error: 'Failed to query customer list.' }, { status: 500 });
     }
@@ -308,9 +359,17 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const auth = await verifyAdminAuth();
+    const auth = await verifyAdminAuth(req);
     if (!auth.authorized || !auth.user) {
-      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+      return NextResponse.json({ success: false, error: auth.error || 'Unauthorized' }, { status: auth.status || 401 });
+    }
+
+    const rl = await checkRateLimit(
+      `admin_access:${auth.user.id}`,
+      RATE_LIMIT_POLICIES.ADMIN_ACCESS_MUTATION
+    );
+    if (!rl.success) {
+      return rateLimitResponse(rl);
     }
 
     const body = await req.json().catch(() => ({}));

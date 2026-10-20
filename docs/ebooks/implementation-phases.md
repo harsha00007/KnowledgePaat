@@ -239,3 +239,99 @@ graph TD
 - **Manual Acceptance Checks**:
   - Complete full customer journey: browse -> read sample -> add to cart -> register -> pay ₹49 -> read online -> upgrade for ₹50 -> download PDF -> admin audit -> refund.
 - **Definition of Done**: 100% test pass rate, zero regressions, and formal production sign-off.
+
+---
+
+# UI Enhancement 4-Phase Roadmap
+
+```mermaid
+graph TD
+    U1[UI Phase 1: Commercial Pricing, Homepage Config & Customer Admin - COMPLETE] --> U2[UI Phase 2: Separate eBook Section, Navigation & Auth Return Paths - COMPLETE]
+    U2 --> U3[UI Phase 3: Reference-Based eBook Storefront Redesign - COMPLETE]
+    U3 --> U4[UI Phase 4: Section Transitions, Animations & Rate Limiting Hardening]
+```
+
+## UI Enhancement Phase 1: Pricing Engine, Homepage & Customer Management (COMPLETED)
+- **Status:** **COMPLETE & VERIFIED (36/36 Automated Checks Passing)**
+- **Scope**:
+  - Single authoritative commercial pricing in `public.ebook_pricing` with unique constraint per edition.
+  - Commercial price modifications on published books decoupled from immutable chapter text and PDF storage references.
+  - Compatibility mirrors in `ebook_editions` updated synchronously; pricing versions and audit trails recorded atomically.
+  - Integer paise calculations, deterministic half-up rounding, and rejection of ₹0 commercial offers.
+  - Optimistic concurrency control via `pricing_version` with HTTP 409 Conflict rejection for stale administrator edits.
+  - Modern eBook Storefront Content Editor (`/admin/e-books/homepage`) with isolated draft and atomic publishing.
+  - eBook Customer Management (`/admin/e-book-customers`) with bounded server-side pagination, search, and audited access actions.
+  - Dynamic pricing integration across storefront catalogue, book details, cart validation, checkout, and upgrade quotes.
+- **Key Artifacts & Docs**:
+  - `docs/ebooks/ui-phase-1-implementation.md`
+  - `docs/ebooks/ui-phase-1-checklist.md`
+  - `docs/ebooks/ui-phase-1-manual-tests.md`
+  - `frontend/scripts/test_ui_phase1_suite.ts`
+
+## UI Enhancement Phase 2: Separate eBook Section, Dedicated Navigation & Auth Return Paths (COMPLETED)
+- **Status:** **COMPLETE & VERIFIED (32/32 Automated Checks Passing)**
+- **Scope**:
+  - Added "E-Books" navigation button directly beside the hamburger menu in `PublicLayout.tsx`.
+  - Removed standalone eBook shopping cart icon control from main platform header (retained inside bookstore only).
+  - Created dedicated `EBookLayout.tsx` with official KnowledgePaat logo linking to `/`, "eBooks" badge, Store Home (`/e-books`), Browse Books (`/e-books#catalogue`), Categories dropdown with category filtering, My Books (`/my-books`), fast search toggle, and cart badge.
+  - Accessible mobile drawer with `role="dialog"`, `aria-modal="true"`, `Escape` listener, focus restoration, accessible close button, and zero horizontal overflow.
+  - Dedicated 4-column bookstore footer with brand mission, bookstore links, career platform links, account controls, dynamic social links, and "Back to KnowledgePaat Platform Home" (`/`).
+  - Correct page wrappers applied across `/e-books`, `/e-books/[bookId]`, `/cart`, `/checkout`, `/checkout/success`, and `/my-books`. Preserved distraction-free `/read/...` and administrative `AdminLayout`. Zero simultaneous header rendering.
+  - Preserved public anonymous browsing for catalogue, search, filters, details, samples, and guest cart.
+  - Authenticated student access verified without unwanted redirects to `/student/dashboard`.
+  - Secure authentication return paths via `sanitizeInternalRedirectUrl`, rejecting open-redirect and protocol attack vectors.
+  - Cart state continuity across route changes via `EBookCartProvider` at root layout under canonical key `knowledgepaat_ebook_cart_v1`.
+- **Key Artifacts & Docs**:
+  - `docs/ebooks/ui-phase-2-implementation.md`
+  - `docs/ebooks/ui-phase-2-checklist.md`
+  - `docs/ebooks/ui-phase-2-manual-tests.md`
+  - `frontend/scripts/test_ui_phase2_suite.ts`
+  - `frontend/scripts/capture_phase2_screenshots.ts`
+  - Visual Screenshots: `screenshots/ui_phase2_*.png`
+
+## UI Enhancement Phase 3: Reference-Based eBook Storefront Redesign (COMPLETED)
+- **Status:** **COMPLETE & VERIFIED (15/15 Automated Checks Passing, 9 Visual Screenshots Captured, Clean Build)**
+- **Scope**:
+  - Established visual design tokens (`globals.css`): `#130B24` / `#1B0E36` deep purple, `#FAF9FD` lavender background, `#FBBF24` / `#F59E0B` gold accents, `#EBE5F5` card borders, and Google Font `Playfair Display` serif typography.
+  - Preserved official brand asset (`/brand/knowledgepaat_logo.png`) inside high-contrast crisp white container.
+  - Implemented Reference Two-Column Hero:
+    - Left: Gold eyebrow pill, large Playfair Display serif heading with gold gradient highlight, description, 3 benefit pills, gold CTA to `#catalogue`.
+    - Right: Three-book 3D perspective stage with tilted left/right books, central featured book, and violet elliptical pedestal.
+  - Curated Selection: 4 horizontal cards across desktop, 1 on mobile, featuring 3D thumbnail, serif title, author, genuine rating (never fabricated), authoritative selling price with discount strikethrough, and state-aware "Add" / "In Cart" / "Read" actions. Graceful padding from catalogue if < 4 books configured.
+  - Spotlight Publication Section: 3-column layout with large 3D book cover, center spotlight details with green platform benefits checklist, and right two access plan cards ("Read Online" vs "Read + Download") with server pricing and recommended gold badge. Direct `addToCart(bookId, plan)` integration.
+  - Full Catalogue at `#catalogue`: 2 cards per row on desktop, 1 on mobile, sticky search toolbar, category filter pills, pagination controls, and active category state.
+  - Complete elimination of hardcoded `₹49` / `₹99` fallback strings across storefront, drawers, cart, checkout licensing, and book details.
+  - Dedicated deep purple footer with contrast logo container, 4-column directory, SVG social icons, and platform return link.
+  - Aesthetic harmony applied to downstream pages (`/e-books/[bookId]`, `/cart`, `/checkout`, `/my-books`).
+- **Key Artifacts & Docs**:
+  - `docs/ebooks/ui-phase-3-implementation.md`
+  - `docs/ebooks/ui-phase-3-checklist.md`
+  - `docs/ebooks/ui-phase-3-manual-tests.md`
+  - `frontend/scripts/test_ui_phase3_suite.ts`
+  - `frontend/scripts/capture_phase3_screenshots.ts`
+  - Visual Screenshots: `screenshots/01_desktop_storefront_hero_featured.png` through `09_my_books_phase3.png`
+
+## UI Enhancement Phase 4: Section Transitions, Distributed Rate Limiting & Scalable Pagination (REMEDIATION COMPLETE)
+- **Status:** **REMEDIATION COMPLETE & VERIFIED (19/20 Remediation Checks Passed, 1 UNVERIFIED Edge Proxy Requirement, 21/21 UI Phase 4 Regression Checks Passed, Clean Build)**
+- **Scope & Deliverables**:
+  - **Section-Switching Animation**: 350ms directional slide animations with `overflow-x: clip` eliminating layout shift and horizontal scrollbars. Main→EBooks slides left/enters right; EBooks→Main slides right/enters left.
+  - **Accessibility**: `@media (prefers-reduced-motion: reduce)` immediate 0ms transition bypass with `opacity: 1 !important`.
+  - **Navigation Integrity**: Client router navigation fires immediately without artificial delay; native modifier keys (`metaKey`, `ctrlKey`, `shiftKey`, `altKey`) and middle-click new tab opening preserved.
+  - **Shared Rate-Limit Atomicity & Dedicated Storage**: In-process `withKeyLock` mutex completely eliminated. Multi-instance shared state persisted in dedicated table `ebook_webhook_events` (`gateway='rate_limit'`). Unique constraint on `event_id` (`rl:${key}:${windowBucket}:${slot}`) guarantees multi-instance atomicity. `public.ebook_audit_logs` contains 0 ephemeral rate-limit rows, keeping business audit history intact. Bounded retention automatically purges expired rate-limit slots without deleting business audit events.
+  - **Real Cross-Process Concurrency**: Concurrently executed across 6 distinct OS child processes (`rate_limit_worker.ts`). Exactly 4 allowed (limit 4) and 2 blocked with HTTP 429 and accurate `Retry-After`. Quota persists across process restarts (restarted process immediately blocked). Customer B maintains independent quota. Sensitive mutations rejected by rate limit leave business state invariant (0 entitlements modified).
+  - **Forwarded-IP Trust & Anti-Spoofing**: Forwarded client-IP headers (`cf-connecting-ip`, `x-real-ip`, `x-forwarded-for`) are accepted ONLY when `TRUST_PROXY=true`. Authenticated customer account quotas bind strictly to verified customer identity (`auth.user.id`), immune to header spoofing. Edge proxy trust labeled **UNVERIFIED in local runner** with documented reverse-proxy requirements.
+  - **Endpoint Policy Coverage & Truthful 503 Outage**: All 18 policies verified and actively invoked across all corresponding API routes. Quota exhaustion returns HTTP 429 (`RATE_LIMIT_EXCEEDED`). Backend outage returns truthful HTTP 503 (`LIMITER_UNAVAILABLE`), safely protecting sensitive operations while enabling payment provider webhook retries. Public search degrades safely to in-memory sliding store during DB outage.
+  - **Complete Filtered CSV Export (>5,000 Records)**: Replaced single capped query with bounded batched retrieval (`BATCH_SIZE=1000`, `MAX_CSV_EXPORT=10000`) overcoming PostgREST 1,000-row limit. Verified with 5,100 disposable order fixtures: exported all 5,100 records (>1,000 and >5,000 verified), filtered subset (2,600 paid), 0 omissions, 0 duplicates, formula injection protection (`sanitizeCsvField`). Disposable fixtures cleanly purged.
+  - **Server-Side Pagination**: Bounded limits (1-50), stable deterministic sorting (`created_at DESC, id ASC`), PGRST103 safe out-of-range empty page handling.
+  - **Visual & Content Accuracy**: Exact paise formatting preserved across all views; unsupported fixed claims removed.
+- **Key Artifacts & Docs**:
+  - `docs/ebooks/ui-phase-4-implementation.md`
+  - `docs/ebooks/ui-phase-4-checklist.md`
+  - `docs/ebooks/ui-phase-4-manual-tests.md`
+  - `docs/ebooks/ui-enhancements-final-report.md`
+  - `frontend/scripts/test_phase4_remediation_suite.ts`
+  - `frontend/scripts/test_ui_phase4_suite.ts`
+  - `frontend/scripts/rate_limit_worker.ts`
+  - `frontend/scripts/capture_phase4_journeys.ts`
+  - Visual Evidence: `screenshots/phase4_journey_a_bookstore_entry.png` through `phase4_journey_j_admin_live_presentation.png`
+

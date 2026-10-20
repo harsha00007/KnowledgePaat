@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { UUID_REGEX } from '@/lib/ebook/validation';
+import { checkRateLimit, rateLimitResponse, getRealClientIp, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,12 @@ interface CartInputItem {
 
 export async function POST(req: NextRequest) {
   try {
+    const clientIp = getRealClientIp(req);
+    const rl = await checkRateLimit(`cart_validate:${clientIp}`, RATE_LIMIT_POLICIES.CART_VALIDATE);
+    if (!rl.success) {
+      return rateLimitResponse(rl);
+    }
+
     const body = await req.json().catch(() => ({}));
     const rawItems = Array.isArray(body?.items) ? body.items : [];
 

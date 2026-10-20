@@ -21,6 +21,7 @@ import {
 import { Button } from '@/components/Button';
 import { FreeSampleDrawer } from '@/components/ebook/FreeSampleDrawer';
 import { useEBookCart, EBookPlan } from '@/lib/ebook/cartContext';
+import { formatPaise } from '@/lib/ebook/pricingShared';
 
 interface BookDetailClientProps {
   book: {
@@ -97,8 +98,8 @@ export function BookDetailClient({
     onlinePricing.online_discount_type !== 'none' && 
     (onlinePricing.online_original_price_paise || 0) > edition.price_read_online_paise
   );
-  const onlineOriginalRupees = hasOnlineDiscount 
-    ? `₹${Math.round((onlinePricing?.online_original_price_paise || 0) / 100)}` 
+  const onlineOriginalRupees = hasOnlineDiscount && (onlinePricing?.online_original_price_paise || 0) > edition.price_read_online_paise
+    ? formatPaise(onlinePricing!.online_original_price_paise!, edition.currency) 
     : null;
 
   const hasDownloadDiscount = Boolean(
@@ -106,13 +107,13 @@ export function BookDetailClient({
     onlinePricing.download_discount_type !== 'none' && 
     (onlinePricing.download_original_price_paise || 0) > edition.price_read_download_paise
   );
-  const downloadOriginalRupees = hasDownloadDiscount 
-    ? `₹${Math.round((onlinePricing?.download_original_price_paise || 0) / 100)}` 
+  const downloadOriginalRupees = hasDownloadDiscount && (onlinePricing?.download_original_price_paise || 0) > edition.price_read_download_paise
+    ? formatPaise(onlinePricing!.download_original_price_paise!, edition.currency) 
     : null;
 
-  const priceOnline = `₹${Math.round(edition.price_read_online_paise / 100)}`;
-  const priceDownload = `₹${Math.round(edition.price_read_download_paise / 100)}`;
-  const priceUpgrade = `₹${Math.round(edition.price_upgrade_pdf_paise / 100)}`;
+  const priceOnline = formatPaise(edition.price_read_online_paise, edition.currency);
+  const priceDownload = formatPaise(edition.price_read_download_paise, edition.currency);
+  const priceUpgrade = formatPaise(edition.price_upgrade_pdf_paise, edition.currency);
 
   const inCart = hasBook(book.id);
   const currentCartPlan = getBookPlan(book.id);
@@ -131,20 +132,20 @@ export function BookDetailClient({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/60 pb-24">
+    <div className="min-h-screen bg-[#FAF9FD] text-[#130B24] pb-24">
       {/* ── BREADCRUMB ────────────────────────────────────────────── */}
-      <nav aria-label="Breadcrumb" className="bg-white border-b border-slate-200/80 py-3">
+      <nav aria-label="Breadcrumb" className="bg-white border-b border-purple-100 py-3">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <ol className="flex items-center space-x-2 text-xs font-semibold text-slate-500 font-display">
+          <ol className="flex items-center space-x-2 text-xs font-semibold text-purple-900/60 font-display">
             <li>
-              <Link href="/" className="hover:text-[#2563EB] transition-colors">Home</Link>
+              <Link href="/" className="hover:text-purple-900 transition-colors">Home</Link>
             </li>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+            <ChevronRight className="w-3.5 h-3.5 text-purple-300" />
             <li>
-              <Link href="/e-books" className="hover:text-[#2563EB] transition-colors">eBooks</Link>
+              <Link href="/e-books" className="hover:text-purple-900 transition-colors">eBooks</Link>
             </li>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-            <li className="text-[#0B1D3A] truncate max-w-xs sm:max-w-md" aria-current="page">
+            <ChevronRight className="w-3.5 h-3.5 text-purple-300" />
+            <li className="text-[#130B24] font-bold truncate max-w-xs sm:max-w-md" aria-current="page">
               {book.title}
             </li>
           </ol>
@@ -152,7 +153,7 @@ export function BookDetailClient({
       </nav>
 
       {/* ── MAIN PRODUCT HEADER & PURCHASING SECTION ──────────────── */}
-      <section className="bg-white border-b border-slate-200/80 pt-8 pb-12">
+      <section className="bg-white border-b border-purple-100 pt-8 pb-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
             
@@ -221,43 +222,43 @@ export function BookDetailClient({
 
               {/* Title & Author */}
               <div className="space-y-1">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#0B1D3A] font-display tracking-tight leading-tight">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black font-serif text-[#130B24] tracking-tight leading-tight">
                   {book.title}
                 </h1>
                 {book.subtitle && (
-                  <p className="text-base sm:text-lg text-slate-600 font-medium font-sans">
+                  <p className="text-base sm:text-lg text-purple-900/70 font-medium font-sans">
                     {book.subtitle}
                   </p>
                 )}
-                <p className="text-sm sm:text-base text-slate-600 pt-1">
-                  Authored by <strong className="text-[#0B1D3A] font-bold">{book.author}</strong>
+                <p className="text-sm sm:text-base text-purple-900/60 pt-1">
+                  Authored by <strong className="text-[#130B24] font-bold">{book.author}</strong>
                 </p>
               </div>
 
               {/* Intended Audience */}
               {book.reader_role && (
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs sm:text-sm text-slate-700 flex items-start gap-2.5">
-                  <Info className="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
+                <div className="p-3.5 rounded-xl bg-purple-50/70 border border-purple-200/80 text-xs sm:text-sm text-purple-900 flex items-start gap-2.5">
+                  <Info className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-bold text-[#0B1D3A]">Intended Audience: </span>
+                    <span className="font-bold text-[#130B24]">Intended Audience: </span>
                     <span>{book.reader_role}</span>
                   </div>
                 </div>
               )}
 
               {/* Short summary */}
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-sans">
+              <p className="text-sm sm:text-base text-purple-950/80 leading-relaxed font-sans">
                 {book.description}
               </p>
 
               {/* ── ACCESS PLAN SELECTION BOX ──────────────────────── */}
-              <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/40 border border-blue-100/90 space-y-4">
+              <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-purple-50/50 via-white to-amber-50/30 border border-purple-200/80 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm sm:text-base font-bold text-[#0B1D3A] font-display flex items-center gap-2">
-                    <ShieldCheck className="w-4.5 h-4.5 text-[#2563EB]" />
+                  <h3 className="text-sm sm:text-base font-bold text-[#130B24] font-display flex items-center gap-2">
+                    <ShieldCheck className="w-4.5 h-4.5 text-purple-600" />
                     Choose Your Access Plan
                   </h3>
-                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+                  <span className="text-[11px] font-bold text-amber-700 bg-amber-400/15 border border-amber-400/30 px-2.5 py-0.5 rounded-full uppercase tracking-wide">
                     Lifetime Access
                   </span>
                 </div>
@@ -267,8 +268,8 @@ export function BookDetailClient({
                   <label
                     className={`relative flex flex-col justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
                       selectedPlan === 'read_online'
-                        ? 'border-[#2563EB] bg-white shadow-sm'
-                        : 'border-slate-200 bg-white/70 hover:border-slate-300'
+                        ? 'border-purple-500 bg-white shadow-sm ring-1 ring-purple-300'
+                        : 'border-purple-100 bg-white/70 hover:border-purple-300'
                     }`}
                   >
                     <input
@@ -281,32 +282,32 @@ export function BookDetailClient({
                     />
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 font-display">
+                        <span className="text-xs font-bold uppercase tracking-wider text-purple-600 font-display">
                           Online Reader
                         </span>
                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                          selectedPlan === 'read_online' ? 'border-[#2563EB] bg-[#2563EB]' : 'border-slate-300'
+                          selectedPlan === 'read_online' ? 'border-purple-600 bg-purple-600' : 'border-purple-200'
                         }`}>
                           {selectedPlan === 'read_online' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </div>
                       </div>
                       <div className="flex flex-wrap items-baseline gap-2">
                         {onlineOriginalRupees && (
-                          <span className="text-sm font-semibold text-slate-400 line-through">
+                          <span className="text-sm font-semibold text-purple-400 line-through">
                             {onlineOriginalRupees}
                           </span>
                         )}
-                        <span className="text-2xl font-black text-[#0B1D3A] font-display">{priceOnline}</span>
+                        <span className="text-2xl font-black text-[#130B24] font-display">{priceOnline}</span>
                         {hasOnlineDiscount && (
                           <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
                             {onlinePricing?.online_discount_type === 'percentage' 
                               ? `${onlinePricing.online_discount_value}% OFF`
-                              : `SAVE ₹${Math.round((onlinePricing?.online_discount_value || 0) / 100)}`}
+                              : `SAVE ${formatPaise(onlinePricing?.online_discount_value || 0, edition.currency)}`}
                           </span>
                         )}
-                        <span className="text-xs text-slate-400">one-time</span>
+                        <span className="text-xs text-purple-400 font-medium">one-time</span>
                       </div>
-                      <p className="text-xs text-slate-600 leading-snug">
+                      <p className="text-xs text-purple-900/70 leading-snug">
                         Website online reading on any device. Note: Does not include PDF download.
                       </p>
                     </div>
@@ -316,8 +317,8 @@ export function BookDetailClient({
                   <label
                     className={`relative flex flex-col justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
                       selectedPlan === 'read_download'
-                        ? 'border-[#2563EB] bg-white shadow-sm ring-1 ring-[#2563EB]/20'
-                        : 'border-slate-200 bg-white/70 hover:border-slate-300'
+                        ? 'border-amber-400 bg-white shadow-md ring-2 ring-amber-300/40'
+                        : 'border-purple-100 bg-white/70 hover:border-amber-300'
                     }`}
                   >
                     <input
@@ -329,46 +330,46 @@ export function BookDetailClient({
                       className="sr-only"
                     />
                     {/* Value Badge */}
-                    <span className="absolute -top-2.5 right-4 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#2563EB] text-white shadow-2xs font-display">
+                    <span className="absolute -top-2.5 right-4 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-400 to-amber-500 text-[#130B24] shadow-xs font-display uppercase tracking-wider">
                       Most Popular
                     </span>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-[#2563EB] font-display">
+                        <span className="text-xs font-bold uppercase tracking-wider text-amber-800 font-display">
                           Read + Download
                         </span>
                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                          selectedPlan === 'read_download' ? 'border-[#2563EB] bg-[#2563EB]' : 'border-slate-300'
+                          selectedPlan === 'read_download' ? 'border-amber-500 bg-amber-500' : 'border-purple-200'
                         }`}>
                           {selectedPlan === 'read_download' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </div>
                       </div>
                       <div className="flex flex-wrap items-baseline gap-2">
                         {downloadOriginalRupees && (
-                          <span className="text-sm font-semibold text-slate-400 line-through">
+                          <span className="text-sm font-semibold text-purple-400 line-through">
                             {downloadOriginalRupees}
                           </span>
                         )}
-                        <span className="text-2xl font-black text-[#0B1D3A] font-display">{priceDownload}</span>
+                        <span className="text-2xl font-black text-amber-950 font-display">{priceDownload}</span>
                         {hasDownloadDiscount && (
                           <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
                             {onlinePricing?.download_discount_type === 'percentage'
                               ? `${onlinePricing.download_discount_value}% OFF`
-                              : `SAVE ₹${Math.round((onlinePricing?.download_discount_value || 0) / 100)}`}
+                              : `SAVE ${formatPaise(onlinePricing?.download_discount_value || 0, edition.currency)}`}
                           </span>
                         )}
-                        <span className="text-xs text-slate-400">one-time</span>
+                        <span className="text-xs text-purple-400 font-medium">one-time</span>
                       </div>
-                      <p className="text-xs text-slate-600 leading-snug">
+                      <p className="text-xs text-purple-900/70 leading-snug">
                         Website online reading PLUS downloadable, complete PDF edition for offline studying.
                       </p>
                     </div>
                   </label>
                 </div>
 
-                {/* Clear ₹50 Upgrade explanation */}
-                <p className="text-xs text-slate-500 flex items-center gap-1.5 pt-1">
-                  <Sparkles className="w-3.5 h-3.5 text-[#00C2CB] shrink-0" />
+                {/* Upgrade explanation */}
+                <p className="text-xs text-purple-700/70 flex items-center gap-1.5 pt-1">
+                  <Sparkles className="w-3.5 h-3.5 text-[#F59E0B] shrink-0" />
                   <span>
                     Online buyers can add offline PDF access at any time later for <strong>+{priceUpgrade}</strong>.
                   </span>
@@ -376,36 +377,39 @@ export function BookDetailClient({
 
                 {/* Actions: Add to Cart & View Cart */}
                 <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    isLoading={isAdding}
+                  <button
+                    type="button"
+                    disabled={isAdding}
                     onClick={handleAddToCart}
-                    className="w-full sm:w-auto px-8 font-bold text-sm shadow-brand"
+                    className="btn-gold w-full sm:w-auto px-8 py-3 font-bold text-sm rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md"
                   >
                     {justAdded ? (
                       <>
-                        <Check className="w-4 h-4 mr-2" />
-                        Added to Cart!
+                        <Check className="w-4 h-4" />
+                        <span>Added to Cart!</span>
                       </>
                     ) : inCart ? (
                       <>
-                        <ShoppingCart className="w-4 h-4 mr-2" />
-                        Update Cart Plan ({selectedPlan === 'read_download' ? priceDownload : priceOnline})
+                        <ShoppingCart className="w-4 h-4" />
+                        <span>Update Cart Plan ({selectedPlan === 'read_download' ? priceDownload : priceOnline})</span>
                       </>
                     ) : (
                       <>
-                        <ShoppingCart className="w-4 h-4 mr-2" />
-                        Add to Cart — {selectedPlan === 'read_download' ? priceDownload : priceOnline}
+                        <ShoppingCart className="w-4 h-4" />
+                        <span>Add to Cart — {selectedPlan === 'read_download' ? priceDownload : priceOnline}</span>
                       </>
                     )}
-                  </Button>
+                  </button>
 
                   {inCart && (
                     <Link href="/cart" className="w-full sm:w-auto">
-                      <Button variant="secondary" size="lg" className="w-full font-semibold text-sm">
-                        View in Cart <ArrowRight className="w-4 h-4 ml-1.5" />
-                      </Button>
+                      <button
+                        type="button"
+                        className="w-full px-6 py-3 rounded-xl border border-purple-200 bg-white hover:bg-purple-50 text-purple-900 font-bold text-sm transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <span>View in Cart</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
                     </Link>
                   )}
                 </div>

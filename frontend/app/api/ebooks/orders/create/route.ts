@@ -18,8 +18,8 @@ export async function POST(req: NextRequest) {
     const customer = authResult.customer;
 
     // 2. Enforce payment rate limits
-    const rateLimitKey = `pay_create_ebook:${customer.userId}`;
-    const rl = await checkRateLimit(rateLimitKey, RATE_LIMIT_POLICIES.PAYMENT_CREATE);
+    const rateLimitKey = `order_create_ebook:${customer.userId}`;
+    const rl = await checkRateLimit(rateLimitKey, RATE_LIMIT_POLICIES.ORDER_CREATE);
     if (!rl.success) {
       return rateLimitResponse(rl);
     }

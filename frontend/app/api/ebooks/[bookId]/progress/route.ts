@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getVerifiedCustomer } from '@/lib/ebook/customerAuth';
 import { saveReadingProgress } from '@/lib/ebook/reader';
 import { createClient } from '@/utils/supabase/server';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,6 +63,14 @@ export async function POST(
         { success: false, error: authResult.message },
         { status: authResult.status }
       );
+    }
+
+    const rl = await checkRateLimit(
+      `reader_persist:${authResult.customer.userId}`,
+      RATE_LIMIT_POLICIES.READER_PERSIST
+    );
+    if (!rl.success) {
+      return rateLimitResponse(rl);
     }
 
     const body = await req.json();

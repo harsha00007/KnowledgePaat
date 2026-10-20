@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { PublicLayout } from '@/layouts/PublicLayout';
+import { EBookLayout } from '@/layouts/EBookLayout';
 import { BookstoreClient } from './BookstoreClient';
 import { Loader2 } from 'lucide-react';
 
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 
 export default function EBooksPage() {
   return (
-    <PublicLayout>
+    <EBookLayout>
       <Suspense
         fallback={
           <div className="min-h-[60vh] flex flex-col items-center justify-center py-24 text-slate-400 space-y-3">
@@ -34,6 +34,6 @@ export default function EBooksPage() {
       >
         <BookstoreClient />
       </Suspense>
-    </PublicLayout>
+    </EBookLayout>
   );
 }

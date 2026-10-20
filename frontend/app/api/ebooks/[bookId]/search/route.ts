@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVerifiedCustomer } from '@/lib/ebook/customerAuth';
 import { searchAuthorizedBook } from '@/lib/ebook/reader';
-import { checkRateLimit, getRealClientIp } from '@/lib/rateLimit';
+import { checkRateLimit, getRealClientIp, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,21 +31,13 @@ export async function GET(
       );
     }
 
-    // 2. Rate limiting (30 requests per minute per user/IP)
+    // 2. Rate limiting (READER_SEARCH policy)
     const clientIp = getRealClientIp(req);
-    const rateLimitKey = `search_${authResult.customer.userId || clientIp}`;
-    const rateLimit = await checkRateLimit(rateLimitKey, { limit: 30, windowSeconds: 60 });
+    const rateLimitKey = `reader_search_${authResult.customer.userId || clientIp}`;
+    const rateLimit = await checkRateLimit(rateLimitKey, RATE_LIMIT_POLICIES.READER_SEARCH);
 
     if (!rateLimit.success) {
-      return NextResponse.json(
-        { success: false, error: 'Too many search requests. Please slow down.' },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': String(rateLimit.retryAfter || 5),
-          },
-        }
-      );
+      return rateLimitResponse(rateLimit);
     }
 
     // 3. Perform authorized search

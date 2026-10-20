@@ -7,6 +7,8 @@ import { BookOpen, Sparkles, ArrowRight, ShoppingCart, Check, FileText } from 'l
 import { Button } from '@/components/Button';
 import { useEBookCart } from '@/lib/ebook/cartContext';
 
+import { formatPaise } from '@/lib/ebook/pricingShared';
+
 export interface BookCardData {
   id: string;
   slug: string;
@@ -42,18 +44,18 @@ export function BookCard({ book, onOpenSample, onQuickAdd }: BookCardProps) {
   const inCart = hasBook(book.id);
   const selectedPlan = getBookPlan(book.id);
 
-  const formattedMinPrice = `₹${Math.round(book.min_price_paise / 100)}`;
+  const formattedMinPrice = formatPaise(book.min_price_paise);
   const detailHref = `/e-books/${encodeURIComponent(book.slug || book.id)}`;
 
   return (
     <article
-      className="group relative flex flex-col sm:flex-row bg-white rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all duration-200 overflow-hidden"
+      className="group relative flex flex-col sm:flex-row bg-white rounded-2xl border border-purple-100/90 shadow-2xs hover:shadow-md hover:border-purple-300 transition-all duration-200 overflow-hidden"
       aria-labelledby={`book-title-${book.id}`}
     >
       {/* ── LEFT: Book Cover Presentation ── */}
-      <div className="sm:w-48 sm:shrink-0 bg-gradient-to-br from-slate-100 to-slate-200/70 relative flex items-center justify-center p-6 border-b sm:border-b-0 sm:border-r border-slate-100">
+      <div className="sm:w-48 sm:shrink-0 bg-gradient-to-br from-[#1C1037]/5 to-purple-100/40 relative flex items-center justify-center p-5 sm:p-6 border-b sm:border-b-0 sm:border-r border-purple-100/70">
         <Link href={detailHref} className="block w-full max-w-[140px] sm:max-w-none transition-transform duration-200 group-hover:scale-[1.03]">
-          <div className="aspect-[3/4] relative rounded-xl overflow-hidden shadow-sm border border-slate-300/60 bg-white">
+          <div className="aspect-[3/4] relative rounded-xl overflow-hidden shadow-sm border border-purple-200/60 bg-[#1B0E36]">
             {book.cover_image_url ? (
               <img
                 src={book.cover_image_url}
@@ -62,22 +64,24 @@ export function BookCard({ book, onOpenSample, onQuickAdd }: BookCardProps) {
                 loading="lazy"
               />
             ) : (
-              // Styled typographic fallback cover
-              <div className="w-full h-full bg-gradient-to-br from-[#0B1D3A] via-[#163668] to-[#2563EB] text-white p-3.5 flex flex-col justify-between select-none">
+              // Styled deep purple typographic fallback cover
+              <div className="w-full h-full bg-gradient-to-br from-[#130B24] via-[#241447] to-[#3D256E] text-white p-3.5 flex flex-col justify-between select-none">
                 <div className="space-y-1">
-                  <span className="text-[9px] font-bold tracking-widest text-[#00C2CB] uppercase font-display">
+                  <span className="text-[9px] font-bold tracking-widest text-[#FBBF24] uppercase font-display">
                     {book.category}
                   </span>
-                  <p className="text-xs font-bold leading-snug line-clamp-3 font-display">
+                  <p className="text-xs font-bold leading-snug line-clamp-3 font-serif text-white">
                     {book.title}
                   </p>
                 </div>
-                <div className="border-t border-white/20 pt-2">
-                  <p className="text-[10px] text-slate-300 truncate">{book.author}</p>
-                  <p className="text-[8px] text-white/60 tracking-wider uppercase mt-0.5">KnowledgePaat</p>
+                <div className="border-t border-purple-400/20 pt-2">
+                  <p className="text-[10px] text-purple-200 truncate">{book.author}</p>
+                  <p className="text-[8px] text-[#FBBF24] tracking-wider uppercase mt-0.5 font-display">KnowledgePaat</p>
                 </div>
               </div>
             )}
+            {/* Spine lighting effect */}
+            <div className="absolute inset-y-0 left-0 w-2 bg-gradient-to-r from-black/30 via-white/10 to-transparent pointer-events-none" />
           </div>
         </Link>
       </div>
@@ -87,45 +91,45 @@ export function BookCard({ book, onOpenSample, onQuickAdd }: BookCardProps) {
         <div className="space-y-2.5">
           {/* Metadata badges */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-[#2563EB] border border-blue-100">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200/60">
               {book.category}
             </span>
 
             {book.current_edition && (
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">
+              <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-purple-900/70">
                 Ed. {book.current_edition.edition_number}
               </span>
             )}
 
             {book.has_free_sample && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <Sparkles className="w-2.5 h-2.5" /> Sample Available
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/10 text-amber-800 border border-amber-400/30">
+                <Sparkles className="w-2.5 h-2.5 text-amber-600" /> Sample Available
               </span>
             )}
           </div>
 
           {/* Title & Author */}
           <div>
-            <h2 id={`book-title-${book.id}`} className="text-lg sm:text-xl font-bold text-[#0B1D3A] font-display leading-snug hover:text-[#2563EB] transition-colors">
+            <h2 id={`book-title-${book.id}`} className="text-lg sm:text-xl font-bold text-[#130B24] font-serif leading-snug hover:text-purple-800 transition-colors">
               <Link href={detailHref}>
                 {book.title}
               </Link>
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-              by <span className="text-slate-800 font-semibold">{book.author}</span>
+            <p className="text-xs sm:text-sm text-purple-900/60 font-medium mt-0.5">
+              by <span className="text-purple-950 font-semibold">{book.author}</span>
             </p>
           </div>
 
           {/* Short description */}
-          <p className="text-xs sm:text-sm text-slate-600 line-clamp-2 leading-relaxed">
+          <p className="text-xs sm:text-sm text-purple-950/75 line-clamp-2 leading-relaxed">
             {book.description}
           </p>
 
           {/* Chapters / metadata stats */}
-          <div className="flex items-center gap-3 text-xs text-slate-400 pt-1">
+          <div className="flex items-center gap-3 text-xs text-purple-400 pt-1">
             {book.total_chapter_count !== undefined && book.total_chapter_count > 0 && (
               <span className="flex items-center gap-1">
-                <FileText className="w-3.5 h-3.5" /> {book.total_chapter_count} chapters
+                <FileText className="w-3.5 h-3.5 text-purple-400" /> {book.total_chapter_count} chapters
               </span>
             )}
             {book.current_edition?.page_count ? (
@@ -135,41 +139,38 @@ export function BookCard({ book, onOpenSample, onQuickAdd }: BookCardProps) {
         </div>
 
         {/* Pricing & Call to Actions */}
-        <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+        <div className="mt-5 pt-4 border-t border-purple-50 flex flex-wrap items-center justify-between gap-3">
           {/* Price pill */}
           <div>
-            <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Starting from</span>
+            <span className="text-[11px] font-medium text-purple-600/70 uppercase tracking-wide">Starting from</span>
             <div className="flex items-baseline gap-1">
-              <span className="text-xl sm:text-2xl font-black text-[#0B1D3A] font-display">
+              <span className="text-xl sm:text-2xl font-black text-[#130B24] font-display">
                 {formattedMinPrice}
               </span>
-              <span className="text-[11px] text-slate-400 font-medium">INR</span>
             </div>
           </div>
 
           {/* Action buttons */}
           <div className="flex items-center gap-2">
             {book.has_free_sample && onOpenSample && (
-              <Button
-                variant="outline"
-                size="sm"
+              <button
+                type="button"
                 onClick={() => onOpenSample(book)}
-                className="text-xs font-semibold px-3 h-8"
+                className="inline-flex items-center px-3 py-1.5 rounded-xl border border-purple-200 bg-purple-50/70 text-xs font-semibold text-purple-800 hover:bg-purple-100 transition-colors cursor-pointer"
               >
-                <BookOpen className="w-3.5 h-3.5 mr-1 text-[#2563EB]" />
-                Free Sample
-              </Button>
+                <BookOpen className="w-3.5 h-3.5 mr-1 text-purple-600" />
+                <span>Free Sample</span>
+              </button>
             )}
 
             <Link href={detailHref}>
-              <Button
-                variant="primary"
-                size="sm"
-                className="text-xs font-bold px-3.5 h-8 shadow-brand"
+              <button
+                type="button"
+                className="btn-gold inline-flex items-center px-3.5 py-1.5 text-xs font-bold rounded-xl cursor-pointer"
               >
                 <span>View Details</span>
                 <ArrowRight className="w-3.5 h-3.5 ml-1" />
-              </Button>
+              </button>
             </Link>
           </div>
         </div>
@@ -177,3 +178,4 @@ export function BookCard({ book, onOpenSample, onQuickAdd }: BookCardProps) {
     </article>
   );
 }
+

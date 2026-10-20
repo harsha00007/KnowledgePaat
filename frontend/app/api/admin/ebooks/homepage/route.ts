@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/utils/supabase/server';
 import { logger } from '@/lib/logger';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -94,15 +95,23 @@ export async function GET() {
         actor_id,
         action,
         metadata,
-        created_at,
-        actor:profiles!ebook_audit_logs_actor_id_fkey (
-          full_name,
-          email
-        )
+        created_at
       `)
       .eq('entity_type', 'ebook_homepage')
       .order('created_at', { ascending: false })
       .limit(10);
+
+    const actorIds = Array.from(new Set((auditLogs || []).map((l: any) => l.actor_id).filter(Boolean)));
+    const actorsMap = new Map<string, { full_name: string | null; email: string | null }>();
+    if (actorIds.length > 0) {
+      const { data: actorProfiles } = await adminClient
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', actorIds);
+      for (const ap of (actorProfiles || [])) {
+        actorsMap.set(ap.id, { full_name: ap.full_name, email: ap.email });
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -128,7 +137,7 @@ export async function GET() {
         id: log.id,
         created_at: log.created_at,
         action: log.action,
-        actor_name: log.actor?.full_name || 'Administrator',
+        actor_name: actorsMap.get(log.actor_id)?.full_name || 'Administrator',
         metadata: log.metadata,
       })),
     });
@@ -143,6 +152,14 @@ export async function PUT(req: NextRequest) {
     const auth = await verifyAdmin();
     if (!auth.authorized || !auth.user) {
       return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    }
+
+    const rl = await checkRateLimit(
+      `admin_homepage:${auth.user.id}`,
+      RATE_LIMIT_POLICIES.ADMIN_HOMEPAGE_MUTATION
+    );
+    if (!rl.success) {
+      return rateLimitResponse(rl);
     }
 
     const body = await req.json().catch(() => ({}));

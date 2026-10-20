@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Metadata, ResolvingMetadata } from 'next';
 import { notFound } from 'next/navigation';
-import { PublicLayout } from '@/layouts/PublicLayout';
+import { EBookLayout } from '@/layouts/EBookLayout';
 import { BookDetailClient } from './BookDetailClient';
 import { createClient } from '@/utils/supabase/server';
 import { UUID_REGEX } from '@/lib/ebook/validation';
@@ -150,13 +150,13 @@ export default async function BookDetailPage({ params }: PageProps) {
   const firstSampleChapterId = sampleChapters.length > 0 ? sampleChapters[0].id : null;
 
   return (
-    <PublicLayout>
+    <EBookLayout>
       <BookDetailClient
         book={book}
         edition={edition}
         tableOfContents={tableOfContents}
         firstSampleChapterId={firstSampleChapterId}
       />
-    </PublicLayout>
+    </EBookLayout>
   );
 }

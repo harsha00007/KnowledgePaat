@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { handleEBookWebhook } from '@/lib/ebook/orders';
 import { getRazorpayCredentials } from '@/lib/razorpay';
 import { logger } from '@/lib/logger';
+import { checkRateLimit, rateLimitResponse, getRealClientIp, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
+    const clientIp = getRealClientIp(req);
+    const rl = await checkRateLimit(`webhook:${clientIp}`, RATE_LIMIT_POLICIES.PAYMENT_WEBHOOK);
+    if (!rl.success) {
+      return rateLimitResponse(rl);
+    }
+
     const { webhookSecret } = getRazorpayCredentials();
     if (!webhookSecret) {
       logger.warn('Webhook rejected: endpoint fail-closed because RAZORPAY_WEBHOOK_SECRET is unconfigured', {

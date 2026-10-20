@@ -66,7 +66,7 @@ export async function getCustomerAccessOverview(customerId: string) {
         version_name,
         status
       ),
-      order:ebook_orders (
+      order:ebook_orders!fk_ebook_entitlements_order (
         id,
         order_number,
         order_type,

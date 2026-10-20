@@ -17,7 +17,7 @@ import {
   Download
 } from 'lucide-react';
 import { Button } from '@/components/Button';
-import { calculateSellingPrice, DiscountType, AuthoritativePricing } from '@/lib/ebook/pricing';
+import { calculateSellingPrice, DiscountType, AuthoritativePricing } from '@/lib/ebook/pricingShared';
 import { EBookEdition } from '@/types/ebook';
 
 interface PricingTabProps {

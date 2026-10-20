@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Metadata } from 'next';
-import { PublicLayout } from '@/layouts/PublicLayout';
+import { EBookLayout } from '@/layouts/EBookLayout';
 import { CartClient } from './CartClient';
 
 export const metadata: Metadata = {
@@ -14,8 +14,8 @@ export const metadata: Metadata = {
 
 export default function CartPage() {
   return (
-    <PublicLayout>
+    <EBookLayout>
       <CartClient />
-    </PublicLayout>
+    </EBookLayout>
   );
 }

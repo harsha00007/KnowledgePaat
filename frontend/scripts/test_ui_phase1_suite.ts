@@ -147,16 +147,16 @@ async function runSuite() {
     console.error('Failed to get auth cookies:', err.message);
   }
 
-  // Find a published book edition that is the current edition
+  // Find a published book edition that is the current edition and has chapters
   const { data: publishedEditions } = await adminDbClient
     .from('ebook_editions')
-    .select('id, ebook_id, edition_number, status, is_current_edition, ebooks!inner(id, title, status)')
+    .select('id, ebook_id, edition_number, status, is_current_edition, ebooks!inner(id, title, status), ebook_chapters!inner(id)')
     .eq('status', 'published')
     .eq('is_current_edition', true)
     .limit(1);
 
   if (!publishedEditions || publishedEditions.length === 0) {
-    console.error('FATAL: No published book editions found in staging DB!');
+    console.error('FATAL: No published book editions with chapters found in staging DB!');
     process.exit(1);
   }
 
@@ -432,6 +432,27 @@ async function runSuite() {
     `HTTP Status: ${noReasonRes.status}`
   );
 
+  // Zero-selling-price rejection (e.g. 100% discount leading to ₹0 final price)
+  const zeroPriceRes = await fetch(`${appBaseUrl}/api/admin/ebooks/${testBook.id}/pricing`, {
+    method: 'PUT',
+    headers: { 'Cookie': adminCookie, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      editionId: testEdition.id,
+      online: { original_price_paise: 10000, discount_type: 'percentage', discount_value: 100 },
+      download: { original_price_paise: 20000, discount_type: 'none', discount_value: 0 },
+      upgrade: { original_price_paise: 5000, discount_type: 'none', discount_value: 0 },
+      currentVersion: updatedPriceJson.pricing.pricing_version,
+      changeReason: 'Zero selling price rejection test'
+    })
+  });
+  recordTest(
+    'VAL-05',
+    'Reject zero final selling price for commercial offers (must use complimentary grants)',
+    'HTTP API',
+    zeroPriceRes.status === 400 ? 'PASS' : 'FAIL',
+    `HTTP Status: ${zeroPriceRes.status}`
+  );
+
   // =========================================================================
   // 4. SERVER CALCULATION OF FINAL PRICES & TAMPER RESISTANCE
   // =========================================================================
@@ -517,7 +538,7 @@ async function runSuite() {
   // Public Catalogue Listing
   const catalogRes = await fetch(`${appBaseUrl}/api/ebooks?limit=50`);
   const catalogJson = await catalogRes.json();
-  const catalogBook = catalogJson.ebooks?.find((b: any) => b.id === testBook.id);
+  const catalogBook = catalogJson.books?.find((b: any) => b.id === testBook.id);
   const catalogOnlinePrice = catalogBook?.current_edition?.pricing?.online_price_paise;
 
   recordTest(
@@ -575,7 +596,7 @@ async function runSuite() {
   const quoteResult = await getUpgradeQuote(
     testBook.id,
     testEdition.id,
-    { userId: studentUserId, email: studentEmail, verified: true }
+    { userId: studentUserId, email: studentEmail }
   );
   recordTest(
     'FLOW-04',
@@ -728,15 +749,15 @@ async function runSuite() {
   // 4. Verify Public Storefront now resolves published content with authoritative book metadata
   const publicHomeAfter = await fetch(`${appBaseUrl}/api/ebooks/homepage`);
   const publicHomeAfterJson = await publicHomeAfter.json();
-  const isNowPublished = publicHomeAfterJson.content?.hero_heading === testHeroHeading;
-  const hasFeaturedBooks = Array.isArray(publicHomeAfterJson.featuredBooks) && publicHomeAfterJson.featuredBooks.length > 0;
+  const isNowPublished = publicHomeAfterJson.hero?.heading === testHeroHeading;
+  const hasFeaturedBooks = Array.isArray(publicHomeAfterJson.featured_books) && publicHomeAfterJson.featured_books.length > 0;
 
   recordTest(
     'HOME-04',
     'Public storefront serves published configuration with catalogue books & authoritative prices',
     'HTTP API',
     isNowPublished && hasFeaturedBooks ? 'PASS' : 'FAIL',
-    `Published Heading: "${publicHomeAfterJson.content?.hero_heading}", Featured Books: ${publicHomeAfterJson.featuredBooks?.length}`
+    `Published Heading: "${publicHomeAfterJson.hero?.heading}", Featured Books: ${publicHomeAfterJson.featured_books?.length}`
   );
 
   // =========================================================================
@@ -762,7 +783,7 @@ async function runSuite() {
   // Verify previous content remains published
   const publicHomeAfterFail = await fetch(`${appBaseUrl}/api/ebooks/homepage`);
   const publicHomeAfterFailJson = await publicHomeAfterFail.json();
-  const previousContentPreserved = publicHomeAfterFailJson.content?.hero_heading === testHeroHeading;
+  const previousContentPreserved = publicHomeAfterFailJson.hero?.heading === testHeroHeading;
 
   recordTest(
     'HOME-05',
@@ -819,10 +840,10 @@ async function runSuite() {
     detailCustRes.status === 200 &&
     Array.isArray(custDetailJson.entitlements) &&
     Array.isArray(custDetailJson.orders) &&
-    Array.isArray(custDetailJson.readingProgress) &&
-    Array.isArray(custDetailJson.downloadLogs)
+    Array.isArray(custDetailJson.reading_progress) &&
+    Array.isArray(custDetailJson.download_logs)
       ? 'PASS' : 'FAIL',
-    `Entitlements: ${custDetailJson.entitlements?.length}, Orders: ${custDetailJson.orders?.length}, Progress: ${custDetailJson.readingProgress?.length}`
+    `Entitlements: ${custDetailJson.entitlements?.length}, Orders: ${custDetailJson.orders?.length}, Progress: ${custDetailJson.reading_progress?.length}, Downloads: ${custDetailJson.download_logs?.length}`
   );
 
   // Grant Complimentary Access Action

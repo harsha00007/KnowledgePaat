@@ -119,6 +119,33 @@ export async function POST(
       return NextResponse.json({ error: 'Failed to allocate unique edition number.' }, { status: 500 });
     }
 
+    // Authoritatively provision initial pricing record in ebook_pricing
+    const { error: pricingErr } = await auth.supabase
+      .from('ebook_pricing')
+      .insert({
+        edition_id: createdEdition.id,
+        online_original_price_paise: prices.price_read_online_paise,
+        online_discount_type: 'none',
+        online_discount_value: 0,
+        online_price_paise: prices.price_read_online_paise,
+        download_original_price_paise: prices.price_read_download_paise,
+        download_discount_type: 'none',
+        download_discount_value: 0,
+        download_price_paise: prices.price_read_download_paise,
+        upgrade_original_price_paise: prices.price_upgrade_pdf_paise,
+        upgrade_discount_type: 'none',
+        upgrade_discount_value: 0,
+        upgrade_price_paise: prices.price_upgrade_pdf_paise,
+        currency: 'INR',
+        pricing_version: 1,
+        change_reason: 'New edition provisioning pricing',
+        updated_by: auth.user.id,
+      });
+
+    if (pricingErr) {
+      console.warn('Non-fatal: New edition pricing creation failed:', pricingErr);
+    }
+
     // Support draft revision workflow: clone chapters from specified existing edition
     let chaptersCloned = 0;
     let clonedChapters: any[] = [];

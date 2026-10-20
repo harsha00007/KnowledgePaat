@@ -304,29 +304,27 @@ export function FreeSampleDrawer({
             <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
               {onSelectPlan && (
                 <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs"
+                  <button
+                    type="button"
+                    className="px-3.5 py-1.5 rounded-xl border border-purple-200 bg-white hover:bg-purple-50 text-xs font-bold text-purple-900 transition-colors"
                     onClick={() => {
                       onClose();
                       onSelectPlan('read_online');
                     }}
                   >
-                    Read Online (₹49)
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="text-xs shadow-brand"
+                    Unlock Read Online
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-gold px-4 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer"
                     onClick={() => {
                       onClose();
                       onSelectPlan('read_download');
                     }}
                   >
-                    <ShoppingBag className="w-3.5 h-3.5 mr-1" />
-                    Read + PDF (₹99)
-                  </Button>
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    <span>Get Full Access (Online + PDF)</span>
+                  </button>
                 </>
               )}
             </div>

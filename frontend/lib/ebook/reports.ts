@@ -21,10 +21,10 @@ function getServiceSupabase() {
  * Prepends a single quote if string begins with =, +, -, @, tab, or carriage return.
  */
 export function sanitizeCsvField(value: any): string {
-  if (value === null || value === undefined) return '';
+  if (value === null || value === undefined) return '""';
   const str = String(value);
   if (/^[=+\-@\t\r]/.test(str)) {
-    return `'${str.replace(/"/g, '""')}`;
+    return `"'${str.replace(/"/g, '""')}"`;
   }
   return `"${str.replace(/"/g, '""')}"`;
 }

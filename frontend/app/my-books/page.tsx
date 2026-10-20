@@ -1,6 +1,6 @@
 import React from 'react';
 import { Metadata } from 'next';
-import { PublicLayout } from '@/layouts/PublicLayout';
+import { EBookLayout } from '@/layouts/EBookLayout';
 import { MyBooksClient } from './MyBooksClient';
 
 export const metadata: Metadata = {
@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 
 export default function MyBooksPage() {
   return (
-    <PublicLayout>
+    <EBookLayout>
       <MyBooksClient />
-    </PublicLayout>
+    </EBookLayout>
   );
 }

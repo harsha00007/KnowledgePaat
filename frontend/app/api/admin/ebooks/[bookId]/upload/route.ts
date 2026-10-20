@@ -8,6 +8,7 @@ import {
 } from '@/lib/ebook/storage';
 import { logAdminAuditEvent } from '@/lib/ebook/audit';
 import { UUID_REGEX, isEditionContentLocked } from '@/lib/ebook/validation';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 
 export async function POST(
   req: NextRequest,
@@ -16,6 +17,14 @@ export async function POST(
   try {
     const auth = await verifyAdminRequest(req, 'upload');
     if (!auth.authorized) return auth.response!;
+
+    const rl = await checkRateLimit(
+      `admin_upload:${auth.user.id}`,
+      RATE_LIMIT_POLICIES.ADMIN_UPLOAD
+    );
+    if (!rl.success) {
+      return rateLimitResponse(rl);
+    }
 
     const { bookId } = await params;
     if (!UUID_REGEX.test(bookId)) {

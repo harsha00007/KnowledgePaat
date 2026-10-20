@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { Metadata } from 'next';
-import { PublicLayout } from '@/layouts/PublicLayout';
+import { EBookLayout } from '@/layouts/EBookLayout';
 import { SuccessClient } from './SuccessClient';
 
 export const metadata: Metadata = {
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function CheckoutSuccessPage() {
   return (
-    <PublicLayout>
+    <EBookLayout>
       <Suspense fallback={
         <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
           <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
@@ -19,6 +19,6 @@ export default function CheckoutSuccessPage() {
       }>
         <SuccessClient />
       </Suspense>
-    </PublicLayout>
+    </EBookLayout>
   );
 }

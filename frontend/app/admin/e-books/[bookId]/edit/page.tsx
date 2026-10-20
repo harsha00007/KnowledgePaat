@@ -145,6 +145,12 @@ export default function AdminEditEBookPage({ params }: { params: Promise<{ bookI
     if (bookId) {
       fetchBookData();
     }
+    if (typeof window !== 'undefined') {
+      const tabParam = new URLSearchParams(window.location.search).get('tab') as TabKey;
+      if (tabParam && ['details', 'chapters', 'editions', 'pricing', 'publication', 'preview'].includes(tabParam)) {
+        setActiveTab(tabParam);
+      }
+    }
   }, [bookId]);
 
   const selectChapter = (ch: EBookChapter) => {

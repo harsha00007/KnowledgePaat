@@ -3,11 +3,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, ArrowRight, Home, Briefcase, BookOpen, FileText, CreditCard, ChevronRight, Mail, ShoppingCart } from 'lucide-react';
+import { Menu, X, ArrowRight, Home, Briefcase, BookOpen, FileText, CreditCard, ChevronRight, Mail } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Logo } from '@/components/Logo';
 import { createClient } from '@/utils/supabase/client';
-import { useEBookCart } from '@/lib/ebook/cartContext';
+import { SectionTransitionLink } from '@/components/SectionTransition';
 import {
   fetchSocialLinks,
   SocialLinksSettings,
@@ -57,7 +57,6 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router   = useRouter();
   const supabase = createClient();
-  const { cartCount } = useEBookCart();
 
   // Close menu on route change
   useEffect(() => { setIsMenuOpen(false); }, [pathname]);
@@ -159,7 +158,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
           <div className="flex h-14 sm:h-18 items-center justify-between relative">
 
-            {/* ── LEFT: Hamburger Menu Button + Mobile Logo (on < md) ── */}
+            {/* ── LEFT: Hamburger Menu Button + Dedicated E-Books Button + Mobile Logo ── */}
             <div className="relative z-20 flex items-center gap-1.5 xs:gap-2 sm:gap-3">
               <div
                 ref={menuContainerRef}
@@ -194,6 +193,27 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                       {NAV_LINKS.map((link) => {
                         const isActive = pathname === link.href;
                         const Icon = link.icon;
+                        if (link.href === '/e-books') {
+                          return (
+                            <SectionTransitionLink
+                              key={link.href}
+                              href={link.href}
+                              direction="to-ebooks"
+                              onClick={() => setIsMenuOpen(false)}
+                              className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all font-display ${
+                                isActive
+                                  ? 'bg-blue-50 text-[#2563EB]'
+                                  : 'text-[#0B1D3A] hover:bg-slate-50 hover:text-[#2563EB]'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <Icon className={`h-4 w-4 ${isActive ? 'text-[#2563EB]' : 'text-slate-400'}`} />
+                                <span>{link.label}</span>
+                              </div>
+                              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                            </SectionTransitionLink>
+                          );
+                        }
                         return (
                           <Link
                             key={link.href}
@@ -218,13 +238,25 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 )}
               </div>
 
-              {/* Mobile-only Logo next to Hamburger — polished sizing */}
+              {/* Dedicated E-Books Navigation Button directly beside hamburger control */}
+              <SectionTransitionLink
+                href="/e-books"
+                direction="to-ebooks"
+                id="main-nav-ebooks-btn"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3.5 h-9 sm:h-11 rounded-xl text-xs sm:text-sm font-bold text-[#0B1D3A] hover:bg-slate-100 hover:text-[#2563EB] transition-all border border-slate-200/90 shadow-2xs font-display focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 shrink-0"
+                aria-label="KnowledgePaat eBooks"
+              >
+                <BookOpen className="h-4 w-4 text-[#2563EB]" />
+                <span>E-Books</span>
+              </SectionTransitionLink>
+
+              {/* Mobile-only Logo next to Hamburger/E-Books */}
               <Link
                 href="/"
                 className="flex md:hidden items-center transition-opacity hover:opacity-90 pl-0.5"
                 aria-label="KnowledgePaat — go to home"
               >
-                <Logo size="sm" className="h-7 sm:h-8 w-auto max-w-[135px] xs:max-w-[145px]" />
+                <Logo size="sm" className="h-7 sm:h-8 w-auto max-w-[125px] xs:max-w-[145px]" />
               </Link>
             </div>
 
@@ -239,21 +271,8 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               </Link>
             </div>
 
-            {/* ── RIGHT: Cart Icon + Log In & Get Started Free CTA ── */}
+            {/* ── RIGHT: Log In & Get Started Free CTA ── */}
             <div className="relative z-20 flex items-center gap-1.5 xs:gap-2 sm:gap-3.5 shrink-0">
-              {/* eBook Shopping Cart Icon Link */}
-              <Link
-                href="/cart"
-                className="relative flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-xl text-[#0B1D3A] hover:bg-slate-100 hover:text-[#2563EB] transition-colors border border-slate-200/90 shadow-2xs mr-0.5"
-                aria-label="Shopping Cart"
-              >
-                <ShoppingCart className="h-4.5 w-4.5 stroke-[2.2]" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#2563EB] text-[10px] font-bold text-white shadow-2xs animate-in zoom-in-75">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
 
               {user ? (
                 <>

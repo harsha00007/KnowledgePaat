@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/utils/supabase/server';
 import { getAuthoritativeEditionPricing, updateEditionPricing, DiscountType } from '@/lib/ebook/pricing';
 import { UUID_REGEX } from '@/lib/ebook/validation';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,11 +78,7 @@ export async function GET(
         actor_id,
         action,
         metadata,
-        created_at,
-        actor:profiles!ebook_audit_logs_actor_id_fkey (
-          full_name,
-          email
-        )
+        created_at
       `)
       .eq('entity_type', 'ebook_edition')
       .eq('entity_id', targetEdition.id)
@@ -89,23 +86,38 @@ export async function GET(
       .order('created_at', { ascending: false })
       .limit(10);
 
+    const actorIds = Array.from(new Set((auditLogs || []).map((l: any) => l.actor_id).filter(Boolean)));
+    const actorsMap = new Map<string, { full_name: string | null; email: string | null }>();
+    if (actorIds.length > 0) {
+      const { data: actorProfiles } = await adminClient
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', actorIds);
+      for (const ap of (actorProfiles || [])) {
+        actorsMap.set(ap.id, { full_name: ap.full_name, email: ap.email });
+      }
+    }
+
     return NextResponse.json({
       success: true,
       book,
       editions,
       selected_edition: targetEdition,
       pricing,
-      audit_history: (auditLogs || []).map((log: any) => ({
-        id: log.id,
-        created_at: log.created_at,
-        actor_name: log.actor?.full_name || 'Administrator',
-        actor_email: log.actor?.email || null,
-        change_reason: log.metadata?.change_reason || 'No reason provided',
-        previous_version: log.metadata?.previous_version,
-        new_version: log.metadata?.new_version,
-        previous_values: log.metadata?.previous_values,
-        new_values: log.metadata?.new_values,
-      }))
+      audit_history: (auditLogs || []).map((log: any) => {
+        const actor = actorsMap.get(log.actor_id);
+        return {
+          id: log.id,
+          created_at: log.created_at,
+          actor_name: actor?.full_name || 'Administrator',
+          actor_email: actor?.email || null,
+          change_reason: log.metadata?.change_reason || 'No reason provided',
+          previous_version: log.metadata?.previous_version,
+          new_version: log.metadata?.new_version,
+          previous_values: log.metadata?.previous_values,
+          new_values: log.metadata?.new_values,
+        };
+      })
     });
   } catch (err: any) {
     console.error('Error in GET admin pricing:', err);
@@ -124,6 +136,15 @@ export async function PUT(
     }
 
     const { bookId } = await params;
+
+    const rl = await checkRateLimit(
+      `admin_pricing:${auth.user.id}`,
+      RATE_LIMIT_POLICIES.ADMIN_PRICING_MUTATION
+    );
+    if (!rl.success) {
+      return rateLimitResponse(rl);
+    }
+
     const body = await req.json().catch(() => ({}));
 
     const editionId = String(body?.editionId || '').trim();

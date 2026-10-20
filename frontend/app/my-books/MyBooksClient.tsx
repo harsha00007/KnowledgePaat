@@ -96,6 +96,23 @@ export function MyBooksClient() {
     });
   }, [books, selectedPlanFilter, searchQuery]);
 
+  // Client-side / URL Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
+
+  // Reset page when search or plan filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedPlanFilter, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredBooks.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+
+  const paginatedBooks = useMemo(() => {
+    const start = (safePage - 1) * PAGE_SIZE;
+    return filteredBooks.slice(start, start + PAGE_SIZE);
+  }, [filteredBooks, safePage, PAGE_SIZE]);
+
   const readerEnabled = isFeatureEnabled('ebook_reader');
   const pdfDownloadEnabled = isFeatureEnabled('ebook_pdf_download');
 
@@ -254,21 +271,21 @@ export function MyBooksClient() {
   }
 
   return (
-    <div className="min-h-[75vh] bg-[#F8FAFC] py-8 sm:py-10 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-[75vh] bg-[#FAF9FD] text-[#130B24] py-8 sm:py-10 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         {/* Header & Title */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-[#2563EB] border border-blue-200/80">
-                <BookOpen className="w-3.5 h-3.5" />
-                Customer Library
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-400/15 text-amber-800 border border-amber-400/30 font-display">
+                <BookOpen className="w-3.5 h-3.5 text-amber-600" />
+                Customer Digital Shelf
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0B1D3A] tracking-tight font-display">
+            <h1 className="text-2xl sm:text-3xl font-black font-serif text-[#130B24] tracking-tight">
               My Books
             </h1>
-            <p className="text-sm text-slate-600 mt-1">
+            <p className="text-xs sm:text-sm text-purple-900/60 mt-1">
               Your owned technical books, permanent reading access, and edition library.
             </p>
           </div>
@@ -276,16 +293,19 @@ export function MyBooksClient() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsOrdersModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:text-[#0B1D3A] hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-purple-200 bg-white text-purple-900 hover:text-white hover:bg-purple-900 transition-colors shadow-2xs cursor-pointer"
             >
-              <Receipt className="w-3.5 h-3.5 text-slate-500" />
+              <Receipt className="w-3.5 h-3.5" />
               <span>Order History</span>
             </button>
-            <Link href="/e-books">
-              <Button variant="outline" size="sm" className="gap-1.5">
+            <Link href="/e-books#catalogue">
+              <button
+                type="button"
+                className="btn-gold inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer"
+              >
                 <span>Browse Bookstore</span>
-                <ArrowRight className="w-4 h-4" />
-              </Button>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </Link>
           </div>
         </div>
@@ -297,30 +317,30 @@ export function MyBooksClient() {
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
               <button
                 onClick={() => setSelectedPlanFilter('all')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap font-display ${
                   selectedPlanFilter === 'all'
-                    ? 'bg-[#2563EB] text-white shadow-2xs'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-[#0B1D3A]'
+                    ? 'bg-[#130B24] text-[#FBBF24] shadow-2xs border border-amber-400/30'
+                    : 'text-purple-900/70 hover:bg-purple-50 hover:text-purple-950'
                 }`}
               >
                 All Books ({books.length})
               </button>
               <button
                 onClick={() => setSelectedPlanFilter('read_online')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap font-display ${
                   selectedPlanFilter === 'read_online'
-                    ? 'bg-[#2563EB] text-white shadow-2xs'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-[#0B1D3A]'
+                    ? 'bg-[#130B24] text-[#FBBF24] shadow-2xs border border-amber-400/30'
+                    : 'text-purple-900/70 hover:bg-purple-50 hover:text-purple-950'
                 }`}
               >
                 Read Online ({books.filter((b) => b.plan === 'read_online').length})
               </button>
               <button
                 onClick={() => setSelectedPlanFilter('read_download')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap font-display ${
                   selectedPlanFilter === 'read_download'
-                    ? 'bg-[#2563EB] text-white shadow-2xs'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-[#0B1D3A]'
+                    ? 'bg-[#130B24] text-[#FBBF24] shadow-2xs border border-amber-400/30'
+                    : 'text-purple-900/70 hover:bg-purple-50 hover:text-purple-950'
                 }`}
               >
                 Read + Download ({books.filter((b) => b.plan === 'read_download').length})
@@ -329,13 +349,13 @@ export function MyBooksClient() {
 
             {/* Search Box */}
             <div className="relative min-w-[220px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400" />
               <input
                 type="text"
                 placeholder="Search your library..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-slate-50/50 text-[#0B1D3A] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all"
+                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-purple-200 bg-purple-50/40 text-[#130B24] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/30 focus:border-[#FBBF24] transition-all"
               />
             </div>
           </div>
@@ -378,9 +398,10 @@ export function MyBooksClient() {
             </Button>
           </div>
         ) : (
-          /* 5. Library Grid: Exactly 2 cards per row on desktop (md:grid-cols-2), single column on mobile */
+          <>
+          {/* 5. Library Grid: Exactly 2 cards per row on desktop (md:grid-cols-2), single column on mobile */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredBooks.map((book) => {
+            {paginatedBooks.map((book) => {
               const isDownload = book.plan === 'read_download';
               const isRevoked = !book.isActive;
               const hasHistoricalNotice = !book.isCurrentEdition || book.editionStatus !== 'published';
@@ -614,6 +635,45 @@ export function MyBooksClient() {
               );
             })}
           </div>
+
+          {/* Accessible Library Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-200/80">
+              <p className="text-xs text-slate-500 font-medium">
+                Showing <span className="font-semibold text-[#0B1D3A]">{(safePage - 1) * PAGE_SIZE + 1}</span> to{' '}
+                <span className="font-semibold text-[#0B1D3A]">
+                  {Math.min(safePage * PAGE_SIZE, filteredBooks.length)}
+                </span> of{' '}
+                <span className="font-semibold text-[#0B1D3A]">{filteredBooks.length}</span> titles
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={safePage <= 1}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  aria-label="Previous page"
+                  className="text-xs font-semibold"
+                >
+                  Previous
+                </Button>
+                <span className="text-xs text-slate-600 font-medium px-2">
+                  Page {safePage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={safePage >= totalPages}
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  aria-label="Next page"
+                  className="text-xs font-semibold"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </div>
 

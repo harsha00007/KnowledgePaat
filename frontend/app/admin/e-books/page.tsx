@@ -34,18 +34,33 @@ export default function AdminEBooksListPage() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const fetchBooks = async () => {
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 15,
+    total: 0,
+    totalPages: 1,
+    hasMore: false,
+  });
+
+  const fetchBooks = async (targetPage: number = page) => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
       if (searchQuery) params.set('search', searchQuery);
       if (statusFilter !== 'all') params.set('status', statusFilter);
       if (categoryFilter !== 'all') params.set('category', categoryFilter);
+      params.set('page', String(targetPage));
+      params.set('limit', '15');
 
       const res = await fetch(`/api/admin/ebooks?${params.toString()}`);
       const data = await res.json();
       if (res.ok && data.success) {
         setBooks(data.books || []);
+        if (data.pagination) {
+          setPagination(data.pagination);
+          setPage(data.pagination.page);
+        }
       } else {
         setFeedback({ type: 'error', message: data.error || 'Failed to load eBooks.' });
       }
@@ -58,12 +73,14 @@ export default function AdminEBooksListPage() {
   };
 
   useEffect(() => {
-    fetchBooks();
+    setPage(1);
+    fetchBooks(1);
   }, [statusFilter, categoryFilter]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchBooks();
+    setPage(1);
+    fetchBooks(1);
   };
 
   const handleArchiveBook = async (bookId: string, title: string) => {
@@ -334,6 +351,42 @@ export default function AdminEBooksListPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {pagination.totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-slate-200 bg-slate-50/50">
+                <p className="text-xs text-slate-500 font-medium">
+                  Showing <span className="font-semibold text-slate-900">{(pagination.page - 1) * pagination.limit + 1}</span> to{' '}
+                  <span className="font-semibold text-slate-900">
+                    {Math.min(pagination.page * pagination.limit, pagination.total)}
+                  </span> of{' '}
+                  <span className="font-semibold text-slate-900">{pagination.total}</span> eBooks
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={pagination.page <= 1 || isLoading}
+                    onClick={() => fetchBooks(pagination.page - 1)}
+                    className="text-xs font-semibold h-8"
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-xs text-slate-600 font-medium px-2">
+                    Page {pagination.page} of {pagination.totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!pagination.hasMore || isLoading}
+                    onClick={() => fetchBooks(pagination.page + 1)}
+                    className="text-xs font-semibold h-8"
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

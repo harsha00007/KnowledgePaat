@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminRequest } from '@/lib/ebook/adminAuth';
 import { logger } from '@/lib/logger';
 import { executeEBookRefund, executeRefundBothOrders } from '@/lib/ebook/refunds';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 
 export async function POST(
   req: NextRequest,
@@ -10,6 +11,14 @@ export async function POST(
   try {
     const auth = await verifyAdminRequest(req, 'admin_order_refund');
     if (!auth.authorized) return auth.response!;
+
+    const rl = await checkRateLimit(
+      `refund_init:${auth.user.id}`,
+      RATE_LIMIT_POLICIES.REFUND_INITIATE
+    );
+    if (!rl.success) {
+      return rateLimitResponse(rl);
+    }
 
     const { orderId } = await params;
     const body = await req.json().catch(() => ({}));

@@ -27,9 +27,9 @@ export async function POST(
     }
     const customer = authResult.customer;
 
-    // 2. Enforce payment verification rate limits (20 attempts per 5 mins per customer)
-    const rateLimitKey = `pay_check_status:${customer.userId}`;
-    const rl = await checkRateLimit(rateLimitKey, RATE_LIMIT_POLICIES.PAYMENT_VERIFY);
+    // 2. Enforce payment verification rate limits (30 attempts per min per customer)
+    const rateLimitKey = `status_recovery:${customer.userId}`;
+    const rl = await checkRateLimit(rateLimitKey, RATE_LIMIT_POLICIES.STATUS_RECOVERY);
     if (!rl.success) {
       return rateLimitResponse(rl);
     }

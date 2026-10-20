@@ -87,42 +87,44 @@ export function CartClient() {
   const isReadyForCheckout = validationStatus === 'validated' && !isValidating && validatedItems.length > 0;
 
   return (
-    <div className="min-h-screen bg-slate-50/60 py-10 sm:py-14">
+    <div className="min-h-screen bg-[#FAF9FD] text-[#130B24] py-10 sm:py-14">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         
         {/* ── HEADER ──────────────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/90 pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-100 pb-6">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl sm:text-3xl font-black text-[#0B1D3A] font-display">
+              <h1 className="text-2xl sm:text-3xl font-black font-serif text-[#130B24]">
                 Shopping Cart
               </h1>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-[#2563EB] border border-blue-200 font-display">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-400/15 text-amber-800 border border-amber-400/30 font-display">
                 {cartCount} {cartCount === 1 ? 'Book' : 'Books'}
               </span>
             </div>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-              Review your selected editions and access plans before checkout.
+            <p className="text-xs sm:text-sm text-purple-900/60 font-medium mt-1">
+              Authoritative server pricing verified directly against published editions.
             </p>
           </div>
 
           <div className="flex items-center gap-2.5">
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
+              type="button"
               onClick={revalidateCart}
               disabled={isValidating}
-              className="text-xs text-slate-500 hover:text-[#0B1D3A]"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-purple-200 bg-white hover:bg-purple-50 text-xs font-semibold text-purple-800 transition-colors cursor-pointer"
             >
-              <RefreshCw className={`w-3.5 h-3.5 mr-1 ${isValidating ? 'animate-spin' : ''}`} />
-              Revalidate Prices
-            </Button>
+              <RefreshCw className={`w-3.5 h-3.5 ${isValidating ? 'animate-spin' : ''}`} />
+              <span>Revalidate Prices</span>
+            </button>
 
-            <Link href="/e-books">
-              <Button variant="outline" size="sm" className="text-xs font-semibold">
-                <ArrowLeft className="w-3.5 h-3.5 mr-1" />
-                Continue Browsing
-              </Button>
+            <Link href="/e-books#catalogue">
+              <button
+                type="button"
+                className="btn-gold inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Continue Browsing</span>
+              </button>
             </Link>
           </div>
         </div>
@@ -252,9 +254,8 @@ export function CartClient() {
 
               {/* Checkout CTA: strictly disabled when prices are unverified */}
               <div className="space-y-2 pt-2">
-                <Button
-                  variant="primary"
-                  size="lg"
+                <button
+                  type="button"
                   disabled={!isReadyForCheckout}
                   onClick={() => {
                     if (isCheckoutEnabled) {
@@ -263,15 +264,17 @@ export function CartClient() {
                       setCheckoutModalOpen(true);
                     }
                   }}
-                  className="w-full font-bold text-sm shadow-brand cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-gold w-full py-3.5 px-4 font-bold text-sm rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Lock className="w-4 h-4 mr-2" />
-                  {isReadyForCheckout
-                    ? `Proceed to Checkout (${formattedTotal})`
-                    : isValidationFailed
-                    ? 'Checkout Unavailable (Verification Failed)'
-                    : 'Verifying Pricing...'}
-                </Button>
+                  <Lock className="w-4 h-4" />
+                  <span>
+                    {isReadyForCheckout
+                      ? `Proceed to Checkout (${formattedTotal})`
+                      : isValidationFailed
+                      ? 'Checkout Unavailable (Verification Failed)'
+                      : 'Verifying Pricing...'}
+                  </span>
+                </button>
 
                 <p className="text-[11px] text-slate-400 text-center flex items-center justify-center gap-1.5">
                   {isReadyForCheckout ? (
@@ -479,15 +482,17 @@ function CartItemCard({
               onClick={() => onUpdatePlan('read_online')}
               className={`flex items-center justify-between p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                 item.plan === 'read_online'
-                  ? 'border-[#2563EB] bg-blue-50/60 text-[#0B1D3A] shadow-2xs font-semibold'
+                  ? 'border-purple-600 bg-purple-50/60 text-[#130B24] shadow-2xs font-semibold'
                   : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100 text-slate-600'
               }`}
             >
               <div className="flex items-center gap-2">
-                <Laptop className={`w-4 h-4 ${item.plan === 'read_online' ? 'text-[#2563EB]' : 'text-slate-400'}`} />
+                <Laptop className={`w-4 h-4 ${item.plan === 'read_online' ? 'text-purple-600' : 'text-slate-400'}`} />
                 <span className="text-xs">Read Online</span>
               </div>
-              <span className="text-xs font-bold font-display">₹49</span>
+              <span className="text-xs font-bold font-display">
+                {item.plan === 'read_online' ? item.formatted_price : 'Online'}
+              </span>
             </button>
 
             {/* Read + Download */}
@@ -496,15 +501,17 @@ function CartItemCard({
               onClick={() => onUpdatePlan('read_download')}
               className={`flex items-center justify-between p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                 item.plan === 'read_download'
-                  ? 'border-[#2563EB] bg-blue-50/60 text-[#0B1D3A] shadow-2xs font-semibold'
+                  ? 'border-purple-600 bg-purple-50/60 text-[#130B24] shadow-2xs font-semibold'
                   : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100 text-slate-600'
               }`}
             >
               <div className="flex items-center gap-2">
-                <Download className={`w-4 h-4 ${item.plan === 'read_download' ? 'text-[#2563EB]' : 'text-slate-400'}`} />
+                <Download className={`w-4 h-4 ${item.plan === 'read_download' ? 'text-purple-600' : 'text-slate-400'}`} />
                 <span className="text-xs">Read + PDF</span>
               </div>
-              <span className="text-xs font-bold font-display">₹99</span>
+              <span className="text-xs font-bold font-display">
+                {item.plan === 'read_download' ? item.formatted_price : 'Online + PDF'}
+              </span>
             </button>
           </div>
         </div>

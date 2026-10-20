@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { checkRateLimit, rateLimitResponse, getRealClientIp, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 60; // 60s cache revalidation
 
 export async function GET(req: NextRequest) {
   try {
+    const clientIp = getRealClientIp(req);
+    const rl = await checkRateLimit(`catalogue_search:${clientIp}`, RATE_LIMIT_POLICIES.CATALOGUE_SEARCH);
+    if (!rl.success) {
+      return rateLimitResponse(rl);
+    }
+
     const supabase = await createClient();
     const { searchParams } = new URL(req.url);
 
@@ -58,7 +65,8 @@ export async function GET(req: NextRequest) {
       .eq('status', 'published')
       .eq('editions.status', 'published')
       .eq('editions.is_current_edition', true)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true });
 
     if (category && category !== 'all' && category !== 'All') {
       query = query.eq('category', category);
@@ -78,6 +86,31 @@ export async function GET(req: NextRequest) {
     const { data: booksData, count, error } = await query;
 
     if (error) {
+      if (error.code === 'PGRST103' || String(error.message || '').toLowerCase().includes('range')) {
+        // Out-of-range page requested: get total count and return empty page
+        const { count: exactTotal } = await supabase
+          .from('ebooks')
+          .select('id, editions:ebook_editions!inner(id)', { count: 'exact', head: true })
+          .eq('status', 'published')
+          .eq('editions.status', 'published')
+          .eq('editions.is_current_edition', true);
+
+        const total = exactTotal || 0;
+        const totalPages = Math.ceil(total / limit) || 1;
+
+        return NextResponse.json({
+          success: true,
+          books: [],
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasMore: false,
+          }
+        });
+      }
+
       console.error('Error fetching public ebooks catalog:', error);
       return NextResponse.json({ success: false, error: 'Failed to load bookstore catalog.' }, { status: 500 });
     }
