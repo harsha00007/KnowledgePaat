@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer-core';
 import fs from 'fs';
 import path from 'path';
+import { setupPuppeteerSession } from './testAuthHelper';
 
 const screenshotsDir = '/home/harsha/.gemini/antigravity-ide/brain/651141cd-1942-4961-ad67-66a54539bfed/screenshots';
 if (!fs.existsSync(screenshotsDir)) {
@@ -130,9 +131,9 @@ async function runJourneys() {
     // JOURNEY D: eBook Header Sign-In → Redirection to /e-books
     // ─────────────────────────────────────────────────────────────────────────
     console.log('\n--- Journey D: Header Sign-In & Redirection ---');
-    // Use test-session endpoint to set session and cleanly redirect to /e-books
-    const signinUrl = `${APP_URL}/api/test-session?email=student%40knowledgepaat.test&password=StudentPassword%402026!&redirectTo=%2Fe-books`;
-    await page.goto(signinUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+    // Set student session cleanly via isolated test harness
+    await setupPuppeteerSession(page, 'student@knowledgepaat.test');
+    await page.goto(`${APP_URL}/e-books`, { waitUntil: 'domcontentloaded', timeout: 20000 });
     await page.waitForSelector('header', { timeout: 15000 }).catch(() => null);
     await new Promise(r => setTimeout(r, 1500));
 
@@ -230,8 +231,8 @@ async function runJourneys() {
     // ─────────────────────────────────────────────────────────────────────────
     console.log('\n--- Journey J: Admin Homepage & Pricing Presentation ---');
     // Sign in as admin
-    const adminSigninUrl = `${APP_URL}/api/test-session?email=admin%40knowledgepaat.test&password=AdminPassword%402026!&redirectTo=%2Fadmin%2Fe-books`;
-    await page.goto(adminSigninUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+    await setupPuppeteerSession(page, 'admin@knowledgepaat.test');
+    await page.goto(`${APP_URL}/admin/e-books`, { waitUntil: 'domcontentloaded', timeout: 25000 });
     await page.waitForSelector('h1', { timeout: 15000 }).catch(() => null);
     await new Promise(r => setTimeout(r, 1500));
 

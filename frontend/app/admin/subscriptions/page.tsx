@@ -211,7 +211,7 @@ export default function AdminSubscriptionsPage() {
     setIsProcessing(true);
     try {
       const expDate = editData.plan === 'free' ? null : (editData.end_date ? new Date(editData.end_date).toISOString() : null);
-      let payload: any = {
+      const payload: any = {
         plan: editData.plan.toLowerCase(),
         status: editData.status.toLowerCase(),
         end_date: expDate,
@@ -258,7 +258,7 @@ export default function AdminSubscriptionsPage() {
     setIsProcessing(true);
     try {
       const formattedDate = new Date(extendDate).toISOString();
-      let updatePayload: any = { 
+      const updatePayload: any = { 
         end_date: formattedDate,
         current_period_end: formattedDate,
         status: 'active'
@@ -637,7 +637,7 @@ export default function AdminSubscriptionsPage() {
             </p>
             {normalizePlanId(selectedSub.plan) !== 'free' && selectedSub.status.toLowerCase() === 'active' && (
               <div className="bg-amber-50 border border-amber-200 p-3 rounded-[var(--radius-lg)] text-amber-900 font-medium leading-relaxed">
-                Cancelling this subscription will immediately downgrade the student's access to the Free tier.
+                Cancelling this subscription will immediately downgrade the student&apos;s access to the Free tier.
               </div>
             )}
             <div className="flex justify-end gap-2.5 pt-3 border-t border-[var(--color-border)]">

@@ -628,7 +628,7 @@ export default function AdminStorePage() {
 
           // Upload to 'resumes' storage bucket (with graceful fallback to 'notes')
           let uploadBucket = 'resumes';
-          let { error: uploadError } = await supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from(uploadBucket)
             .upload(filePath, uploadedResumeFile, {
               contentType: uploadedResumeFile.type || 'application/octet-stream',
@@ -720,7 +720,7 @@ export default function AdminStorePage() {
 
       if (selectedProduct) {
         // Update product
-        let res = await supabase
+        const res = await supabase
           .from('store_products')
           .update(productPayload)
           .eq('id', selectedProduct.id);
@@ -2009,7 +2009,7 @@ export default function AdminStorePage() {
         {selectedProduct && (
           <div className="space-y-4 text-xs">
             <p className="text-[var(--color-text-secondary)] leading-relaxed">
-              Are you sure you want to <strong>{selectedProduct.status === 'active' ? 'deactivate' : 'activate'}</strong> "{selectedProduct.title}"?
+              Are you sure you want to <strong>{selectedProduct.status === 'active' ? 'deactivate' : 'activate'}</strong> &quot;{selectedProduct.title}&quot;?
             </p>
             <div className="flex justify-end gap-2.5 pt-3 border-t border-[var(--color-border)]">
               <Button variant="outline" size="sm" onClick={() => setIsStatusModalOpen(false)} disabled={isProcessing}>Cancel</Button>
@@ -2059,7 +2059,7 @@ export default function AdminStorePage() {
                 <div>
                   <p className="font-bold text-red-950">Permanent Removal: No Dependencies Found</p>
                   <p className="mt-1 leading-relaxed text-red-900">
-                    Are you sure you want to permanently delete <strong>"{selectedProduct.title}"</strong>?
+                    Are you sure you want to permanently delete <strong>&quot;{selectedProduct.title}&quot;</strong>?
                     This product has no purchase or order history and can be permanently removed.
                   </p>
                   <p className="mt-1.5 text-[11px] text-red-800">

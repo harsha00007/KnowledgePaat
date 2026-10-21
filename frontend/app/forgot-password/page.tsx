@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
               Reset your password
             </h1>
             <p className="mt-1.5 text-sm text-[var(--color-text-secondary)]">
-              Enter your email and we'll send you a recovery link
+              Enter your email and we&apos;ll send you a recovery link
             </p>
           </div>
           
@@ -59,7 +59,7 @@ export default function ForgotPasswordPage() {
                 </div>
                 <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">Check your email</h2>
                 <p className="text-sm text-[var(--color-text-secondary)] mb-6 leading-relaxed">
-                  We've sent a password reset link to <strong className="text-[var(--color-text-primary)] font-semibold">{email}</strong>.
+                  We&apos;ve sent a password reset link to <strong className="text-[var(--color-text-primary)] font-semibold">{email}</strong>.
                 </p>
                 <Link href="/login" className="block w-full">
                   <Button variant="outline" className="w-full justify-center">Return to Sign in</Button>

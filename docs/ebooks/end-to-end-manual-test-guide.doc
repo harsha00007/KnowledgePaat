@@ -1,0 +1,2250 @@
+<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8">
+  <title>KnowledgePaat eBook Platform — Complete Manual Testing User Guide</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+      <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 1in;
+    }
+    body {
+      font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.5;
+      color: #1a1a1a;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 20pt;
+      font-weight: 800;
+      color: #0B1D3A;
+      border-bottom: 2.5pt solid #2563EB;
+      padding-bottom: 6pt;
+      margin-top: 0;
+      margin-bottom: 12pt;
+    }
+    h2 {
+      font-size: 14pt;
+      font-weight: 700;
+      color: #0B1D3A;
+      border-bottom: 1pt solid #cbd5e1;
+      padding-bottom: 4pt;
+      margin-top: 18pt;
+      margin-bottom: 8pt;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 12pt;
+      font-weight: 700;
+      color: #1e3a8a;
+      margin-top: 14pt;
+      margin-bottom: 6pt;
+      page-break-after: avoid;
+    }
+    p, li {
+      font-size: 10.5pt;
+      line-height: 1.55;
+      margin-bottom: 6pt;
+    }
+    ul, ol {
+      margin-top: 2pt;
+      margin-bottom: 8pt;
+      padding-left: 20pt;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 10pt 0 14pt 0;
+      font-size: 9.5pt;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1pt solid #cbd5e1;
+      padding: 6pt 8pt;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background-color: #f1f5f9;
+      font-weight: 700;
+      color: #0B1D3A;
+    }
+    tr:nth-child(even) td {
+      background-color: #f8fafc;
+    }
+    pre {
+      background: #0B1D3A;
+      color: #f8fafc;
+      padding: 10pt;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 9pt;
+      border-radius: 4pt;
+      overflow-x: auto;
+      line-height: 1.4;
+      margin: 8pt 0;
+    }
+    code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 9pt;
+      background: #f1f5f9;
+      padding: 1.5pt 3pt;
+      border-radius: 2pt;
+      color: #0f172a;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+    }
+    blockquote {
+      border-left: 3.5pt solid #2563EB;
+      margin: 8pt 0 10pt 0;
+      padding: 6pt 12pt;
+      background: #eff6ff;
+      color: #1e3a8a;
+      font-size: 10pt;
+      border-radius: 0 4pt 4pt 0;
+    }
+    hr {
+      border: 0;
+      border-top: 1pt solid #e2e8f0;
+      margin: 16pt 0;
+    }
+  </style>
+</head>
+<body>
+<h1>KnowledgePaat eBook Platform — Complete Manual Testing User Guide</h1>
+<p><strong>Document Version:</strong> 2.0.0<br><strong>Target Environment:</strong> Staging Supabase (<code>https://lzuinimbsdxnhzmjpxmr.supabase.co</code>)<br><strong>Production Guard:</strong> STRICTLY PROTECTED (<code>csjywuflkvohytbvglxf</code> must remain untouched)<br><strong>Gateway Mode:</strong> Razorpay Test Mode Only (<code>rzp_test_...</code> — NEVER live keys or real money)<br><strong>Document Purpose:</strong> Step-by-step executable manual testing instructions for human testers operating as Administrators, Customers, and Public Visitors.</p>
+<hr>
+<h2>1. Quick Overview: The &quot;First Complete Journey&quot;</h2>
+<p>If you are running your very first test on this platform, follow this end-to-end sanity journey (approximately 10 minutes) to confirm all core subsystems are operational before deep-diving into individual test suites:</p>
+<pre><code>[1. Admin Prepares Book]
+  /admin/e-books/new ──&gt; Fill metadata &amp; ₹49/₹99/₹50 pricing
+  /admin/e-books/[id]/edit ──&gt; Upload cover image &amp; PDF attachment
+  /admin/e-books/[id]/edit?tab=chapters ──&gt; Create chapters, mark &quot;Ready&quot;, set Chapter 1 as &quot;Free Sample&quot;
+  /admin/e-books/[id]/edit?tab=publication ──&gt; Verify checklist ──&gt; Click &quot;Publish Edition to Bookstore&quot;
+       │
+       ▼
+[2. Public Visitor Explores]
+  / ──&gt; Click &quot;E-Books&quot; header button (observe smooth 350ms slide transition)
+  /e-books ──&gt; Browse catalogue ──&gt; Open published book detail
+  /e-books/[slug] ──&gt; Read Chapter 1 free sample without signing in ──&gt; Confirm paid chapters are locked
+       │
+       ▼
+[3. Customer Signs In &amp; Purchases]
+  /e-books/[slug] ──&gt; Select &quot;Read Online (₹49)&quot; ──&gt; Add to Cart
+  /cart ──&gt; Review authoritative ₹49.00 total ──&gt; Click &quot;Proceed to Checkout&quot;
+  /login?redirectTo=/checkout ──&gt; Sign in with Customer A credentials ──&gt; Lands on /checkout with cart intact
+  /checkout ──&gt; Click &quot;Pay ₹49 via UPI / Cards&quot; ──&gt; Razorpay Test Mode Modal opens
+  Razorpay Modal ──&gt; Enter Test Card (4100 2800 0000 1007) ──&gt; Enter OTP ──&gt; Payment verifies
+  /checkout/success ──&gt; Success receipt displays ──&gt; Click &quot;Go to My Books&quot;
+       │
+       ▼
+[4. Customer Reads &amp; Upgrades]
+  /my-books ──&gt; Book card appears with &quot;Read Online&quot; badge ──&gt; Click &quot;Start Reading&quot;
+  /read/[slug]/[ch1] ──&gt; Read chapter ──&gt; Scroll ──&gt; Observe &quot;Saving...&quot; then &quot;Saved&quot;
+  /my-books ──&gt; Click &quot;Add PDF access — ₹50&quot; ──&gt; Complete ₹50 Test Mode upgrade payment
+  /my-books ──&gt; Card elevates to &quot;Read + Download&quot; ──&gt; Click &quot;Download PDF&quot; ──&gt; PDF file downloads
+       │
+       ▼
+[5. Administrator Audits Order]
+  /admin/e-book-orders ──&gt; Locate Customer A&#39;s base order (₹49) and upgrade order (₹50)
+  /admin/e-book-orders/[orderId] ──&gt; Inspect item breakdowns, payment IDs, and audit logs
+</code></pre>
+<hr>
+<h2>2. Beginner-Friendly Setup &amp; Preconditions</h2>
+<h3>2.1 Starting the Application Locally</h3>
+<p>Open your terminal, navigate to the <code>frontend</code> folder, and start the local development server:</p>
+<pre><code class="language-bash">cd /home/harsha/Documents/Documents/Project/KnowledgePaat/frontend
+
+# Install dependencies if not already done
+npm install
+
+# Start local server
+npm run dev
+</code></pre>
+<p>The application will start at <strong><code>http://localhost:3000</code></strong>.</p>
+<blockquote>
+<p>[!NOTE]
+To test against a production-optimized build locally, execute:</p>
+<pre><code class="language-bash">npm run build
+npm run start
+</code></pre>
+</blockquote>
+<h3>2.2 Confirming Staging Database Target</h3>
+<p>Before clicking any buttons or entering any test data, confirm that your environment is connected <strong>only</strong> to dedicated Staging Supabase:</p>
+<ol>
+<li>Open <code>frontend/.env.local</code> (or review your shell environment variables).</li>
+<li>Verify:<pre><code class="language-env">NEXT_PUBLIC_SUPABASE_URL=https://lzuinimbsdxnhzmjpxmr.supabase.co
+</code></pre>
+</li>
+<li><strong>CRITICAL GUARD:</strong> Confirm the project reference is <strong><code>lzuinimbsdxnhzmjpxmr</code></strong>. The production reference (<code>csjywuflkvohytbvglxf</code>) must <strong>never</strong> appear in your local configuration or test commands.</li>
+</ol>
+<h3>2.3 Confirming Razorpay Test Mode</h3>
+<ol>
+<li>In <code>frontend/.env.local</code>, inspect the Razorpay Key ID:<pre><code class="language-env">NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_...
+</code></pre>
+</li>
+<li>Verify it starts with <strong><code>rzp_test_</code></strong>.</li>
+<li><strong>NEVER</strong> use keys starting with <code>rzp_live_</code>. Any transaction initiated in Test Mode will not charge real money or touch live banking rails.</li>
+<li>Official Razorpay Test Mode Card Documentation:<br><a href="https://razorpay.com/docs/payments/payments/test-card-details/">https://razorpay.com/docs/payments/payments/test-card-details/</a></li>
+</ol>
+<h3>2.4 Required Test Accounts &amp; Secure Credentials</h3>
+<p>Three distinct user accounts are required for manual testing. <strong>Never store real credentials in test guides, source code, or shared transcripts.</strong> Obtain test credentials using these variable names from your secure team vault or <code>.env.local</code>:</p>
+<table>
+<thead>
+<tr>
+<th align="left">Role</th>
+<th align="left">Variable Name in <code>.env.local</code> / Vault</th>
+<th align="left">Typical Usage in Tests</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Administrator</strong></td>
+<td align="left"><code>STAGING_TEST_ADMIN_EMAIL</code><br><code>STAGING_TEST_ADMIN_PASSWORD</code></td>
+<td align="left">Manages books, editions, pricing, publication, customer access grants, order ledgers, and refunds at <code>/admin/*</code>.</td>
+</tr>
+<tr>
+<td align="left"><strong>Customer A</strong></td>
+<td align="left"><code>STAGING_TEST_STUDENT_EMAIL</code><br><code>STAGING_TEST_STUDENT_PASSWORD</code></td>
+<td align="left">Primary customer account. Purchases books, reads chapters, saves bookmarks, upgrades plans, and downloads PDFs.</td>
+</tr>
+<tr>
+<td align="left"><strong>Customer B</strong></td>
+<td align="left"><code>STAGING_TEST_CUSTOMER_B_EMAIL</code><br><code>STAGING_TEST_CUSTOMER_B_PASSWORD</code></td>
+<td align="left">Secondary customer account. Used for multi-tenant boundary checks (confirming Customer B cannot access Customer A&#39;s books or orders).</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>[!TIP]
+If test user accounts need provisioning or password rotation on staging, administrators can run the local helper:</p>
+<pre><code class="language-bash">npx ts-node --project tsconfig.json scripts/rotate_staging_test_credentials.ts
+</code></pre>
+<p>This script updates staging Auth directly and places the high-entropy credentials securely into <code>frontend/.env.local</code>.</p>
+</blockquote>
+<h3>2.5 Browser Profiles for Independent Sessions</h3>
+<p>To prevent session cookie collision between Administrator and Customers, configure three separate browser contexts:</p>
+<ul>
+<li><strong>Window 1 (Regular Browser / Profile A):</strong> Log in as <strong>Administrator</strong> at <code>http://localhost:3000/admin/login</code>.</li>
+<li><strong>Window 2 (Incognito / Profile B):</strong> Log in as <strong>Customer A</strong> at <code>http://localhost:3000/login</code>.</li>
+<li><strong>Window 3 (Secondary Browser, e.g., Firefox or Chrome Guest Profile):</strong> Log in as <strong>Customer B</strong> or browse anonymously as <strong>Public Visitor</strong>.</li>
+</ul>
+<h3>2.6 Test Assets &amp; Disposable Records Requirement</h3>
+<p>Have the following test assets ready on your machine:</p>
+<ul>
+<li><strong>Cover Image:</strong> Any standard JPEG, PNG, or WebP image under 2MB (e.g., <code>500x700px</code>).</li>
+<li><strong>Publication PDF:</strong> Any standard PDF document under 100MB (a sample 2-page PDF is sufficient).</li>
+<li><strong>Chapter Content:</strong> Sample text formatted in Markdown (headings, paragraphs, code blocks).</li>
+</ul>
+<blockquote>
+<p>[!IMPORTANT]
+<strong>Use Disposable Records Only:</strong><br>Tests that change pricing, withdraw books from sale, revoke customer entitlements, or issue refunds must be performed on <strong>disposable staging records created during your test session</strong>. Do not alter established staging baseline books unless explicitly directed.</p>
+</blockquote>
+<hr>
+<h2>3. Official Razorpay Test Cards Reference</h2>
+<p>Use only these official Razorpay Sandbox card numbers during checkout testing. Label every entry as <strong>Test Mode</strong>:</p>
+<table>
+<thead>
+<tr>
+<th align="left">Card Type</th>
+<th align="left">Card Number (Test Mode Only)</th>
+<th align="left">Expiry</th>
+<th align="left">CVV</th>
+<th align="left">Expected Result / Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Domestic Success</strong></td>
+<td align="left"><code>4100 2800 0000 1007</code></td>
+<td align="left">Any future date (e.g., <code>12/28</code>)</td>
+<td align="left">Any 3 digits (<code>123</code>)</td>
+<td align="left">Instant OTP authentication &amp; successful capture. Enter any 4- or 6-digit OTP (e.g., <code>123456</code>).</td>
+</tr>
+<tr>
+<td align="left"><strong>Alternative Success</strong></td>
+<td align="left"><code>4012 0000 0000 0002</code></td>
+<td align="left">Future date (<code>10/29</code>)</td>
+<td align="left"><code>456</code></td>
+<td align="left">Visa domestic success.</td>
+</tr>
+<tr>
+<td align="left"><strong>Declined / Failed Card</strong></td>
+<td align="left"><code>4000 0000 0000 1002</code></td>
+<td align="left">Future date (<code>12/28</code>)</td>
+<td align="left"><code>123</code></td>
+<td align="left">Immediate decline by issuing bank simulation.</td>
+</tr>
+<tr>
+<td align="left"><strong>Insufficient Funds</strong></td>
+<td align="left"><code>4000 0000 0000 1004</code></td>
+<td align="left">Future date (<code>12/28</code>)</td>
+<td align="left"><code>123</code></td>
+<td align="left">Simulates card failure due to insufficient credit limit.</td>
+</tr>
+</tbody></table>
+<p>Official Documentation: <a href="https://razorpay.com/docs/payments/payments/test-card-details/">https://razorpay.com/docs/payments/payments/test-card-details/</a></p>
+<hr>
+<h2>4. Test Suite A: Administrator Prepares Books</h2>
+<p>Execute this suite first to author, configure, and publish a disposable test book.</p>
+<hr>
+<h3>TC-ADM-01: Sign In as Administrator</h3>
+<ul>
+<li><strong>Role:</strong> Administrator</li>
+<li><strong>Prerequisites:</strong> Administrator credentials available from <code>STAGING_TEST_ADMIN_EMAIL</code> and <code>STAGING_TEST_ADMIN_PASSWORD</code>.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/admin/login</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Open <code>http://localhost:3000/admin/login</code> in Browser Window 1.</li>
+<li>Enter the administrator email and password into the respective fields.</li>
+<li>Click <strong>&quot;Sign In to Dashboard&quot;</strong>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Login succeeds without error.</li>
+<li>User is redirected to <code>/admin/dashboard</code>.</li>
+<li>Admin header navigation displays links to eBooks, Customers, and Orders.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of <code>/admin/dashboard</code> showing logged-in admin state.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-ADM-02: Create Draft Book &amp; Metadata</h3>
+<ul>
+<li><strong>Role:</strong> Administrator</li>
+<li><strong>Prerequisites:</strong> Signed in as Administrator (<code>TC-ADM-01</code>).</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/admin/e-books</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>On <code>/admin/e-books</code>, click the <strong>&quot;Add New eBook&quot;</strong> button (top right).</li>
+<li>The page navigates to <code>/admin/e-books/new</code>.</li>
+<li>Fill in the form fields:<ul>
+<li><strong>Book Title:</strong> <code>Manual Test Guide to Cloud Architecture</code></li>
+<li><strong>Author Name:</strong> <code>QA Lead Engineer</code></li>
+<li><strong>URL Slug:</strong> <code>manual-test-guide-cloud-architecture</code> (auto-generated or manually typed)</li>
+<li><strong>Category:</strong> <code>System Design</code></li>
+<li><strong>Target Reader Role:</strong> <code>Backend Engineers &amp; Testers</code></li>
+<li><strong>Subtitle:</strong> <code>A Comprehensive Hands-On Testing Guide</code></li>
+<li><strong>Language:</strong> <code>en</code></li>
+<li><strong>Description:</strong> <code>This disposable staging book is created specifically for manual verification of checkout, reading, downloads, and refunds.</code></li>
+</ul>
+</li>
+<li>Review default pricing tiers shown:<ul>
+<li>Online: ₹49 (4900 paise)</li>
+<li>Download: ₹99 (9900 paise)</li>
+<li>Upgrade: ₹50 (5000 paise)</li>
+</ul>
+</li>
+<li>Click <strong>&quot;Save &amp; Continue to Workspace&quot;</strong> (or submit button).</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Book record is created in <code>ebooks</code> with <code>status=&#39;draft&#39;</code>.</li>
+<li>Initial Edition #1 is automatically generated in <code>ebook_editions</code>.</li>
+<li>Browser automatically redirects to the editor at <code>/admin/e-books/[bookId]/edit</code>.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Note the generated <code>bookId</code> from the URL bar.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-ADM-03: Upload Public Cover Asset</h3>
+<ul>
+<li><strong>Role:</strong> Administrator</li>
+<li><strong>Prerequisites:</strong> Draft book created (<code>TC-ADM-02</code>); valid image file (<code>.jpg</code> or <code>.png</code>, &lt; 2MB).</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-books/[bookId]/edit?tab=details</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>On the editor page, ensure the <strong>&quot;Book Details &amp; Cover&quot;</strong> tab is active.</li>
+<li>In the right-hand column under <strong>&quot;Cover Image (Public)&quot;</strong>, click the file input button (<strong>&quot;Choose File&quot;</strong>).</li>
+<li>Select your test cover image.</li>
+<li>Click <strong>&quot;Upload Cover&quot;</strong>.</li>
+<li>After the upload finishes, click <strong>&quot;Save Book Details&quot;</strong> at the bottom of the left column.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>File is uploaded to the public storage bucket (<code>ebook-covers</code>).</li>
+<li>Cover preview appears immediately in the preview box.</li>
+<li>Green notification banner displays: <code>&quot;Cover image uploaded and attached successfully.&quot;</code></li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot showing the uploaded cover image thumbnail in the editor.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-ADM-04: Upload Private Publication PDF to Edition</h3>
+<ul>
+<li><strong>Role:</strong> Administrator</li>
+<li><strong>Prerequisites:</strong> Draft book created (<code>TC-ADM-02</code>); valid PDF document (&lt; 100MB).</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-books/[bookId]/edit?tab=editions</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In the editor tab bar, click <strong>&quot;Editions &amp; PDF Files&quot;</strong>.</li>
+<li>Confirm Edition #1 is selected as the active edition.</li>
+<li>Under <strong>&quot;Publication PDF Document (Strictly Private)&quot;</strong>, locate the file input.</li>
+<li>Select your test PDF file.</li>
+<li>Click <strong>&quot;Upload PDF&quot;</strong>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>File is uploaded to the private bucket (<code>ebook-pdfs</code>).</li>
+<li>Storage path, original filename, and file size in MB are displayed with a green <code>&quot;Verified Attachment&quot;</code> badge.</li>
+<li>Green banner confirms: <code>&quot;Publication PDF uploaded to private storage successfully.&quot;</code></li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the verified PDF attachment card with path and size.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-ADM-05: Author Chapters, Mark Readiness, Reorder, &amp; Designate Free Sample</h3>
+<ul>
+<li><strong>Role:</strong> Administrator</li>
+<li><strong>Prerequisites:</strong> Draft book created (<code>TC-ADM-02</code>).</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-books/[bookId]/edit?tab=chapters</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Click the <strong>&quot;Website Chapters&quot;</strong> tab.</li>
+<li>Click <strong>&quot;+ Add&quot;</strong> to create Chapter 1.<ul>
+<li>Title: <code>Chapter 1: Cloud Architecture Fundamentals</code></li>
+<li>Slug: <code>chapter-1-fundamentals</code></li>
+<li>Check the box: <strong>&quot;Designate as Free Sample (Accessible to public visitors without login)&quot;</strong></li>
+<li>Check the box: <strong>&quot;Ready for Publication&quot;</strong></li>
+<li>Markdown Body:<pre><code class="language-markdown"># Chapter 1: Cloud Architecture Fundamentals
+
+Welcome to the free sample chapter. This chapter is publicly accessible to all visitors.
+
+## Key Concepts
+- High availability
+- Fault tolerance
+- Scalable storage
+</code></pre>
+</li>
+<li>Click <strong>&quot;Save Chapter&quot;</strong>.</li>
+</ul>
+</li>
+<li>Click <strong>&quot;+ Add&quot;</strong> to create Chapter 2.<ul>
+<li>Title: <code>Chapter 2: Distributed Data Stores &amp; Caching</code></li>
+<li>Slug: <code>chapter-2-caching</code></li>
+<li><strong>Leave &quot;Designate as Free Sample&quot; unchecked.</strong></li>
+<li>Check the box: <strong>&quot;Ready for Publication&quot;</strong></li>
+<li>Markdown Body:<pre><code class="language-markdown"># Chapter 2: Distributed Data Stores
+
+This is a protected paid chapter. Only authenticated owners can read this content.
+</code></pre>
+</li>
+<li>Click <strong>&quot;Save Chapter&quot;</strong>.</li>
+</ul>
+</li>
+<li>Click the up/down chevron arrows next to Chapter 2 in the list to test reordering. Move Chapter 2 up, then move Chapter 1 back up so Chapter 1 is first.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Chapter 1 shows the <code>&quot;Free Sample&quot;</code> tag and status <code>&quot;ready&quot;</code>.</li>
+<li>Chapter 2 shows status <code>&quot;ready&quot;</code> without sample tag.</li>
+<li>Reordering saves immediately via <code>/api/admin/ebooks/[bookId]/editions/[editionId]/chapters/reorder</code>.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the chapter list showing Chapter 1 (Free Sample, ready) and Chapter 2 (ready).</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-ADM-06: Configure Dynamic Commercial Pricing &amp; Discounts</h3>
+<ul>
+<li><strong>Role:</strong> Administrator</li>
+<li><strong>Prerequisites:</strong> Draft book created (<code>TC-ADM-02</code>).</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-books/[bookId]/edit?tab=pricing</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Click the <strong>&quot;Pricing &amp; Discounts&quot;</strong> tab.</li>
+<li>Review current prices: Read Online ₹49, Read + Download ₹99, Upgrade ₹50.</li>
+<li>Under <strong>Read Online Tier</strong>:<ul>
+<li>Original Price: <code>49</code></li>
+<li>Discount Type: <code>none</code></li>
+</ul>
+</li>
+<li>Under <strong>Read + Download Tier</strong>:<ul>
+<li>Original Price: <code>99</code></li>
+<li>Discount Type: <code>none</code></li>
+</ul>
+</li>
+<li>Under <strong>PDF Upgrade Delta</strong>:<ul>
+<li>Original Price: <code>50</code></li>
+<li>Discount Type: <code>none</code></li>
+</ul>
+</li>
+<li>In the <strong>&quot;Audit &amp; Change Log Reason&quot;</strong> text area, type: <code>Initial commercial pricing configuration for staging test book</code>.</li>
+<li>Click <strong>&quot;Save Commercial Pricing&quot;</strong>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Live calculations display matching final selling prices (₹49, ₹99, ₹50).</li>
+<li>Save completes successfully with green banner: <code>&quot;Commercial pricing updated successfully.&quot;</code></li>
+<li>Audit history table below updates showing <code>pricing_version=1</code> with your change reason and timestamp.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of pricing summary and audit log row.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-ADM-07: Publication Attempt with Missing Prerequisites</h3>
+<ul>
+<li><strong>Role:</strong> Administrator</li>
+<li><strong>Prerequisites:</strong> A book with an intentionally missing prerequisite (e.g., author a Chapter 3 and leave it as <code>draft</code>, uncheck &quot;Ready&quot;).</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-books/[bookId]/edit?tab=publication</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Go to <strong>&quot;Website Chapters&quot;</strong> tab, click <strong>&quot;+ Add&quot;</strong>, title it <code>Draft Appendix</code>, and save it with <strong>&quot;Ready for Publication&quot; unchecked</strong>.</li>
+<li>Switch to the <strong>&quot;Publication Checklist&quot;</strong> tab.</li>
+<li>Inspect the 7 checklist items.</li>
+<li>Observe Item 5: <strong>&quot;All Included Chapters Ready&quot;</strong>.</li>
+<li>Look at the launch action button at the bottom: <strong>&quot;Publish Edition to Bookstore&quot;</strong>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Checklist shows: <code>DRAFTS EXIST</code> in amber next to Item 5.</li>
+<li>An amber alert box lists blocking reasons: <code>&quot;1 chapter(s) are still in draft status.&quot;</code></li>
+<li>The <strong>&quot;Publish Edition to Bookstore&quot;</strong> button is disabled (<code>disabled</code> attribute present, grayed out).</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot showing the disabled publish button and amber blocking reasons box.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-ADM-08: Satisfy Prerequisites, Publish Edition, &amp; Confirm Public Isolation of Drafts</h3>
+<ul>
+<li><strong>Role:</strong> Administrator</li>
+<li><strong>Prerequisites:</strong> Address blocking issue from <code>TC-ADM-07</code>.</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-books/[bookId]/edit?tab=chapters</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In <strong>&quot;Website Chapters&quot;</strong>, select <code>Draft Appendix</code>, click <strong>&quot;Delete&quot;</strong> (or mark it as &quot;Ready for Publication&quot; and save).</li>
+<li>Switch back to <strong>&quot;Publication Checklist&quot;</strong> tab.</li>
+<li>Confirm all 7 items now show green <strong>PASS</strong> badges:<ul>
+<li>Book Title &amp; Author: PASS</li>
+<li>Book Cover Asset: PASS</li>
+<li>Approved Pricing Tiers: PASS</li>
+<li>Ready Website Chapters: PASS</li>
+<li>All Included Chapters Ready: PASS</li>
+<li>Designated Ready Free Sample: PASS</li>
+<li>Private Publication PDF: PASS</li>
+</ul>
+</li>
+<li>Click the enabled button: <strong>&quot;Publish Edition to Bookstore&quot;</strong>.</li>
+<li>Open an anonymous Incognito window and navigate to <code>http://localhost:3000/e-books</code>.</li>
+<li>Confirm your newly published book appears in the catalogue.</li>
+<li>Return to the admin editor, navigate back to <code>/admin/e-books/new</code>, and create a second book titled <code>Secret Unpublished Draft Book</code> without publishing it.</li>
+<li>Refresh the anonymous <code>/e-books</code> window.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Edition status updates from <code>draft</code> to <code>published</code>.</li>
+<li>Header badge changes from amber <code>&quot;Draft&quot;</code> to green <code>&quot;Published&quot;</code>.</li>
+<li>The published book appears immediately on the public <code>/e-books</code> storefront.</li>
+<li>The <code>Secret Unpublished Draft Book</code> does <strong>NOT</strong> appear on <code>/e-books</code> (drafts remain strictly isolated from visitors).</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of public <code>/e-books</code> catalogue showing only the published book.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h2>5. Test Suite B: Public Visitor Explores the Bookstore</h2>
+<p>Execute this suite in an anonymous Incognito / Guest window without signing in.</p>
+<hr>
+<h3>TC-VIS-01: Public Portal Entry &amp; Slide Transition</h3>
+<ul>
+<li><strong>Role:</strong> Public Visitor (Anonymous)</li>
+<li><strong>Prerequisites:</strong> Application running at <code>http://localhost:3000</code>.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Open a clean Incognito window and navigate to <code>http://localhost:3000/</code>.</li>
+<li>Locate the <strong>&quot;E-Books&quot;</strong> button in the top navigation header (<code>id=&quot;main-nav-ebooks-btn&quot;</code>).</li>
+<li>Click <strong>&quot;E-Books&quot;</strong>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>A smooth 350ms slide transition animation plays.</li>
+<li>Browser URL changes to <code>/e-books</code>.</li>
+<li>The bookstore header appears with the KnowledgePaat logo and dark purple theme.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Observed transition smoothness and URL bar showing <code>/e-books</code>.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-VIS-02: Logo Navigation Back to Main Home</h3>
+<ul>
+<li><strong>Role:</strong> Public Visitor (Anonymous)</li>
+<li><strong>Prerequisites:</strong> On <code>/e-books</code>.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/e-books</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In the dark purple bookstore header, locate the KnowledgePaat logo button (<code>id=&quot;ebook-header-logo-link&quot;</code>).</li>
+<li>Click the logo.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Smooth slide transition reverses back to <code>/</code>.</li>
+<li>The main platform homepage is displayed.</li>
+</ul>
+<ol start="3">
+<li>Click the browser&#39;s Back button (or click <strong>&quot;E-Books&quot;</strong> again) to return to <code>/e-books</code>.</li>
+</ol>
+</li>
+<li><strong>Evidence to Record:</strong> Browser URL returning to <code>/</code>.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-VIS-03: Dedicated Bookstore Navigation &amp; Cart Placement</h3>
+<ul>
+<li><strong>Role:</strong> Public Visitor (Anonymous)</li>
+<li><strong>Prerequisites:</strong> On <code>/e-books</code>.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/e-books</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Inspect the desktop header elements from left to right:<ul>
+<li>KnowledgePaat Logo (links to <code>/</code>)</li>
+<li>&quot;eBooks&quot; portal badge (links to <code>/e-books</code>)</li>
+<li>&quot;Store Home&quot; link</li>
+<li>&quot;Browse Books&quot; anchor link (<code>#catalogue</code>)</li>
+<li>&quot;Categories&quot; dropdown menu</li>
+<li>&quot;My Books&quot; link</li>
+<li>Search magnifying glass icon button</li>
+<li>Shopping Cart icon button (<code>id=&quot;ebook-header-cart-btn&quot;</code>)</li>
+<li>&quot;Sign In&quot; link and &quot;Get Started&quot; button</li>
+</ul>
+</li>
+<li>Click the <strong>&quot;Categories&quot;</strong> dropdown button.</li>
+<li>Select <strong>&quot;System Design&quot;</strong>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Categories dropdown opens smoothly.</li>
+<li>Selecting &quot;System Design&quot; closes the dropdown and updates the catalogue URL to <code>/e-books?category=System+Design</code>.</li>
+<li>Cart button is prominently visible in the header without an item badge (cart is empty).</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the open Categories dropdown.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-VIS-04: Catalogue Browsing, Search, Topic Filtering, &amp; Pagination</h3>
+<ul>
+<li><strong>Role:</strong> Public Visitor (Anonymous)</li>
+<li><strong>Prerequisites:</strong> At least 1 published book in the catalogue.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/e-books</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Scroll down to the <strong>&quot;#catalogue&quot;</strong> section.</li>
+<li>In the catalogue search box, type <code>Cloud</code> and press Enter.</li>
+<li>Verify the catalogue cards filter to show books matching &quot;Cloud&quot;.</li>
+<li>Click the <strong>&quot;All&quot;</strong> category pill to reset filters.</li>
+<li>Click the category pill <strong>&quot;Engineering&quot;</strong>.</li>
+<li>Click <strong>&quot;All&quot;</strong> again.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Search query filters in real-time or on submit.</li>
+<li>Active filter pills display clear highlight state.</li>
+<li>URL synchronizes query parameters (<code>?search=Cloud</code>, <code>?category=Engineering</code>).</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Note filter results and URL parameter behavior.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-VIS-05: Book Details Page, Authoritative Pricing, &amp; Table of Contents</h3>
+<ul>
+<li><strong>Role:</strong> Public Visitor (Anonymous)</li>
+<li><strong>Prerequisites:</strong> Published test book visible in catalogue.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/e-books</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Click on the book card for <code>Manual Test Guide to Cloud Architecture</code>.</li>
+<li>Page navigates to <code>/e-books/[slug]</code>.</li>
+<li>Inspect the detail page layout:<ul>
+<li>Serif typography book title and author.</li>
+<li>Book cover asset rendered cleanly.</li>
+<li>Plan pricing cards: <strong>Read Online (₹49)</strong> and <strong>Read + Download (₹99)</strong>.</li>
+<li>Table of Contents section listing Chapter 1 and Chapter 2.</li>
+</ul>
+</li>
+<li>Observe the badges in the Table of Contents:<ul>
+<li>Chapter 1 has a green <strong>&quot;Free Sample&quot;</strong> badge and a <strong>&quot;Read Sample&quot;</strong> button.</li>
+<li>Chapter 2 has a lock icon indicating it is a paid chapter.</li>
+</ul>
+</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Page renders without layout shift or missing images.</li>
+<li>Pricing matches the admin-configured ₹49 and ₹99 amounts.</li>
+<li>Table of Contents accurately distinguishes free sample from paid chapters.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the book detail page showing pricing tiers and TOC.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-VIS-06: Read Free Sample Chapter Without Authentication</h3>
+<ul>
+<li><strong>Role:</strong> Public Visitor (Anonymous)</li>
+<li><strong>Prerequisites:</strong> On <code>/e-books/[slug]</code>.</li>
+<li><strong>Starting Page:</strong> <code>/e-books/[slug]</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In the Table of Contents on the book detail page, click <strong>&quot;Read Sample&quot;</strong> next to Chapter 1.</li>
+<li>Observe the reading drawer that slides in from the right.</li>
+<li>Read the rendered markdown text.</li>
+<li>Press the <code>Escape</code> key on your keyboard, or click the close button (<strong>&quot;X&quot;</strong>) in the top right of the drawer.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>The sample drawer slides open without prompting for login or authentication.</li>
+<li>Markdown headings, lists, and formatting render safely without raw HTML.</li>
+<li>Pressing <code>Escape</code> or clicking <code>X</code> closes the drawer and returns focus to the detail page.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the open free sample reading drawer showing Chapter 1 content.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-VIS-07: Direct Access Protection on Paid Chapters</h3>
+<ul>
+<li><strong>Role:</strong> Public Visitor (Anonymous)</li>
+<li><strong>Prerequisites:</strong> Knowledge of the paid chapter ID (Chapter 2 ID from admin or URL).</li>
+<li><strong>Starting Page:</strong> Anonymous browser window.</li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Manually type the protected reader URL into the address bar:
+<code>http://localhost:3000/read/[bookSlug]/[paidChapterId]</code></li>
+<li>Press Enter.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>The middleware or reader client intercepts the unauthenticated request.</li>
+<li>User is redirected to <code>/login?redirectTo=/read/[bookSlug]/[paidChapterId]</code> (or an <code>&quot;Authentication Required&quot;</code> screen is displayed with a <code>&quot;Sign In to Continue&quot;</code> button).</li>
+<li>Unauthenticated visitors are strictly forbidden from viewing paid chapter content.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Browser URL showing redirection to <code>/login?redirectTo=...</code>.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h2>6. Test Suite C: Guest Cart and Authentication</h2>
+<p>Execute this suite to verify cart persistence, plan switching, duplicate prevention, and seamless authentication redirection.</p>
+<hr>
+<h3>TC-CRT-01: Add Books Under Both Access Plans</h3>
+<ul>
+<li><strong>Role:</strong> Public Visitor / Guest</li>
+<li><strong>Prerequisites:</strong> At least 2 published books in catalogue (or use 1 book to test one plan, then another).</li>
+<li><strong>Starting Page:</strong> <code>/e-books/[bookSlug]</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>On the book detail page, click the plan card <strong>&quot;Read Online (₹49)&quot;</strong>.</li>
+<li>Click <strong>&quot;Add to Cart&quot;</strong>.</li>
+<li>Observe the shopping cart icon in the header.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Cart badge appears on the cart icon showing count <code>1</code>.</li>
+<li>Item is stored in the browser&#39;s local cart storage.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Header cart badge displaying <code>1</code>.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-CRT-02: Duplicate Prevention on Re-Adding Same Book</h3>
+<ul>
+<li><strong>Role:</strong> Public Visitor / Guest</li>
+<li><strong>Prerequisites:</strong> Book already in cart (<code>TC-CRT-01</code>).</li>
+<li><strong>Starting Page:</strong> <code>/e-books/[bookSlug]</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>On the same book detail page, select <strong>&quot;Read + Download (₹99)&quot;</strong>.</li>
+<li>Click <strong>&quot;Add to Cart&quot;</strong> again.</li>
+<li>Click the cart icon button in the header (<code>/cart</code>).</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Cart counter badge remains <code>1</code> (not 2).</li>
+<li>On <code>/cart</code>, exactly <strong>one line item</strong> exists for this book.</li>
+<li>The plan for this book has updated to the newly selected plan (<strong>Read + Download</strong>), preventing duplicate purchase of the same title.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of <code>/cart</code> showing exactly 1 item for the book.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-CRT-03: Cart Line Item Plan Switching &amp; In-Place Price Recalculation</h3>
+<ul>
+<li><strong>Role:</strong> Public Visitor / Guest</li>
+<li><strong>Prerequisites:</strong> 1 item in cart at <code>/cart</code>.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/cart</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>On <code>/cart</code>, locate the <strong>&quot;Selected Access Tier&quot;</strong> toggle buttons on the item card:<ul>
+<li><code>Read Online</code> (₹49)</li>
+<li><code>Read + PDF</code> (₹99)</li>
+</ul>
+</li>
+<li>Click <strong>&quot;Read Online&quot;</strong>.<ul>
+<li>Observe the item price and Order Summary Total.</li>
+</ul>
+</li>
+<li>Click <strong>&quot;Read + PDF&quot;</strong>.<ul>
+<li>Observe the item price and Order Summary Total.</li>
+</ul>
+</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Switching to <code>Read Online</code> updates the item price to ₹49.00 and Total to ₹49.00.</li>
+<li>Switching to <code>Read + PDF</code> updates the item price to ₹99.00 and Total to ₹99.00.</li>
+<li>Total recalculates in-place immediately without a full page reload.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Note instantaneous total update between ₹49.00 and ₹99.00.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-CRT-04: Remove Single Item &amp; Clear Cart Modal (Cancel vs Confirm)</h3>
+<ul>
+<li><strong>Role:</strong> Public Visitor / Guest</li>
+<li><strong>Prerequisites:</strong> At least 1 item in cart at <code>/cart</code>.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/cart</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Click <strong>&quot;Clear Cart&quot;</strong> (or add 2 books and test trash icon on one book first).</li>
+<li>Click the trash can icon on an item $\rightarrow$ Item is removed immediately.</li>
+<li>Add the book back to cart.</li>
+<li>On <code>/cart</code>, click the <strong>&quot;Clear Cart&quot;</strong> button $\rightarrow$ A modal titled <strong>&quot;Clear Shopping Cart?&quot;</strong> opens.</li>
+<li>In the modal, click <strong>&quot;Cancel&quot;</strong>.</li>
+<li>Confirm the cart items remain intact.</li>
+<li>Click <strong>&quot;Clear Cart&quot;</strong> again, and this time click <strong>&quot;Yes, Clear Cart&quot;</strong>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Trash can icon removes only that specific item.</li>
+<li>&quot;Cancel&quot; in modal dismisses the modal without altering cart items.</li>
+<li>&quot;Yes, Clear Cart&quot; empties the cart and transitions the page to the Empty Cart state showing <code>&quot;Your eBook Shopping Cart is Empty&quot;</code> with an <code>&quot;Explore eBooks Bookstore&quot;</code> button.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the empty cart state.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-CRT-05: Refresh &amp; Multi-Tab Synchronisation Persistence</h3>
+<ul>
+<li><strong>Role:</strong> Public Visitor / Guest</li>
+<li><strong>Prerequisites:</strong> Add 1 book to cart at <code>/cart</code>.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/cart</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>On <code>/cart</code>, select the <strong>&quot;Read Online&quot;</strong> plan.</li>
+<li>Reload the page using <code>F5</code> (or <code>Cmd+R</code>).</li>
+<li>Confirm the book and selected plan persist.</li>
+<li>Open a second tab in the same browser window and navigate to <code>http://localhost:3000/cart</code>.</li>
+<li>In Tab 2, change the plan to <strong>&quot;Read + PDF&quot;</strong>.</li>
+<li>Switch back to Tab 1 without refreshing.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Refreshing does not wipe the cart.</li>
+<li>The storage event listener synchronizes Tab 1 to reflect the updated plan (<strong>Read + PDF</strong>) and updated total (₹99.00) automatically.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Observed synchronization between the two tabs.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-CRT-06: Sign In From eBook Section With Safe Return Path</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> On <code>/e-books</code>; Customer A credentials available from <code>STAGING_TEST_STUDENT_EMAIL</code> / <code>STAGING_TEST_STUDENT_PASSWORD</code>.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/e-books</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In the bookstore header, click the <strong>&quot;Sign In&quot;</strong> link.</li>
+<li>Observe the browser URL bar: it should read <code>/login?redirectTo=%2Fe-books</code>.</li>
+<li>Enter Customer A&#39;s email and password.</li>
+<li>Click <strong>&quot;Sign In&quot;</strong>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Login completes successfully.</li>
+<li>Application redirects the user back to <code>/e-books</code> (NOT to <code>/student/dashboard</code>).</li>
+<li>Bookstore header now shows the user&#39;s logged-in state (e.g., &quot;Dashboard&quot; and &quot;Log out&quot; buttons).</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> URL confirming return to <code>/e-books</code> after authentication.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-CRT-07: Cart Preservation Through Authentication</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> Sign out of all accounts. Add a book to cart as guest at <code>/cart</code>.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/cart</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>On <code>/cart</code>, verify the book is present with plan <strong>&quot;Read Online (₹49)&quot;</strong>.</li>
+<li>Click <strong>&quot;Proceed to Checkout&quot;</strong>.</li>
+<li>Because you are not logged in, the application intercepts and redirects to <code>/login?redirectTo=%2Fcheckout</code>.</li>
+<li>Enter Customer A credentials and click <strong>&quot;Sign In&quot;</strong>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Login succeeds.</li>
+<li>Browser automatically navigates to <code>http://localhost:3000/checkout</code>.</li>
+<li>Your cart items and the ₹49.00 total are intact on <code>/checkout</code> (no items lost).</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of <code>/checkout</code> showing Customer A signed in with the preserved cart items.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-CRT-08: Student Portal Freedom &amp; Unwanted Redirect Prevention</h3>
+<ul>
+<li><strong>Role:</strong> Customer A (Student role)</li>
+<li><strong>Prerequisites:</strong> Signed in as Customer A.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/e-books</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>While signed in as Customer A, click between <code>/e-books</code>, <code>/cart</code>, and <code>/my-books</code>.</li>
+<li>Confirm you can freely navigate these bookstore pages without being automatically bounced to <code>/student/dashboard</code>.</li>
+<li>Only navigating directly to the root landing <code>/</code> or <code>/login</code> should redirect to <code>/student/dashboard</code>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Authenticated students can browse the bookstore, manage their cart, and read their library without unwanted redirects.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Verified smooth navigation across <code>/e-books</code>, <code>/cart</code>, and <code>/my-books</code>.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h2>7. Test Suite D: Checkout and Payment Recovery</h2>
+<p>Execute this suite as signed-in Customer A. Use Razorpay Test Mode cards only.</p>
+<hr>
+<h3>TC-CHK-01: Order Summary Price Verification</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> On <code>/checkout</code> with 1 book (<code>Read Online</code>, ₹49).</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/checkout</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Review the Customer Information card: Email and Full Name verified.</li>
+<li>Review the Order Summary card:<ul>
+<li>Book title and Edition number.</li>
+<li>Selected tier: <code>Read Online</code>.</li>
+<li>Authoritative Total: <code>₹49.00</code>.</li>
+</ul>
+</li>
+<li>Inspect the channel availability badges:<ul>
+<li><code>Cards &amp; Netbanking (Active)</code></li>
+<li><code>UPI Intent (Mobile)</code></li>
+<li><code>UPI QR (Desktop)</code></li>
+</ul>
+</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Total displays exactly ₹49.00 (matching server pricing minor units of 4900 paise).</li>
+<li>Taxes are clearly marked as included.</li>
+<li>Checkout button displays: <code>&quot;Pay ₹49 via UPI / Cards&quot;</code>.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the <code>/checkout</code> summary card.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-CHK-02: Successful Razorpay Test Mode Card Payment</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> On <code>/checkout</code> with 1 book (<code>Read Online</code>, ₹49).</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/checkout</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Click <strong>&quot;Pay ₹49 via UPI / Cards&quot;</strong>.</li>
+<li>The Razorpay modal opens in a centered overlay with navy branding (<code>#0B1D3A</code>).</li>
+<li>In the modal, select the <strong>&quot;Card&quot;</strong> payment option.</li>
+<li>Enter official Razorpay Test Mode details:<ul>
+<li><strong>Card Number:</strong> <code>4100 2800 0000 1007</code></li>
+<li><strong>Expiry:</strong> <code>12/28</code></li>
+<li><strong>CVV:</strong> <code>123</code></li>
+</ul>
+</li>
+<li>Click <strong>&quot;Pay ₹49&quot;</strong>.</li>
+<li>The test OTP screen appears. Enter any OTP (e.g., <code>123456</code>) and click <strong>&quot;Submit&quot;</strong>.</li>
+<li>Wait for verification (do not refresh).</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Razorpay returns payment credentials to the application.</li>
+<li><code>/api/ebooks/orders/verify</code> verifies HMAC signature and confirms database state.</li>
+<li>Cart item is pruned from local storage.</li>
+<li>Browser automatically redirects to <code>/checkout/success?orderId=[orderId]</code>.</li>
+<li>Success page displays: <code>&quot;Payment Confirmed &amp; Access Unlocked&quot;</code>, Order Number, and a <code>&quot;Go to My Books&quot;</code> button.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Note the Order Number (e.g., <code>KP-EB-...</code>) and capture screenshot of <code>/checkout/success</code>.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-CHK-03: Gateway Failure, Cancellation, Dismissal, &amp; Retry</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> Add a different book (or same book on clean account) to cart; proceed to <code>/checkout</code>.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/checkout</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>On <code>/checkout</code>, click <strong>&quot;Pay ₹X via UPI / Cards&quot;</strong>.</li>
+<li>When the Razorpay modal opens, click the close button (<strong>&quot;X&quot;</strong>) in the top corner of the modal (or select Card $\rightarrow$ enter test failed card <code>4000 0000 0000 1002</code>).</li>
+<li>Observe the checkout page.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Modal dismisses cleanly.</li>
+<li>Checkout page displays a <strong>&quot;Payment in Progress&quot;</strong> recovery card with the active order number and a <strong>&quot;Check Payment Status&quot;</strong> button.</li>
+<li>If a declined card was used, a red decline message displays: <code>&quot;Payment was declined or cancelled. You can retry with UPI or Card.&quot;</code></li>
+</ul>
+<ol start="4">
+<li>Click <strong>&quot;Pay ₹X via UPI / Cards&quot;</strong> again.</li>
+<li>Confirm the modal re-opens using the <strong>existing pending order ID</strong> rather than inserting a duplicate order row into the database.</li>
+</ol>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the &quot;Payment in Progress&quot; recovery card on <code>/checkout</code>.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-CHK-04: &quot;Check Payment Status&quot; Recovery Action</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> Active pending order on <code>/checkout</code> or <code>/checkout/success</code>.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/checkout</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>On the &quot;Payment in Progress&quot; recovery card, click <strong>&quot;Check Payment Status&quot;</strong>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Button enters loading state showing <code>&quot;Checking with Razorpay...&quot;</code>.</li>
+<li>Application executes <code>POST /api/ebooks/orders/[orderId]/check-status</code>.</li>
+<li>If payment is still pending/unpaid, the card displays: <code>&quot;Awaiting completed payment confirmation from gateway.&quot;</code></li>
+<li>If payment was captured externally, status updates to <code>paid</code> and redirects to <code>/checkout/success</code>.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Response message displayed on the recovery card.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-CHK-05: Success Page Refresh &amp; Idempotency</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> On <code>/checkout/success?orderId=[orderId]</code> after a completed test payment (<code>TC-CHK-02</code>).</li>
+<li><strong>Starting Page:</strong> <code>/checkout/success?orderId=[orderId]</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>On the success confirmation screen, press <code>F5</code> (or <code>Cmd+R</code>) to reload the page.</li>
+<li>Reload the page a second time.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Page re-fetches the existing order details via <code>GET /api/ebooks/orders/[orderId]</code>.</li>
+<li>Order details, tax invoice download button, and entitlement links render cleanly.</li>
+<li>Zero duplicate orders or entitlements are created in the database.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Confirmation that order details re-render identically without error.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-CHK-06: Pending &amp; Failed Payment Access Protection</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> An order that was initiated but cancelled/unpaid (<code>TC-CHK-03</code>).</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/my-books</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Navigate to <code>/my-books</code>.</li>
+<li>Inspect the library shelf for the book from the cancelled/pending order.</li>
+<li>Attempt to directly access the book reader at <code>/read/[bookSlug]</code>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>The unpaid book does <strong>NOT</strong> appear on the customer&#39;s digital library shelf at <code>/my-books</code>.</li>
+<li>Attempting to access <code>/read/[bookSlug]</code> returns an <code>&quot;Access Restricted&quot;</code> error screen.</li>
+<li>Uncaptured payments never grant digital reading entitlements.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of <code>/my-books</code> showing unpaid title is absent.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-CHK-07: Order Record Comparison (Customer History vs Admin Ledger)</h3>
+<ul>
+<li><strong>Role:</strong> Customer A &amp; Administrator</li>
+<li><strong>Prerequisites:</strong> Successful purchase completed in <code>TC-CHK-02</code>.</li>
+<li><strong>Starting Page:</strong> Customer window at <code>/my-books</code>; Admin window at <code>/admin/e-book-orders</code>.</li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In Customer Window (<code>/my-books</code>), click <strong>&quot;Order History&quot;</strong> button in the top right.</li>
+<li>Inspect the order in the modal:<ul>
+<li>Order Number (e.g., <code>KP-EB-...</code>)</li>
+<li>Date</li>
+<li>Total Amount: <code>₹49</code></li>
+<li>Status badge: <code>Paid &amp; Fulfilled</code></li>
+<li>Line items: <code>Read Online</code></li>
+</ul>
+</li>
+<li>In Admin Window, navigate to <code>http://localhost:3000/admin/e-book-orders</code>.</li>
+<li>Search or filter by the customer email or Order Number.</li>
+<li>Click to open the order detail page (<code>/admin/e-book-orders/[orderId]</code>).</li>
+<li>Compare Customer and Admin records.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Order Number, items, amount in paise (<code>4900</code>), payment provider ID (<code>pay_...</code>), and customer email match identically between customer and admin views.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Note Order Number and verify consistency across both roles.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h2>8. Test Suite E: Customer Library and Reader</h2>
+<p>Execute this suite as signed-in Customer A on their purchased book.</p>
+<hr>
+<h3>TC-LIB-01: Digital Library Entitlements Inspection</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> Completed purchase of <code>Manual Test Guide to Cloud Architecture</code> (Read Online tier).</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/my-books</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Navigate to <code>/my-books</code>.</li>
+<li>Inspect the purchased book card:<ul>
+<li>Cover image thumbnail</li>
+<li>Book Title and Author</li>
+<li>Edition badge: <code>Edition 1</code></li>
+<li>Plan badge: <strong>&quot;Read Online&quot;</strong> (blue badge with book icon)</li>
+<li>Purchase attribution date</li>
+<li>Action buttons: <strong>&quot;Start Reading&quot;</strong> and <strong>&quot;Add PDF access — ₹50&quot;</strong></li>
+</ul>
+</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Card displays with exact metadata.</li>
+<li>&quot;Download PDF&quot; button is absent (or indicates upgrade required).</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the book card in <code>/my-books</code>.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-RDR-02: Launch Reader &amp; Chapter Navigation</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> On <code>/my-books</code>.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/my-books</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>On the book card, click <strong>&quot;Start Reading&quot;</strong>.</li>
+<li>Reader opens at <code>/read/[bookSlug]/[chapter1Id]</code>.</li>
+<li>In the top bar, click the <strong>&quot;Contents&quot;</strong> button (hamburger icon).</li>
+<li>The Table of Contents drawer slides in from the left.</li>
+<li>Click <code>Chapter 2: Distributed Data Stores &amp; Caching</code>.</li>
+<li>Scroll down to the bottom of Chapter 2.</li>
+<li>Click the <strong>&quot;Previous Chapter&quot;</strong> button.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Reader loads distraction-free with dark/navy top header.</li>
+<li>Selecting Chapter 2 in the drawer switches chapters immediately.</li>
+<li>&quot;Previous Chapter&quot; button at bottom navigates back to Chapter 1.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Verified navigation between Chapter 1 and Chapter 2.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-RDR-03: Progress Tracking, Refresh, &amp; Automatic Resume</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> In reader on Chapter 2.</li>
+<li><strong>Starting Page:</strong> <code>/read/[bookSlug]/[chapter2Id]</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Scroll halfway down Chapter 2 (approximately 50% scroll position).</li>
+<li>In the top right header, observe the save status indicator:<ul>
+<li>Displays <code>Saving…</code> with a pulsing teal dot during scroll.</li>
+<li>Within 1.5 seconds after stopping, displays <code>Saved</code> with a green checkmark.</li>
+</ul>
+</li>
+<li>Navigate back to <code>/my-books</code> by clicking the <strong>&quot;My Books&quot;</strong> back link.</li>
+<li>On the book card in <code>/my-books</code>, observe the reading progress bar:<ul>
+<li>Displays <code>&quot;Reading Progress: 50%&quot;</code> with a blue progress bar.</li>
+<li>Button label changes from &quot;Start Reading&quot; to <strong>&quot;Continue Reading&quot;</strong>.</li>
+</ul>
+</li>
+<li>Click <strong>&quot;Continue Reading&quot;</strong>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Reader automatically reopens at Chapter 2 and smoothly scrolls to the saved 50% position.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the 50% progress bar on <code>/my-books</code> and resumed scroll position.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-RDR-04: Bookmarks Management</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> In reader at <code>/read/[bookSlug]/[chapter2Id]</code>.</li>
+<li><strong>Starting Page:</strong> <code>/read/[bookSlug]/[chapter2Id]</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In the top bar, click the <strong>Bookmark icon</strong> button.</li>
+<li>Observe the bookmark icon fill state: it turns solid blue (<code>BookmarkCheck</code>).</li>
+<li>In the top bar, click the <strong>Bookmarks Drawer</strong> button (<code>Layers</code> icon).</li>
+<li>The saved bookmarks drawer slides in from the right.</li>
+<li>Verify the bookmark entry: Chapter Title, scroll position percentage, and timestamp.</li>
+<li>In the drawer, click the <strong>&quot;X&quot;</strong> remove icon next to the bookmark.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Bookmark saves to the server via <code>POST /api/ebooks/[bookId]/bookmarks</code>.</li>
+<li>Drawer lists the saved bookmark.</li>
+<li>Clicking &quot;X&quot; deletes the bookmark via <code>DELETE</code> and updates the header bookmark icon back to unfilled.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the open Bookmarks drawer showing the saved entry.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-RDR-05: In-Book Search</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> In reader at <code>/read/[bookSlug]/[chapterId]</code>.</li>
+<li><strong>Starting Page:</strong> <code>/read/[bookSlug]/[chapterId]</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In the top header bar, click the <strong>Search magnifying glass icon</strong>.</li>
+<li>The Search modal opens over the reading canvas.</li>
+<li>Type <code>caching</code> into the search input and press Enter (or click <strong>&quot;Search&quot;</strong>).</li>
+<li>Review the search results list.</li>
+<li>Click on the matching result for Chapter 2.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Search executes against all edition chapters via <code>/api/ebooks/[bookId]/search</code>.</li>
+<li>Results show Chapter number, title, match count, and a text snippet.</li>
+<li>Clicking a result navigates directly to that chapter and closes the search modal.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of search results with highlighted snippets.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-RDR-06: Display Preferences Persistence</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> In reader at <code>/read/[bookSlug]/[chapterId]</code>.</li>
+<li><strong>Starting Page:</strong> <code>/read/[bookSlug]/[chapterId]</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In the top header bar, click the <strong>Settings icon</strong> (<code>Settings2</code>).</li>
+<li>The <strong>&quot;Display Settings&quot;</strong> popover opens.</li>
+<li>Change the following settings one by one:<ul>
+<li><strong>Theme:</strong> Click <strong>&quot;Sepia&quot;</strong> (canvas turns warm amber <code>#FBF0D9</code>), then <strong>&quot;Dark&quot;</strong> (canvas turns <code>#0B1D3A</code>), then back to <strong>&quot;Light&quot;</strong>.</li>
+<li><strong>Text Size:</strong> Click <strong>&quot;L&quot;</strong> (Large) $\rightarrow$ Text enlarges immediately.</li>
+<li><strong>Typography:</strong> Click <strong>&quot;Serif&quot;</strong> $\rightarrow$ Text font changes to serif.</li>
+<li><strong>Column Width:</strong> Click <strong>&quot;Wide&quot;</strong> $\rightarrow$ Reading column expands.</li>
+</ul>
+</li>
+<li>Reload the browser page (<code>F5</code>).</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Styling updates in real-time on the reading canvas.</li>
+<li>Settings are saved to <code>/api/ebooks/preferences</code>.</li>
+<li>Upon page reload, the reader restores the exact chosen preferences (Theme, Font Size, Typography, Column Width).</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the reader in Sepia or Dark mode.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-RDR-07: Mobile Responsiveness, Drawer Focus, &amp; Keyboard Interactions</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> In reader at <code>/read/[bookSlug]/[chapterId]</code>.</li>
+<li><strong>Starting Page:</strong> <code>/read/[bookSlug]/[chapterId]</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Open DevTools (<code>F12</code>) and toggle device toolbar to a mobile viewport (e.g., iPhone 14 or 390x844px).</li>
+<li>Confirm top header adapts cleanly with collapsed icons.</li>
+<li>Tap the <strong>Contents</strong> hamburger button $\rightarrow$ TOC drawer opens covering responsive width.</li>
+<li>Tap the backdrop or tap <code>X</code> to close.</li>
+<li>Locate a code block in the chapter text $\rightarrow$ Hover/tap the <strong>&quot;Copy&quot;</strong> button on the code block $\rightarrow$ Text copies to clipboard and button briefly shows <strong>&quot;Copied!&quot;</strong>.</li>
+<li><strong>Implementation Truth Check:</strong> Press <code>Escape</code> while the Table of Contents drawer is open.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Mobile layout is responsive without horizontal overflow.</li>
+<li>Code block copy helper functions with &quot;Copied!&quot; feedback.</li>
+<li><em>Actual Implementation Note:</em> Drawers close on backdrop click and <code>X</code> button click. Verify whether <code>Escape</code> closes the active drawer or requires explicit backdrop/button tap.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Mobile screenshot and note on keyboard/Escape behavior.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-RDR-08: Offline / Network Drop Progress-Save Recovery</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> In reader at <code>/read/[bookSlug]/[chapterId]</code>.</li>
+<li><strong>Starting Page:</strong> <code>/read/[bookSlug]/[chapterId]</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Open DevTools (<code>F12</code>) $\rightarrow$ Network tab $\rightarrow$ Set Throttling to <strong>&quot;Offline&quot;</strong>.</li>
+<li>Scroll the chapter text up and down.</li>
+<li>Wait 2 seconds and observe the saving status indicator in the top header.</li>
+<li>Turn Network back to <strong>&quot;No throttling&quot;</strong> (Online).</li>
+<li>In the header, click the red button: <strong>&quot;Save failed (Retry)&quot;</strong>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>While offline, saving fails gracefully and displays a red <strong>&quot;Save failed (Retry)&quot;</strong> button.</li>
+<li>Reading is not interrupted and no crash occurs.</li>
+<li>When connection is restored, clicking &quot;Save failed (Retry)&quot; re-triggers <code>persistProgress()</code> and updates status to <code>Saved</code>.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of &quot;Save failed (Retry)&quot; indicator.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-RDR-09: Multi-User Isolation &amp; Boundary Checks</h3>
+<ul>
+<li><strong>Role:</strong> Customer A &amp; Customer B</li>
+<li><strong>Prerequisites:</strong> Customer A owns the book. Customer B has NOT purchased the book.</li>
+<li><strong>Starting Page:</strong> Customer B browser window.</li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In Customer B&#39;s browser window, navigate to <code>http://localhost:3000/login</code>.</li>
+<li>Sign in using Customer B credentials (<code>STAGING_TEST_CUSTOMER_B_EMAIL</code>).</li>
+<li>Navigate to <code>http://localhost:3000/my-books</code>.</li>
+<li>Confirm Customer A&#39;s purchased book does <strong>NOT</strong> appear in Customer B&#39;s library shelf.</li>
+<li>Copy the paid chapter URL from Customer A&#39;s session (<code>/read/[bookSlug]/[paidChapter2Id]</code>) and paste it into Customer B&#39;s address bar.</li>
+<li>Press Enter.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Customer B&#39;s <code>/my-books</code> displays an empty library state (or only Customer B&#39;s own titles).</li>
+<li>Pasting Customer A&#39;s chapter URL into Customer B&#39;s browser returns an <strong>&quot;Access Restricted&quot;</strong> screen with message: <code>&quot;The requested chapter is not accessible.&quot;</code></li>
+<li>Cross-customer access is strictly prevented by server-side RLS and entitlement verification.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of Customer B seeing &quot;Access Restricted&quot; on Customer A&#39;s chapter.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h2>9. Test Suite F: Downloads and Upgrades</h2>
+<p>Execute this suite as signed-in Customer A on their &quot;Read Online&quot; book.</p>
+<hr>
+<h3>TC-DWN-01: Online-Only Tier Download Restriction</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> Customer A owns <code>Manual Test Guide to Cloud Architecture</code> with <code>read_online</code> plan.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/my-books</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Navigate to <code>/my-books</code>.</li>
+<li>Inspect the book card. Confirm there is <strong>no</strong> active &quot;Download PDF&quot; button; the card displays <strong>&quot;Add PDF access — ₹50&quot;</strong>.</li>
+<li>In your browser DevTools Console (or terminal via <code>curl</code>), execute a direct download request:<pre><code class="language-javascript">fetch(&#39;/api/ebooks/[bookId]/download?editionId=[editionId]&#39;).then(r =&gt; r.json()).then(console.log)
+</code></pre>
+</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>UI strictly prevents PDF download for online-only owners.</li>
+<li>The direct API call returns HTTP <code>403 Forbidden</code> with error code <code>PLAN_DOES_NOT_INCLUDE_DOWNLOAD</code>.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Console output showing HTTP 403 response.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-DWN-02: Read + Download Owner Secure PDF Delivery</h3>
+<ul>
+<li><strong>Role:</strong> Customer (with <code>read_download</code> plan, or after completing upgrade in <code>TC-UPG-04</code>)</li>
+<li><strong>Prerequisites:</strong> Customer entitlement elevated to <code>read_download</code>.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/my-books</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>On <code>/my-books</code>, locate the elevated book card.</li>
+<li>Confirm the purple plan badge: <strong>&quot;Read + Download&quot;</strong>.</li>
+<li>Click <strong>&quot;Download PDF&quot;</strong>.</li>
+<li>Observe the button state: briefly displays <code>&quot;Preparing PDF...&quot;</code>.</li>
+<li>Check your browser downloads folder. Open the downloaded PDF file in a PDF viewer.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>API call <code>/api/ebooks/[bookId]/download</code> validates entitlement and generates a temporary 60-second signed Supabase URL.</li>
+<li>File download initiates immediately.</li>
+<li>PDF opens cleanly in PDF viewer, showing all authored book chapters.</li>
+<li>Card displays green confirmation: <code>&quot;Download ready: [filename].pdf&quot;</code>.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Downloaded PDF file name, file size, and screenshot of the opened document.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-UPG-03: PDF Upgrade Modal &amp; Admin-Controlled Pricing Quote</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> Customer A has <code>read_online</code> access.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/my-books</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>On <code>/my-books</code>, click the button <strong>&quot;Add PDF access — ₹50&quot;</strong> on the book card.</li>
+<li>The <code>EBookUpgradeModal</code> opens in a centered overlay.</li>
+<li>Inspect the modal contents:<ul>
+<li>Current Plan: <code>Read Online</code></li>
+<li>Upgraded Plan: <code>Read + Download (Full)</code></li>
+<li>Benefits listed: Unlimited offline PDF downloads, permanent copy.</li>
+<li>Authoritative Upgrade Price: <code>₹50.00</code>.</li>
+</ul>
+</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Modal fetches the live quote from <code>/api/ebooks/[bookId]/upgrade/quote</code>.</li>
+<li>Authoritative price matches the admin-configured ₹50 upgrade delta (5000 paise).</li>
+<li>Button displays: <code>&quot;Pay ₹50 via UPI / Cards&quot;</code>.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the open Upgrade Modal showing the ₹50 quote.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-UPG-04: Complete Razorpay Test Mode PDF Upgrade Payment</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> Upgrade modal open (<code>TC-UPG-03</code>).</li>
+<li><strong>Starting Page:</strong> <code>EBookUpgradeModal</code> on <code>/my-books</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In the upgrade modal, click <strong>&quot;Pay ₹50 via UPI / Cards&quot;</strong>.</li>
+<li>Razorpay Test Mode modal opens with amount ₹50.</li>
+<li>Select <strong>Card</strong> $\rightarrow$ Enter Test Card <code>4100 2800 0000 1007</code>, <code>12/28</code>, <code>123</code>.</li>
+<li>Submit test OTP (<code>123456</code>).</li>
+<li>Wait for verification.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Modal displays: <code>&quot;Payment confirmed! Upgrading your digital access...&quot;</code>.</li>
+<li>Modal closes automatically.</li>
+<li>The book card on <code>/my-books</code> elevates immediately:<ul>
+<li>Plan badge changes from &quot;Read Online&quot; to <strong>&quot;Read + Download&quot;</strong>.</li>
+<li>&quot;Add PDF access — ₹50&quot; button disappears.</li>
+<li><strong>&quot;Download PDF&quot;</strong> button appears.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the elevated book card on <code>/my-books</code>.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-UPG-05: Separate Upgrade Order &amp; Reading Continuity</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> Upgrade completed (<code>TC-UPG-04</code>).</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/my-books</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>On <code>/my-books</code>, click <strong>&quot;Order History&quot;</strong>.</li>
+<li>Review the orders listed in the modal:<ul>
+<li>Order 1: Base purchase (₹49, <code>Read Online</code>).</li>
+<li>Order 2: Distinct upgrade order (₹50, with a purple badge: <strong>&quot;PDF Upgrade&quot;</strong>).</li>
+</ul>
+</li>
+<li>Close the modal.</li>
+<li>On the upgraded book card, click <strong>&quot;Continue Reading&quot;</strong>.</li>
+<li>Check reading progress, scroll position, and bookmarks.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Upgrade creates a <strong>separate financial order record</strong> with its own order number, preserving clean accounting.</li>
+<li>Upgrading access plan does <strong>NOT</strong> reset reading progress, scroll offset, or saved bookmarks.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the Order History modal showing both the base order and the upgrade order.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-UPG-06: Historical Purchased-Edition PDF Immutability</h3>
+<ul>
+<li><strong>Role:</strong> Administrator &amp; Customer A</li>
+<li><strong>Prerequisites:</strong> Customer A owns Edition 1 of the book.</li>
+<li><strong>Starting Page:</strong> Administrator window at <code>/admin/e-books/[bookId]/edit?tab=editions</code>.</li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In Administrator Window, create and publish <strong>Edition 2</strong> of the book with a new test PDF.</li>
+<li>In Customer A&#39;s window, navigate to <code>/my-books</code>.</li>
+<li>Inspect the book card: it displays badge <code>Edition 1</code> (and <code>Historical Edition</code>).</li>
+<li>Click <strong>&quot;Download PDF&quot;</strong>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Customer A receives the PDF corresponding to <strong>Edition 1</strong> (the exact edition purchased), not Edition 2.</li>
+<li>Content immutability ensures customers always receive the edition they purchased.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Filename and content of the downloaded PDF confirming Edition 1 delivery.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-DWN-07: Access Revocation &amp; Signed URL Expiry</h3>
+<ul>
+<li><strong>Role:</strong> Administrator &amp; Customer A</li>
+<li><strong>Prerequisites:</strong> Customer A owns the book; Administrator window open.</li>
+<li><strong>Starting Page:</strong> Administrator window at <code>/admin/e-book-customers</code>.</li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In Administrator Window, open <code>/admin/e-book-customers</code>.</li>
+<li>Search for Customer A (<code>STAGING_TEST_STUDENT_EMAIL</code>).</li>
+<li>Open Customer Details $\rightarrow$ Under Entitlements, click <strong>&quot;Revoke Access&quot;</strong>.</li>
+<li>Enter reason: <code>Compliance manual test revocation</code> and submit.</li>
+<li>In Customer A&#39;s window, refresh <code>/my-books</code>.</li>
+<li>Attempt to download the PDF or read chapters.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Card displays a red badge: <strong>&quot;Access Revoked&quot;</strong>.</li>
+<li>Reader and download buttons are replaced with notice: <code>&quot;Access for this book has been revoked or refunded.&quot;</code></li>
+<li>Subsequent requests to <code>/api/ebooks/[bookId]/download</code> return HTTP 403 Forbidden.</li>
+<li><strong>Important Technical Context:</strong> Previously downloaded PDF files stored on the user&#39;s hard drive cannot be remotely deleted. A signed URL already issued to the browser may remain functional until its 60-second signature expires. Revocation guarantees <strong>no new signed URLs</strong> can ever be issued.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of <code>/my-books</code> displaying &quot;Access Revoked&quot;.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h2>10. Test Suite G: Admin Management and Edition Protection</h2>
+<p>Execute this suite in Administrator Window 1.</p>
+<hr>
+<h3>TC-ADM-09: Purchase History Orders Ledger &amp; CSV Export</h3>
+<ul>
+<li><strong>Role:</strong> Administrator</li>
+<li><strong>Prerequisites:</strong> Completed test purchases from Suite D and Suite F.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/admin/e-book-orders</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Open <code>/admin/e-book-orders</code>.</li>
+<li>Review the orders table:<ul>
+<li>Columns: Order Number, Customer, Date, Items, Amount, Gateway Status, Refund Status.</li>
+</ul>
+</li>
+<li>Filter by <strong>Status: Paid</strong>.</li>
+<li>In the search box, type Customer A&#39;s email.</li>
+<li>Click on an order row to navigate to <code>/admin/e-book-orders/[orderId]</code>.</li>
+<li>Click the Back button to return to <code>/admin/e-book-orders</code>.</li>
+<li>Click the <strong>&quot;Export CSV&quot;</strong> button.</li>
+<li>Open the downloaded CSV file in a spreadsheet editor (or text editor).</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Orders table displays all staging purchases accurately.</li>
+<li>CSV file downloads. Formulas or special characters (<code>=</code>, <code>+</code>, <code>-</code>, <code>@</code>) in title or user fields are safely escaped with a leading single quote (<code>&#39;</code>) to prevent CSV injection.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Downloaded CSV filename and sample row.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-ADM-10: Edit Published Commercial Pricing with Mandatory Audit Reason</h3>
+<ul>
+<li><strong>Role:</strong> Administrator</li>
+<li><strong>Prerequisites:</strong> A published book at <code>/admin/e-books/[bookId]/edit</code>.</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-books/[bookId]/edit?tab=pricing</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In the editor, navigate to the <strong>&quot;Pricing &amp; Discounts&quot;</strong> tab.</li>
+<li>Change prices:<ul>
+<li>Read Online Original: change from <code>49</code> to <code>59</code></li>
+<li>Read + Download Original: change from <code>99</code> to <code>119</code></li>
+</ul>
+</li>
+<li><strong>Leave the Change Reason empty</strong> and click <strong>&quot;Save Commercial Pricing&quot;</strong>.</li>
+<li>Observe error feedback.</li>
+<li>Enter Change Reason: <code>Promotional price update for Q4 manual audit</code>.</li>
+<li>Click <strong>&quot;Save Commercial Pricing&quot;</strong> again.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Step 3 fails: Red alert specifies <code>&quot;A change reason is required for commercial audit logging.&quot;</code></li>
+<li>Step 5 succeeds: Green banner confirms pricing update.</li>
+<li><code>pricing_version</code> increments from <code>1</code> to <code>2</code>.</li>
+<li>Audit history table displays a new row with the reason, new prices, and admin timestamp.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot showing incremented <code>pricing_version</code> and audit history table row.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-ADM-11: Price Adjustment Protection for Past Paid Orders</h3>
+<ul>
+<li><strong>Role:</strong> Administrator &amp; Customer A</li>
+<li><strong>Prerequisites:</strong> Price adjusted to ₹59/₹119 in <code>TC-ADM-10</code>. Customer A bought earlier at ₹49.</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-book-orders</code> and <code>/my-books</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In Admin Window, open the order detail page for Customer A&#39;s earlier purchase (<code>/admin/e-book-orders/[earlierOrderId]</code>).</li>
+<li>Verify the recorded line item and total amount.</li>
+<li>In Customer A&#39;s window, open <strong>&quot;Order History&quot;</strong> on <code>/my-books</code>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Both admin order ledger and customer order history reflect the original paid amount (<strong>₹49.00</strong>).</li>
+<li>Editing commercial prices in the catalogue never retroactively changes historical paid order records.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Order record displaying unchanged ₹49.00 amount.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-ADM-12: Storefront &amp; Cart Immediate Pricing Reflection</h3>
+<ul>
+<li><strong>Role:</strong> Public Visitor</li>
+<li><strong>Prerequisites:</strong> Price updated to ₹59/₹119 in <code>TC-ADM-10</code>.</li>
+<li><strong>Starting Page:</strong> Anonymous Incognito window at <code>/e-books/[bookSlug]</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Navigate to <code>/e-books/[bookSlug]</code> in an Incognito window.</li>
+<li>Inspect the plan pricing cards.</li>
+<li>Add the book to cart. Navigate to <code>/cart</code>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Storefront detail page immediately reflects the updated prices: <strong>₹59</strong> and <strong>₹119</strong>.</li>
+<li>Cart verifies prices against the server and displays authoritative updated total: <strong>₹59.00</strong> (or ₹119.00).</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of <code>/cart</code> showing the newly updated price.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-ADM-13: Optimistic Concurrency Conflict Detection on Stale Pricing Edits</h3>
+<ul>
+<li><strong>Role:</strong> Administrator</li>
+<li><strong>Prerequisites:</strong> Published book pricing tab open.</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-books/[bookId]/edit?tab=pricing</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Open <code>/admin/e-books/[bookId]/edit?tab=pricing</code> in Tab 1.</li>
+<li>Open the exact same URL in Tab 2.</li>
+<li>In Tab 1: Change Read Online to <code>69</code>, enter reason <code>Tab 1 update</code>, and click <strong>&quot;Save Commercial Pricing&quot;</strong>.<ul>
+<li>Verify Tab 1 saves successfully (version becomes <code>3</code>).</li>
+</ul>
+</li>
+<li>Switch to Tab 2 (which still has stale version <code>2</code> loaded in its form state).</li>
+<li>In Tab 2: Change Read Online to <code>79</code>, enter reason <code>Tab 2 stale update</code>, and click <strong>&quot;Save Commercial Pricing&quot;</strong>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Tab 2 submission is intercepted by server-side optimistic concurrency control.</li>
+<li>Server returns HTTP <code>409 Conflict</code>.</li>
+<li>Tab 2 displays conflict banner: <code>&quot;Concurrent update conflict detected. Please reload.&quot;</code></li>
+<li>Prevents accidental silent overwrites when multiple admins edit pricing simultaneously.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the HTTP 409 conflict error banner in Tab 2.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-ADM-14: Immutability of Published Edition Chapters &amp; PDFs</h3>
+<ul>
+<li><strong>Role:</strong> Administrator</li>
+<li><strong>Prerequisites:</strong> Published edition loaded in editor.</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-books/[bookId]/edit?tab=chapters</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In the editor, ensure the active edition is <strong>Edition 1 (Published)</strong>.</li>
+<li>Click the <strong>&quot;Website Chapters&quot;</strong> tab.</li>
+<li>Inspect the top alert banner and form controls.</li>
+<li>Try to click <strong>&quot;+ Add&quot;</strong>, edit chapter text, click <strong>&quot;Save Chapter&quot;</strong>, or click chapter delete.</li>
+<li>Switch to <strong>&quot;Editions &amp; PDF Files&quot;</strong> tab.</li>
+<li>Inspect the PDF upload section.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Amber banner displays: <code>Edition Content Locked: Edition #1 is published and immutable to preserve purchased reader access. Chapters and PDFs cannot be modified.</code></li>
+<li>&quot;+ Add&quot;, &quot;Delete&quot;, reorder buttons, and editor textarea are disabled (<code>disabled</code> attribute).</li>
+<li>PDF section displays: <code>Publication PDF is locked for published editions. To upload a revised publication PDF, create a new draft edition revision.</code></li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the locked edition banner and disabled chapter controls.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-ADM-15: Create New Draft Edition Revision &amp; Publish Revision</h3>
+<ul>
+<li><strong>Role:</strong> Administrator</li>
+<li><strong>Prerequisites:</strong> Published book with Edition 1 locked (<code>TC-ADM-14</code>).</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-books/[bookId]/edit?tab=editions</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>On the <strong>&quot;Editions &amp; PDF Files&quot;</strong> tab, click <strong>&quot;Create New Edition Revision&quot;</strong>.</li>
+<li>A prompt asks for a revision name. Enter: <code>Edition 2 (Major Update)</code>.</li>
+<li>Click OK.</li>
+<li>Wait for the page to refresh. Confirm active edition switches to <strong>Edition 2</strong>.</li>
+<li>Switch to <strong>&quot;Website Chapters&quot;</strong> tab. Confirm chapters were cloned from Edition 1.</li>
+<li>Edit Chapter 1 title to: <code>Chapter 1: Cloud Architecture Fundamentals (v2 Revised)</code>. Click <strong>&quot;Save Chapter&quot;</strong>.</li>
+<li>On <strong>&quot;Editions &amp; PDF Files&quot;</strong> tab, upload a new revised PDF for Edition 2.</li>
+<li>Switch to <strong>&quot;Publication Checklist&quot;</strong> tab and click <strong>&quot;Publish Edition to Bookstore&quot;</strong>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Edition 2 is created as draft, allowing full editing without touching Edition 1.</li>
+<li>Edition 2 publishes successfully and becomes the active current edition for new storefront buyers.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot showing Edition 2 published and active.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-ADM-16: Customer Edition Preservation After Storefront Revision</h3>
+<ul>
+<li><strong>Role:</strong> Customer A</li>
+<li><strong>Prerequisites:</strong> Customer A purchased Edition 1. Administrator published Edition 2 in <code>TC-ADM-15</code>.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/my-books</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In Customer A&#39;s window, navigate to <code>/my-books</code>.</li>
+<li>Inspect the book card:<ul>
+<li>Edition badge still displays: <code>Edition 1</code>.</li>
+<li>An overlay label displays: <code>Historical Edition</code>.</li>
+</ul>
+</li>
+<li>Click <strong>&quot;Start Reading&quot;</strong> (or Continue Reading).</li>
+<li>Inspect Chapter 1 title in the reader.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Customer A continues reading their purchased <strong>Edition 1</strong> (<code>Chapter 1: Cloud Architecture Fundamentals</code>).</li>
+<li>Chapter 1 does <strong>NOT</strong> show the v2 revision text from Edition 2.</li>
+<li>Customer&#39;s purchased content is preserved indefinitely.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Reader showing Edition 1 title and version name.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-ADM-17: Withdraw Book from Active Sale</h3>
+<ul>
+<li><strong>Role:</strong> Administrator &amp; Customer A</li>
+<li><strong>Prerequisites:</strong> Published book; Customer A owns an edition.</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-books/[bookId]/edit?tab=publication</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In Admin Window, navigate to <code>/admin/e-books/[bookId]/edit?tab=publication</code>.</li>
+<li>Under Launch Actions, click <strong>&quot;Withdraw from Sale&quot;</strong>.</li>
+<li>In an anonymous Incognito window, search for the book on <code>/e-books</code>.</li>
+<li>In Customer A&#39;s window, refresh <code>/my-books</code>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Edition status changes to <code>withdrawn</code> (or <code>archived</code>).</li>
+<li>Book is removed from the public bookstore catalogue <code>/e-books</code> (new visitors cannot buy it).</li>
+<li>In Customer A&#39;s <code>/my-books</code>, the book <strong>remains fully accessible</strong> for reading and PDF downloads.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Public <code>/e-books</code> showing book is absent; Customer A <code>/my-books</code> showing book remains accessible.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-ADM-18: Complimentary Access Grant, Revocation, &amp; Audit Trail</h3>
+<ul>
+<li><strong>Role:</strong> Administrator &amp; Customer B</li>
+<li><strong>Prerequisites:</strong> Customer B account (<code>STAGING_TEST_CUSTOMER_B_EMAIL</code>) exists with zero purchases.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/admin/e-book-customers</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Open <code>/admin/e-book-customers</code>.</li>
+<li>Search for Customer B&#39;s email.</li>
+<li>Click <strong>&quot;View Details&quot;</strong> to open Customer B&#39;s drawer.</li>
+<li>Click <strong>&quot;Grant Complimentary Access&quot;</strong>.</li>
+<li>Select the published test book, active edition, and plan <strong>&quot;Read + Download&quot;</strong>.</li>
+<li>Enter Mandatory Reason: <code>Scholarship complimentary grant for staging QA</code>.</li>
+<li>Click <strong>&quot;Grant Access&quot;</strong>.</li>
+<li>In Customer B&#39;s browser window, navigate to <code>/my-books</code>.</li>
+<li>Inspect Customer B&#39;s library shelf.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Entitlement is created with <code>grant_type=&#39;complimentary&#39;</code>.</li>
+<li>Zero fake financial orders are generated in <code>/admin/e-book-orders</code>.</li>
+<li>Customer B&#39;s <code>/my-books</code> displays the book card with an emerald badge: <strong>&quot;Complimentary&quot;</strong>.</li>
+<li>Customer B can read online and download the PDF.</li>
+<li>In Admin Drawer $\rightarrow$ Audit tab, the grant is logged with admin ID, timestamp, and reason.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of Customer B&#39;s library shelf showing the &quot;Complimentary&quot; badge.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-ADM-19: Homepage CMS Draft &amp; Publishing Controls</h3>
+<ul>
+<li><strong>Role:</strong> Administrator &amp; Public Visitor</li>
+<li><strong>Prerequisites:</strong> Administrator signed in.</li>
+<li><strong>Starting Page:</strong> <code>http://localhost:3000/admin/e-books/homepage</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Open <code>/admin/e-books/homepage</code>.</li>
+<li>In the <strong>&quot;Hero Section&quot;</strong> tab, change:<ul>
+<li>Hero Eyebrow: <code>Curated Technical Publications</code></li>
+<li>Hero Heading: <code>Build Resilient Distributed Systems</code></li>
+<li>Highlighted Text: <code>With Expert Guidance</code></li>
+</ul>
+</li>
+<li>Click <strong>&quot;Save Draft&quot;</strong>.</li>
+<li>Open an anonymous Incognito window at <code>http://localhost:3000/e-books</code>.</li>
+<li>Verify the public storefront: it should still display the old published heading (draft is isolated).</li>
+<li>Return to Admin Window and click <strong>&quot;Publish Homepage&quot;</strong>.</li>
+<li>Refresh the anonymous <code>/e-books</code> window.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>&quot;Save Draft&quot; updates only the draft record without affecting public visitors.</li>
+<li>&quot;Publish Homepage&quot; copies draft to published state, increments version, and updates the public storefront immediately.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of <code>/e-books</code> showing the newly published hero heading.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h2>11. Test Suite H: Refunds</h2>
+<p>Use <strong>separate disposable Test Mode purchases</strong> for each refund scenario. Never execute tests on live production records.</p>
+<hr>
+<h3>TC-RFD-01: Full Refund on Base Purchase</h3>
+<ul>
+<li><strong>Role:</strong> Administrator &amp; Customer A</li>
+<li><strong>Prerequisites:</strong> Create a fresh test purchase of a disposable book (₹49) as Customer A (<code>TC-CHK-02</code>).</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-book-orders/[orderId]</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>In Admin Window, navigate to <code>/admin/e-book-orders</code> and locate the disposable ₹49 order.</li>
+<li>Open the order detail page <code>/admin/e-book-orders/[orderId]</code>.</li>
+<li>Click the <strong>&quot;Process Refund&quot;</strong> button (<code>RotateCcw</code> icon).</li>
+<li>The Refund Order modal opens:<ul>
+<li>Select Refund Type: <strong>&quot;Full Refund&quot;</strong></li>
+<li>Amount: verifies <code>49.00</code></li>
+<li>Access Entitlement Action: verify <strong>&quot;Revoke Access Completely&quot;</strong></li>
+<li>Reason: type <code>Customer requested full cancellation - staging test</code></li>
+</ul>
+</li>
+<li>Click <strong>&quot;Confirm &amp; Execute Refund&quot;</strong>.</li>
+<li>Wait for provider processing.</li>
+<li>In Customer A&#39;s window, refresh <code>/my-books</code> and <code>/my-books</code> $\rightarrow$ Order History.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Razorpay Test Mode gateway processes refund and returns refund ID (<code>rfnd_...</code>).</li>
+<li>Order status updates to <code>refunded</code> and refund status to <code>full</code>.</li>
+<li>Available refundable balance drops to <code>₹0.00</code>.</li>
+<li>Customer A&#39;s entitlement is revoked: card on <code>/my-books</code> shows <code>Access Revoked</code>, reading/downloads blocked.</li>
+<li>Customer Order History modal shows badge: <code>Fully Refunded (₹49)</code>.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Razorpay Refund ID (<code>rfnd_...</code>) and screenshot of the refunded order detail page.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-RFD-02: Partial Refund on Multi-Item or Goodwill</h3>
+<ul>
+<li><strong>Role:</strong> Administrator &amp; Customer A</li>
+<li><strong>Prerequisites:</strong> Create a fresh test purchase (e.g., ₹99 Read + Download) as Customer A.</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-book-orders/[orderId]</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Open the order detail page for the ₹99 purchase.</li>
+<li>Click <strong>&quot;Process Refund&quot;</strong>.</li>
+<li>In the modal:<ul>
+<li>Select Refund Type: <strong>&quot;Partial Refund&quot;</strong></li>
+<li>Enter Refund Amount in Rupees: <code>30</code> (3000 paise)</li>
+<li>Access Entitlement Action: select <strong>&quot;Retain Access Unchanged&quot;</strong></li>
+<li>Reason: type <code>Promotional price matching goodwill refund</code></li>
+</ul>
+</li>
+<li>Click <strong>&quot;Confirm &amp; Execute Refund&quot;</strong>.</li>
+<li>In Customer A&#39;s window, inspect <code>/my-books</code> and <code>/my-books</code> $\rightarrow$ Order History.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Razorpay processes partial refund of ₹30.00.</li>
+<li>Order status updates to <code>partially_refunded</code>.</li>
+<li>Refunded Amount displays <code>₹30.00</code>; Available balance updates to <code>₹69.00</code>.</li>
+<li>Customer A&#39;s entitlement remains <strong>Active</strong> (online reading and downloads still functional).</li>
+<li>Customer Order History displays: <code>Partially Refunded (₹30)</code>.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Note remaining refundable balance (₹69.00) and Customer A&#39;s continued access.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-RFD-03: Upgrade Refund with Online Access Preserved</h3>
+<ul>
+<li><strong>Role:</strong> Administrator &amp; Customer A</li>
+<li><strong>Prerequisites:</strong> Customer A has a base purchase (₹49) AND a completed upgrade (₹50) from Suite F.</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-book-orders</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Open <code>/admin/e-book-orders</code>.</li>
+<li>Locate the <strong>₹50 Upgrade Order</strong> (order type: <code>upgrade</code>).</li>
+<li>Click to open <code>/admin/e-book-orders/[upgradeOrderId]</code>.</li>
+<li>Click <strong>&quot;Process Refund&quot;</strong>.</li>
+<li>Observe the Access Entitlement Action field:<ul>
+<li>It defaults automatically to <strong>&quot;Downgrade to Read Online Only&quot;</strong>.</li>
+</ul>
+</li>
+<li>Enter Reason: <code>Customer dissatisfied with PDF formatting; reverting to online tier</code>.</li>
+<li>Click <strong>&quot;Confirm &amp; Execute Refund&quot;</strong>.</li>
+<li>In Customer A&#39;s window, refresh <code>/my-books</code>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Upgrade order is fully refunded (₹50.00).</li>
+<li>Customer entitlement <strong>downgrades</strong> from <code>read_download</code> to <code>read_online</code>.</li>
+<li>&quot;Download PDF&quot; button disappears.</li>
+<li><strong>Online reading access remains 100% active and unrevoked.</strong></li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of Customer A&#39;s card showing plan reverted to &quot;Read Online&quot; with reading access active.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-RFD-04: Rule C Base-Refund Protection While Active Upgrade Exists</h3>
+<ul>
+<li><strong>Role:</strong> Administrator</li>
+<li><strong>Prerequisites:</strong> Customer has a base purchase (₹49) with an active paid upgrade (₹50) attached.</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-book-orders/[baseOrderId]</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Open the <strong>Base Order</strong> (₹49) detail page in the admin portal.</li>
+<li>Note the banner or linked orders card indicating an active dependent upgrade exists.</li>
+<li>Click <strong>&quot;Process Refund&quot;</strong>.</li>
+<li>In the modal, uncheck any co-refund option and attempt to submit a standalone base refund with <code>force_allow_dependent_upgrade: false</code>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Application business logic enforces <strong>Rule C Conflict</strong>.</li>
+<li>Server rejects the request with error code <code>DEPENDENT_UPGRADE_EXISTS</code>.</li>
+<li>Modal displays error message: <code>&quot;Rule C Conflict: An active paid PDF upgrade exists for this purchase. Standalone base refund is blocked unless you acknowledge and force dependent upgrade resolution.&quot;</code></li>
+<li>Prevents orphaned upgrade licenses.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Screenshot of the Rule C conflict error message in the refund modal.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-RFD-05: Linked Dual Refund (Base + Upgrade Co-Refund)</h3>
+<ul>
+<li><strong>Role:</strong> Administrator &amp; Customer A</li>
+<li><strong>Prerequisites:</strong> Customer has base purchase (₹49) and active upgrade (₹50).</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-book-orders/[baseOrderId]</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>On the Base Order detail page, click <strong>&quot;Process Refund&quot;</strong>.</li>
+<li>Select the option: <strong>&quot;Refund Both Base and Upgrade Orders Co-jointly&quot;</strong>.</li>
+<li>Enter Reason: <code>Complete customer return of both base book and PDF upgrade</code>.</li>
+<li>Click <strong>&quot;Confirm &amp; Execute Refund&quot;</strong>.</li>
+<li>Observe order ledger and Customer A&#39;s library shelf.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>System executes linked refund via <code>action: &#39;refund_both&#39;</code>.</li>
+<li>Both base order (₹49) and upgrade order (₹50) are refunded through Razorpay.</li>
+<li>Customer entitlement is completely revoked.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Both refund IDs and confirmation of total revocation.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-RFD-06: Repeated Refund Prevention &amp; Balance Safeguard</h3>
+<ul>
+<li><strong>Role:</strong> Administrator</li>
+<li><strong>Prerequisites:</strong> Order from <code>TC-RFD-01</code> (fully refunded, balance ₹0.00).</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-book-orders/[orderId]</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>Open the fully refunded order from <code>TC-RFD-01</code>.</li>
+<li>Inspect the &quot;Process Refund&quot; button.</li>
+<li>If clickable, open modal, enter ₹10, and attempt to submit.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Button is disabled or displays notice: <code>&quot;Order is fully refunded.&quot;</code></li>
+<li>Attempting to submit an amount greater than available refundable balance (₹0.00) is rejected immediately with error: <code>&quot;Amount exceeds available refundable balance of ₹0.00.&quot;</code></li>
+<li>Database row-level locks prevent concurrent double-refund attempts.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> UI validation error preventing over-refund.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h3>TC-RFD-07: Pending / Interrupted Refund Recovery</h3>
+<ul>
+<li><strong>Role:</strong> Administrator (Developer-Assisted)</li>
+<li><strong>Prerequisites:</strong> A refund record in <code>pending</code> status (can be inspected from existing audit scenario or simulated via gateway mock).</li>
+<li><strong>Starting Page:</strong> <code>/admin/e-book-orders/[orderId]</code></li>
+<li><strong>Numbered Actions:</strong><ol>
+<li>On an order detail page with a refund in <code>pending</code> status, locate the <strong>&quot;Sync with Gateway&quot;</strong> button (<code>RefreshCw</code> icon) next to the pending refund.</li>
+<li>Click <strong>&quot;Sync with Gateway&quot;</strong>.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>System calls <code>/api/admin/ebooks/refunds/[refundId]/reconcile</code>.</li>
+<li>Queries Razorpay Gateway API directly for provider refund status.</li>
+<li>If provider confirms <code>processed</code>, local database updates to <code>processed</code> and completes customer access revocation.</li>
+</ul>
+</li>
+<li><strong>Evidence to Record:</strong> Sync confirmation alert and updated refund status badge.</li>
+<li><strong>Actual Result:</strong> Pending execution.</li>
+<li><strong>Status:</strong> NOT RUN</li>
+<li><strong>Issue Reference:</strong> None.</li>
+</ul>
+<hr>
+<h2>12. Test Suite I: External Dependencies and Technical Checks</h2>
+<p>These checks address operational launch gates, feature flags, and environment capabilities.</p>
+<hr>
+<h3>TC-TECH-01: Transactional Email Receipts &amp; Refund Notifications</h3>
+<ul>
+<li><strong>Role:</strong> Developer / QA Engineer</li>
+<li><strong>Prerequisites:</strong> Environment inspection.</li>
+<li><strong>Execution:</strong><ol>
+<li>Check <code>frontend/.env.local</code> for <code>RESEND_API_KEY</code> or <code>SMTP_HOST</code>.</li>
+<li>Observe: Credentials are not yet provisioned (<code>RESEND_API_KEY</code> is empty).</li>
+<li>Review <code>test_email_acceptance.ts</code> test results: The outbox queue pattern operates asynchronously without blocking payments, but emails cannot be delivered to physical inboxes until operational DNS (SPF, DKIM, DMARC) and provider keys are provisioned.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Order verification succeeds and creates outbox records cleanly.</li>
+<li>Email transport remains blocked pending domain credentials.</li>
+</ul>
+</li>
+<li><strong>Status:</strong> <strong>BLOCKED</strong> (Operational dependency: Resend / SMTP credentials and DNS records).</li>
+<li><strong>Issue Reference:</strong> Launch Blocker Gate 2 (<code>docs/ebooks/audit-remediation-report.md</code>).</li>
+</ul>
+<hr>
+<h3>TC-TECH-02: UPI Availability &amp; Fallback Payment Channels</h3>
+<ul>
+<li><strong>Role:</strong> Developer / QA Engineer</li>
+<li><strong>Prerequisites:</strong> Razorpay Test Mode account credentials.</li>
+<li><strong>Execution:</strong><ol>
+<li>Run <code>npx ts-node scripts/test_upi_intent_qr_suite.ts</code>.</li>
+<li>Inspect response from Razorpay <code>fetchPaymentMethods()</code>:<pre><code class="language-json">{ &quot;card&quot;: true, &quot;netbanking&quot;: true, &quot;wallet&quot;: true, &quot;upi&quot;: false }
+</code></pre>
+</li>
+<li>Open <code>/checkout</code> in browser $\rightarrow$ Click Pay $\rightarrow$ Inspect modal.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Razorpay merchant account currently has <code>upi: false</code>.</li>
+<li>Modal automatically and cleanly presents fallback channels (<strong>Cards &amp; Netbanking</strong>) without crashing.</li>
+<li>Seamless fallback payment works 100% via test cards.</li>
+</ul>
+</li>
+<li><strong>Status:</strong> <strong>BLOCKED for UPI</strong> (Requires Razorpay Dashboard merchant UPI activation); <strong>PASS for clean fallback</strong>.</li>
+<li><strong>Issue Reference:</strong> Launch Blocker Gate 1 (<code>docs/ebooks/audit-remediation-report.md</code>).</li>
+</ul>
+<hr>
+<h3>TC-TECH-03: Mobile Browser Intent &amp; Desktop QR Hardware Acceptance</h3>
+<ul>
+<li><strong>Role:</strong> Physical Device Tester</li>
+<li><strong>Prerequisites:</strong> Physical Android / iOS smartphone with Google Pay, PhonePe, or Paytm installed; desktop browser.</li>
+<li><strong>Execution:</strong><ol>
+<li>On Android Chrome: Open staging URL $\rightarrow$ Add eBook $\rightarrow$ Tap Pay.</li>
+<li>While <code>upi: false</code>, confirm modal renders responsive bottom sheet showing Card and Netbanking options cleanly.</li>
+<li>Once merchant UPI is activated in Razorpay Dashboard: Re-test to verify installed UPI banking apps open via intent.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Mobile bottom sheet renders with touch-friendly controls.</li>
+<li>Test Card payments complete cleanly on mobile devices.</li>
+</ul>
+</li>
+<li><strong>Status:</strong> NOT RUN (Pending physical hardware session post-UPI merchant activation).</li>
+<li><strong>Issue Reference:</strong> Section 5 (<code>docs/ebooks/razorpay-upi-qr-integration.md</code>).</li>
+</ul>
+<hr>
+<h3>TC-TECH-04: API Rate Limiting &amp; Overload Recovery</h3>
+<ul>
+<li><strong>Role:</strong> Developer / QA Engineer</li>
+<li><strong>Prerequisites:</strong> Terminal access.</li>
+<li><strong>Execution:</strong><ol>
+<li>Run the rate limit automated verification:<pre><code class="language-bash">npx ts-node --project tsconfig.json scripts/rate_limit_worker.ts
+</code></pre>
+</li>
+<li>Rapidly send &gt; 20 requests to <code>/api/ebooks/orders/create</code> within 60 seconds.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>First 20 requests succeed (or return business validation).</li>
+<li>21st request returns HTTP <code>429 Too Many Requests</code>.</li>
+<li>Response includes headers: <code>Retry-After: [seconds]</code> and <code>X-RateLimit-Remaining: 0</code>.</li>
+<li>Database state remains completely invariant.</li>
+<li>After the retry window expires, normal API requests succeed immediately.</li>
+</ul>
+</li>
+<li><strong>Status:</strong> <strong>PASS</strong> (Verified in automated audit suite).</li>
+<li><strong>Issue Reference:</strong> Section 8 (<code>docs/ebooks/audit-remediation-report.md</code>).</li>
+</ul>
+<hr>
+<h3>TC-TECH-05: Production Reverse Proxy Trust &amp; Header Spoofing</h3>
+<ul>
+<li><strong>Role:</strong> DevOps / Security Engineer</li>
+<li><strong>Prerequisites:</strong> Staging / Production deployment configuration inspection.</li>
+<li><strong>Execution:</strong><ol>
+<li>Inspect <code>frontend/lib/rateLimit.ts</code>.</li>
+<li>Confirm the auto-trust bug was remediated: <code>TRUST_PROXY</code> must be explicitly configured as <code>true</code> <strong>only</strong> when deployed behind an authentic reverse proxy (Cloudflare, AWS ALB, Nginx).</li>
+<li>Send request with spoofed <code>X-Forwarded-For: 1.1.1.1</code> to standalone container.</li>
+</ol>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li>Standalone server ignores untrusted <code>X-Forwarded-For</code> header and extracts the true client IP from the connection socket.</li>
+<li>When deployed to production behind reverse proxy, setting <code>TRUST_PROXY=true</code> extracts the authentic client IP.</li>
+</ul>
+</li>
+<li><strong>Status:</strong> <strong>FIXED + UNVERIFIED IN PROD</strong> (Code fixed; live proof requires deployment behind production reverse-proxy).</li>
+<li><strong>Issue Reference:</strong> Launch Blocker Gate 3 (<code>docs/ebooks/audit-remediation-report.md</code>).</li>
+</ul>
+<hr>
+<h3>TC-TECH-06: Code Quality, Lint Baseline, &amp; Typecheck Verification</h3>
+<ul>
+<li><strong>Role:</strong> Developer / QA Engineer</li>
+<li><strong>Prerequisites:</strong> Terminal access in <code>frontend/</code>.</li>
+<li><strong>Execution:</strong><pre><code class="language-bash">cd frontend
+npm run build
+npx tsc --noEmit
+npm run lint
+</code></pre>
+</li>
+<li><strong>Expected Results:</strong><ul>
+<li><code>npm run build</code>: Completes successfully (Exit code 0); production route table verified.</li>
+<li><code>npx tsc --noEmit</code>: Zero TypeScript compilation errors.</li>
+<li><code>npm run lint</code>: Exit code 0. Zero <code>prefer-const</code> errors; zero <code>react/no-unescaped-entities</code> errors. Baseline of 545 non-breaking application warnings/errors documented.</li>
+</ul>
+</li>
+<li><strong>Status:</strong> <strong>PASS</strong> (Verified in gap-closure audit).</li>
+<li><strong>Issue Reference:</strong> Workstream 2 (<code>docs/ebooks/audit-remediation-report.md</code>).</li>
+</ul>
+<hr>
+<h2>13. Printable Export Capabilities Statement</h2>
+<blockquote>
+<p>[!NOTE]
+<strong>Environment Export Tooling Status:</strong><br>Command-line PDF/Word conversion utilities (<code>pandoc</code>, <code>libreoffice</code>, <code>wkhtmltopdf</code>, <code>weasyprint</code>) are <strong>not installed</strong> in this Linux operating environment.  </p>
+<p><strong>How to create a clean printable PDF:</strong></p>
+<ol>
+<li>Open this file (<code>docs/ebooks/end-to-end-manual-test-guide.md</code>) in any modern browser (or VS Code / GitHub Markdown viewer).</li>
+<li>Press <code>Ctrl + P</code> (or <code>Cmd + P</code> on macOS) to open the browser print dialogue.</li>
+<li>Select <strong>&quot;Save as PDF&quot;</strong>.</li>
+<li>Ensure <strong>&quot;Background graphics&quot;</strong> is checked to preserve color alerts and status badges.</li>
+<li>Click <strong>&quot;Save&quot;</strong>.</li>
+</ol>
+</blockquote>
+<hr>
+<h2>14. Recommended Starting Point</h2>
+<p>To begin your manual testing session right now:</p>
+<ol>
+<li><strong>Start the local server:</strong><br><code>cd frontend &amp;&amp; npm run dev</code></li>
+<li><strong>Open your browser at:</strong><br><code>http://localhost:3000/admin/login</code></li>
+<li><strong>Begin with Test:</strong><br><strong><code>TC-ADM-01: Sign In as Administrator</code></strong> (Section 4)</li>
+<li>Follow sequentially through <strong>Section 4 (Admin Prepares Books)</strong> to publish your test book, then open an Incognito window to proceed with <strong>Section 5 (Public Visitor)</strong> and <strong>Section 6 (Guest Cart &amp; Checkout)</strong>.</li>
+</ol>
+
+
+</body>
+</html>

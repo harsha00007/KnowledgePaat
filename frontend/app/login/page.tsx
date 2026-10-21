@@ -72,7 +72,7 @@ function LoginForm() {
       let role = isAdminRpc ? 'admin' : null;
 
       if (!role) {
-        let { data: profile } = await supabase
+        const { data: profile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', data.user.id)
@@ -201,7 +201,7 @@ function LoginForm() {
           </form>
           
           <div className="mt-6 pt-6 border-t border-[var(--color-border)] text-center text-xs text-[var(--color-text-secondary)]">
-            Don't have an account yet?{' '}
+            Don&apos;t have an account yet?{' '}
             <Link href={registerHref} className="font-semibold text-[var(--color-brand-600)] hover:text-[var(--color-brand-700)] transition-colors">
               Create free account
             </Link>

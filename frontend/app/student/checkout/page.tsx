@@ -30,6 +30,13 @@ export default function StudentCheckoutPage() {
   const [orderSuccess, setOrderSuccess] = useState<any | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // If cart is empty and no completed order, return to cart
+  useEffect(() => {
+    if (!isLoading && cartItems.length === 0 && !orderSuccess) {
+      router.push('/student/cart');
+    }
+  }, [isLoading, cartItems, orderSuccess, router]);
+
   if (!isStoreEnabled) {
     return (
       <StudentLayout>
@@ -42,13 +49,6 @@ export default function StudentCheckoutPage() {
       </StudentLayout>
     );
   }
-
-  // If cart is empty and no completed order, return to cart
-  useEffect(() => {
-    if (!isLoading && cartItems.length === 0 && !orderSuccess) {
-      router.push('/student/cart');
-    }
-  }, [isLoading, cartItems, orderSuccess, router]);
 
   const handleRazorpayCartCheckout = async () => {
     setIsProcessing(true);

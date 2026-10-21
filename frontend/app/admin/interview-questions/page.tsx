@@ -495,7 +495,7 @@ export default function AdminInterviewPrepPage() {
       };
 
       if (selectedQuestion) {
-        let { error } = await supabase.from('interview_questions').update(payload).eq('id', selectedQuestion.id);
+        const { error } = await supabase.from('interview_questions').update(payload).eq('id', selectedQuestion.id);
         if (error && (error.message?.includes('answer_type') || error.code === 'PGRST204')) {
           const { answer_type, ...safePayload } = payload;
           const retry = await supabase.from('interview_questions').update(safePayload).eq('id', selectedQuestion.id);
@@ -504,7 +504,7 @@ export default function AdminInterviewPrepPage() {
           throw error;
         }
       } else {
-        let { error } = await supabase.from('interview_questions').insert(payload);
+        const { error } = await supabase.from('interview_questions').insert(payload);
         if (error && (error.message?.includes('answer_type') || error.code === 'PGRST204')) {
           const { answer_type, ...safePayload } = payload;
           const retry = await supabase.from('interview_questions').insert(safePayload);
@@ -591,7 +591,7 @@ export default function AdminInterviewPrepPage() {
       };
 
       if (selectedQuestion) {
-        let { error } = await supabase.from('interview_questions').update(payload).eq('id', selectedQuestion.id);
+        const { error } = await supabase.from('interview_questions').update(payload).eq('id', selectedQuestion.id);
         if (error && (error.message?.includes('answer_type') || error.code === 'PGRST204')) {
           const { answer_type, ...safePayload } = payload;
           const retry = await supabase.from('interview_questions').update(safePayload).eq('id', selectedQuestion.id);
@@ -600,7 +600,7 @@ export default function AdminInterviewPrepPage() {
           throw error;
         }
       } else {
-        let { error } = await supabase.from('interview_questions').insert(payload);
+        const { error } = await supabase.from('interview_questions').insert(payload);
         if (error && (error.message?.includes('answer_type') || error.code === 'PGRST204')) {
           const { answer_type, ...safePayload } = payload;
           const retry = await supabase.from('interview_questions').insert(safePayload);
@@ -1637,7 +1637,7 @@ export default function AdminInterviewPrepPage() {
 
               {testConfigs.length === 0 && (
                 <div className="col-span-full py-12 text-center text-xs text-[var(--color-text-tertiary)] bg-white rounded-[var(--radius-xl)] border border-[var(--color-border)]">
-                  No test configurations created yet. Click "Create Test Configuration" above to get started.
+                  No test configurations created yet. Click &quot;Create Test Configuration&quot; above to get started.
                 </div>
               )}
             </div>
@@ -2775,7 +2775,7 @@ export default function AdminInterviewPrepPage() {
               </div>
             ) : (
               <div className="py-8 text-center text-xs text-amber-700 bg-amber-50 rounded border border-amber-200">
-                ⚠️ No active questions in the question bank match this test's category & difficulty.
+                ⚠️ No active questions in the question bank match this test&apos;s category & difficulty.
               </div>
             )}
           </div>

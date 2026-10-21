@@ -100,10 +100,10 @@ function parseSingleQuestionBlock(block: string, rowNumber: number): RawImportRo
   if (lines.length === 0) return row;
 
   let currentField: string = 'title';
-  let titleParts: string[] = [];
-  let answerParts: string[] = [];
-  let tipsParts: string[] = [];
-  let mistakeParts: string[] = [];
+  const titleParts: string[] = [];
+  const answerParts: string[] = [];
+  const tipsParts: string[] = [];
+  const mistakeParts: string[] = [];
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];

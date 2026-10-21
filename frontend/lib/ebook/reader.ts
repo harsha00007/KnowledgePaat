@@ -564,7 +564,7 @@ export async function searchAuthorizedBook(
     const lowerBody = body.toLowerCase();
     const titleMatch = ch.title.toLowerCase().includes(lowerQuery);
 
-    let matchIndex = lowerBody.indexOf(lowerQuery);
+    const matchIndex = lowerBody.indexOf(lowerQuery);
     let matchCount = 0;
 
     // Count occurrences

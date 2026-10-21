@@ -537,7 +537,7 @@ export default function ProfilePage() {
               />
               {nameChangeCount >= 2 && data.fullName.trim() !== (savedBaseline.fullName || '').trim() && (
                 <p className="text-[11px] text-amber-600 mt-1 font-medium flex items-center gap-1">
-                  <Info className="w-3 h-3" /> Max 2 name changes reached. Revert to "{savedBaseline.fullName}" to save other details.
+                  <Info className="w-3 h-3" /> Max 2 name changes reached. Revert to &quot;{savedBaseline.fullName}&quot; to save other details.
                 </p>
               )}
             </div>

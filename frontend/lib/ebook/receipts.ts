@@ -6,7 +6,7 @@
  * - Outbox failure NEVER undoes or rolls back a paid order or unlocked entitlement.
  */
 
-import { createClient } from '@/utils/supabase/server';
+import { createClient, createAdminClient } from '@/utils/supabase/server';
 import { logger } from '@/lib/logger';
 
 export interface EmailTransportStatus {
@@ -62,7 +62,7 @@ export interface ProcessReceiptResult {
  * Strictly non-blocking: never fails the purchase or entitlement grant if email sending fails.
  */
 export async function processOrderReceiptOutbox(orderId: string): Promise<ProcessReceiptResult> {
-  const supabase = await createClient();
+  const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY ? createAdminClient() : await createClient();
 
   try {
     // 1. Fetch outbox item
@@ -151,7 +151,7 @@ export async function processOrderReceiptOutbox(orderId: string): Promise<Proces
       status: 'sent',
       message: 'Receipt delivered successfully',
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     logger.error('Unexpected error in receipt outbox processor', err, {
       module: 'receipt_outbox',
       orderId,
@@ -160,7 +160,7 @@ export async function processOrderReceiptOutbox(orderId: string): Promise<Proces
       success: false,
       orderId,
       status: 'failed',
-      message: err.message || 'Unknown receipt processor error',
+      message: err instanceof Error ? err.message : 'Unknown receipt processor error',
     };
   }
 }

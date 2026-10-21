@@ -137,7 +137,9 @@ export function EBookCartProvider({ children }: { children: React.ReactNode }) {
 
   // Ref to prevent race conditions during rapid state updates
   const itemsRef = useRef(storedItems);
-  itemsRef.current = storedItems;
+  useEffect(() => {
+    itemsRef.current = storedItems;
+  }, [storedItems]);
 
   /**
    * Server Re-validation
@@ -190,7 +192,7 @@ export function EBookCartProvider({ children }: { children: React.ReactNode }) {
         const updatedStored = currentStoredItems
           .filter(i => !unavailableSet.has(i.bookId))
           .map(st => {
-            const serverItem = (data.items || []).find((vi: any) => vi.book_id === st.bookId);
+            const serverItem = (data.items || []).find((vi: { book_id: string; price_paise: number }) => vi.book_id === st.bookId);
             return {
               ...st,
               lastPricePaise: serverItem ? serverItem.price_paise : st.lastPricePaise,
@@ -202,7 +204,7 @@ export function EBookCartProvider({ children }: { children: React.ReactNode }) {
       } else {
         throw new Error(data.error || 'Cart validation failed.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error during cart server revalidation:', err);
       setValidationStatus('error');
       setValidationError('Live price verification could not be completed. Please check your connection and click Revalidate Prices.');
@@ -215,9 +217,11 @@ export function EBookCartProvider({ children }: { children: React.ReactNode }) {
   // Hydration & initial load
   useEffect(() => {
     const initialItems = safeReadStorage();
-    setStoredItems(initialItems);
-    setIsHydrated(true);
-    revalidateWithServer(initialItems);
+    queueMicrotask(() => {
+      setStoredItems(initialItems);
+      setIsHydrated(true);
+      revalidateWithServer(initialItems);
+    });
   }, [revalidateWithServer]);
 
   // Cross-tab synchronization

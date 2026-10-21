@@ -19,12 +19,19 @@ import {
   Receipt,
   X,
   CreditCard,
-  Lock
+  Lock,
+  Smartphone,
+  QrCode,
+  ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { useFeatureFlags } from '@/context/FeatureFlagContext';
 import { CustomerOwnedBook, EBookAccessPlan, EBookUpgradeQuote } from '@/types/ebook';
-import { loadRazorpayCheckoutScript, RAZORPAY_UPI_ONLY_CONFIG } from '@/lib/razorpayClient';
+import {
+  loadRazorpayCheckoutScript,
+  openKnowledgePaatRazorpayCheckout,
+  RAZORPAY_UPI_CHECKOUT_CONFIG,
+} from '@/lib/razorpayClient';
 
 export function MyBooksClient() {
   const router = useRouter();
@@ -230,7 +237,7 @@ export function MyBooksClient() {
               className="w-full justify-center"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
-              I've Verified My Email
+              I&apos;ve Verified My Email
             </Button>
             <Link href="/login?redirectTo=/my-books" className="block w-full">
               <Button variant="outline" className="w-full justify-center">
@@ -371,7 +378,7 @@ export function MyBooksClient() {
               Your Library is Empty
             </h2>
             <p className="text-sm text-slate-600 mb-8 max-w-sm mx-auto leading-relaxed">
-              You haven't purchased any eBooks yet. Explore our curated technical collection to start reading and build your digital shelf.
+              You haven&apos;t purchased any eBooks yet. Explore our curated technical collection to start reading and build your digital shelf.
             </p>
             <Link href="/e-books">
               <Button variant="primary" size="lg" className="shadow-brand">
@@ -922,49 +929,25 @@ function EBookUpgradeModal({
     fetchQuote();
   }, [book.bookId, book.editionId]);
 
-  const handlePayUpgrade = async () => {
-    if (isProcessing) return;
+  const [activeUpgradeOrder, setActiveUpgradeOrder] = useState<any | null>(null);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
+
+  const launchUpgradeCheckout = async (orderData: any) => {
     setIsProcessing(true);
     setErrorMessage(null);
 
     try {
-      // 1. Create Server-Authoritative Upgrade Order
-      const res = await fetch(`/api/ebooks/${book.bookId}/upgrade`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ editionId: book.editionId }),
-      });
-
-      const orderData = await res.json();
-      if (!res.ok || !orderData.success) {
-        throw new Error(orderData.error || 'Could not initialize upgrade order.');
-      }
-
-      // 2. Load Razorpay Checkout Script
-      const isLoaded = await loadRazorpayCheckoutScript();
-      if (!isLoaded || typeof (window as any).Razorpay === 'undefined') {
-        throw new Error('Could not load payment checkout gateway. Please check your connection.');
-      }
-
-      // 3. Launch Razorpay Popup
-      const options = {
-        key: orderData.keyId,
-        amount: orderData.amountPaise,
+      await openKnowledgePaatRazorpayCheckout({
+        keyId: orderData.keyId,
+        amountPaise: orderData.amountPaise,
         currency: orderData.currency || 'INR',
-        name: 'KnowledgePaat',
-        description: `Upgrade to PDF Download — ${book.versionName}`,
-        order_id: orderData.razorpayOrderId,
-        prefill: {
-          name: 'Valued Customer',
-          email: 'customer@knowledgepaat.test',
-        },
-        theme: {
-          color: '#2563EB',
-        },
-        ...RAZORPAY_UPI_ONLY_CONFIG,
-        handler: async (response: any) => {
+        internalOrderId: orderData.orderId,
+        razorpayOrderId: orderData.razorpayOrderId,
+        description: `Upgrade to PDF Download — ${book.versionName || book.title}`,
+        themeColor: '#0B1D3A',
+        onSuccess: async (response) => {
           try {
-            // 4. Verify payment authoritatively on server
             const verifyRes = await fetch('/api/ebooks/orders/verify', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -991,22 +974,93 @@ function EBookUpgradeModal({
             setIsProcessing(false);
           }
         },
-        modal: {
-          ondismiss: () => {
-            setIsProcessing(false);
-          },
+        onDismiss: () => {
+          setIsProcessing(false);
+          setRecoveryMessage('Checkout closed or switched to UPI app. If payment completed, click "Check Payment Status" below.');
         },
-      };
-
-      const rzp = new (window as any).Razorpay(options);
-      rzp.on('payment.failed', (failResp: any) => {
-        setIsProcessing(false);
-        setErrorMessage(failResp?.error?.description || 'Payment was declined or failed.');
+        onPaymentFailed: (failResp) => {
+          setIsProcessing(false);
+          setErrorMessage(failResp?.description || 'Payment was declined or failed.');
+        },
       });
-      rzp.open();
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to open payment gateway.');
+      setIsProcessing(false);
+    }
+  };
+
+  const handlePayUpgrade = async () => {
+    if (isProcessing) return;
+    setErrorMessage(null);
+    setRecoveryMessage(null);
+
+    // Reuse existing active order if present
+    if (activeUpgradeOrder) {
+      await launchUpgradeCheckout(activeUpgradeOrder);
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // 1. Create Server-Authoritative Upgrade Order
+      const res = await fetch(`/api/ebooks/${book.bookId}/upgrade`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ editionId: book.editionId }),
+      });
+
+      const orderData = await res.json();
+      if (!res.ok || !orderData.success) {
+        throw new Error(orderData.error || 'Could not initialize upgrade order.');
+      }
+
+      setActiveUpgradeOrder(orderData);
+      await launchUpgradeCheckout(orderData);
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to initiate checkout.');
       setIsProcessing(false);
+    }
+  };
+
+  const handleCheckPaymentStatus = async () => {
+    if (!activeUpgradeOrder || isCheckingStatus) return;
+    setIsCheckingStatus(true);
+    setRecoveryMessage('Checking latest status with Razorpay Gateway...');
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch(`/api/ebooks/orders/${activeUpgradeOrder.orderId}/check-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        if (data.paymentStatus === 'paid' || data.status === 'paid') {
+          setSuccessMessage('Upgrade confirmed! Full PDF download access unlocked.');
+          setTimeout(() => {
+            onSuccess();
+            onClose();
+          }, 1800);
+          return;
+        } else if (data.paymentStatus === 'authorized') {
+          setRecoveryMessage('Payment authorized by your bank. Awaiting automatic capture confirmation...');
+        } else if (data.paymentStatus === 'failed') {
+          setErrorMessage(data.message || 'Payment attempt failed.');
+          setRecoveryMessage(null);
+        } else {
+          setRecoveryMessage(
+            data.message || 'Payment has not yet completed. If you approved in UPI app, please wait a few seconds and check again.'
+          );
+        }
+      } else {
+        setErrorMessage(data.error || 'Unable to check status from payment provider.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Network error while checking status.');
+    } finally {
+      setIsCheckingStatus(false);
     }
   };
 
@@ -1103,6 +1157,76 @@ function EBookUpgradeModal({
               </span>
             </div>
 
+            {/* Payment Methods Badges */}
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-1.5 text-[11px]">
+              <div className="flex items-center justify-between font-semibold text-slate-700 text-[10px]">
+                <span>Supported Channels</span>
+                <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold">Standard Checkout</span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200 text-[10px] font-medium">
+                  <CreditCard className="w-2.5 h-2.5 text-slate-600" />
+                  Cards & Netbanking (Active)
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-medium">
+                  <Smartphone className="w-2.5 h-2.5 text-purple-600" />
+                  UPI Intent (Mobile)
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-medium">
+                  <QrCode className="w-2.5 h-2.5 text-purple-600" />
+                  UPI QR (Desktop)
+                </span>
+              </div>
+            </div>
+
+            {/* Pending Payment Recovery Banner */}
+            {activeUpgradeOrder && (
+              <div className="p-3.5 rounded-xl bg-purple-50 border border-purple-200 text-purple-950 text-xs space-y-2">
+                <div className="flex items-start gap-2">
+                  <Clock className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="font-bold text-slate-900 text-xs">Payment in Progress</p>
+                    <p className="text-[11px] text-purple-800">
+                      If you completed payment in your UPI app, click <strong>Check Status</strong> below to activate PDF access.
+                    </p>
+                    {recoveryMessage && (
+                      <p className="text-[10px] font-semibold text-blue-700 bg-blue-50 p-1.5 rounded border border-blue-100">
+                        {recoveryMessage}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    disabled={isCheckingStatus || isProcessing}
+                    onClick={handleCheckPaymentStatus}
+                    className="flex-1 py-1.5 px-3 bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs rounded-lg flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50 transition-colors"
+                  >
+                    {isCheckingStatus ? (
+                      <>
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                        <span>Verifying...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>Check Status</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isProcessing || isCheckingStatus}
+                    onClick={() => launchUpgradeCheckout(activeUpgradeOrder)}
+                    className="py-1.5 px-3 bg-white hover:bg-slate-50 border border-purple-200 text-purple-900 font-semibold text-xs rounded-lg cursor-pointer disabled:opacity-50 transition-colors"
+                  >
+                    Reopen
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex gap-2 pt-2">
               <Button
@@ -1118,13 +1242,13 @@ function EBookUpgradeModal({
                 variant="primary"
                 size="sm"
                 onClick={handlePayUpgrade}
-                disabled={isProcessing}
+                disabled={isProcessing || isCheckingStatus}
                 className="flex-1 text-xs bg-purple-600 hover:bg-purple-700 border-purple-600"
               >
                 {isProcessing ? (
                   <>
                     <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                    Processing...
+                    Opening Gateway...
                   </>
                 ) : (
                   <>

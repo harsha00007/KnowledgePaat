@@ -21,6 +21,7 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';
 import { sanitizeInternalRedirectUrl } from '../lib/safeRedirect';
+import { getTestAuthCookieHeader } from './testAuthHelper';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
@@ -354,18 +355,9 @@ async function run() {
   console.log('\n--- 6. SIGNED-IN STUDENT BROWSING ---');
 
   const studentEmail = 'student@knowledgepaat.test';
-  const studentPassword = 'StudentPassword@2026!';
 
-  // Obtain verified student session cookies via test session route
-  const studentSessionRes = await fetch(
-    `${APP_URL}/api/test-session?email=${encodeURIComponent(studentEmail)}&password=${encodeURIComponent(studentPassword)}&redirectTo=/e-books`,
-    { redirect: 'manual' }
-  );
-
-  const studentCookies = (studentSessionRes.headers as any).getSetCookie
-    ? (studentSessionRes.headers as any).getSetCookie()
-    : [studentSessionRes.headers.get('set-cookie') || ''];
-  const studentCookieHeader = studentCookies.map((c: string) => c.split(';')[0]).filter(Boolean).join('; ');
+  // Obtain verified student session cookies via isolated test harness
+  const studentCookieHeader = await getTestAuthCookieHeader(studentEmail);
 
   // Request /e-books as signed-in student
   const studentEbooksRes = await fetch(`${APP_URL}/e-books`, {

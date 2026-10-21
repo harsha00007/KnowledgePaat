@@ -52,8 +52,8 @@ export async function GET(req: NextRequest) {
     // Collect all relevant book IDs to query
     const targetBookIds = Array.from(new Set([...featuredBookIds, ...(highlightedBookId ? [highlightedBookId] : [])]));
 
-    let booksMap = new Map<string, any>();
-    let pricingMap = new Map<string, any>();
+    const booksMap = new Map<string, any>();
+    const pricingMap = new Map<string, any>();
 
     if (targetBookIds.length > 0) {
       // 2. Fetch published books from catalog ONLY (filtering out draft/archived books)

@@ -60,7 +60,7 @@ export default function ContactPage() {
             Get in touch with the KnowledgePaat team
           </h1>
           <p className="mt-4 text-base text-[var(--color-text-secondary)] leading-relaxed max-w-xl mx-auto">
-            Have questions about student subscriptions, job verification, or interview materials? We're here to help.
+            Have questions about student subscriptions, job verification, or interview materials? We&apos;re here to help.
           </p>
         </div>
       </section>

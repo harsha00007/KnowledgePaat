@@ -146,7 +146,7 @@ export default function AdminEBookCustomersPage() {
 
     setIsSubmittingAction(true);
     try {
-      let payload: any = {
+      const payload: any = {
         customerId: selectedCustomerId,
         reason: actionReason.trim(),
       };
@@ -671,7 +671,7 @@ export default function AdminEBookCustomersPage() {
                               <span className="text-slate-400 text-[11px]">{new Date(al.created_at).toLocaleString()}</span>
                             </div>
                             <div className="text-slate-600">
-                              Actor: {al.actor?.full_name || 'Admin'} • Reason: <em>"{al.metadata?.reason || al.metadata?.change_reason || 'N/A'}"</em>
+                              Actor: {al.actor?.full_name || 'Admin'} • Reason: <em>&quot;{al.metadata?.reason || al.metadata?.change_reason || 'N/A'}&quot;</em>
                             </div>
                           </div>
                         ))}

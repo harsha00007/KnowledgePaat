@@ -200,7 +200,7 @@ function RegisterForm() {
                 </div>
                 <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">Registration Successful!</h2>
                 <p className="text-sm text-[var(--color-text-secondary)] mb-6 leading-relaxed">
-                  We've sent a verification link to <strong className="text-[var(--color-text-primary)] font-semibold">{email}</strong>. Please check your inbox to confirm your account and sign in.
+                  We&apos;ve sent a verification link to <strong className="text-[var(--color-text-primary)] font-semibold">{email}</strong>. Please check your inbox to confirm your account and sign in.
                 </p>
                 <Link href={loginHref} className="block w-full">
                   <Button className="w-full justify-center">Go to Sign in</Button>

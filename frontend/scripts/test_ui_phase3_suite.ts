@@ -23,6 +23,7 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';
 import puppeteer from 'puppeteer-core';
+import { setupPuppeteerSession } from './testAuthHelper';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
@@ -340,8 +341,8 @@ async function run() {
     );
 
     // My Books Page (/my-books)
-    const studentUrl = `${APP_URL}/api/test-session?email=student%40knowledgepaat.test&password=StudentPassword%402026!&redirectTo=%2Fmy-books`;
-    await page.goto(studentUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await setupPuppeteerSession(page, 'student@knowledgepaat.test');
+    await page.goto(`${APP_URL}/my-books`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForSelector('h1', { timeout: 20000 }).catch(() => null);
     await new Promise((r) => setTimeout(r, 1000));
     const myBooksInfo = await page.evaluate(() => {

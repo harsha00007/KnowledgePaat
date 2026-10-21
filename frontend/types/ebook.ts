@@ -81,7 +81,7 @@ export interface EBookAuditLog {
   action: string;
   entity_type: string;
   entity_id: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   created_at: string;
 }
 
@@ -236,7 +236,7 @@ export interface EBookOrder {
   refunded_amount_paise?: number;
   customer_email: string | null;
   customer_name: string | null;
-  notes: Record<string, any>;
+  notes: Record<string, unknown>;
   paid_at: string | null;
   created_at: string;
   updated_at: string;
@@ -305,7 +305,7 @@ export interface EBookReceiptOutboxItem {
   status: 'pending' | 'processing' | 'sent' | 'failed';
   retry_count: number;
   last_error: string | null;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
   sent_at: string | null;
   created_at: string;
   updated_at: string;
@@ -316,7 +316,7 @@ export interface EBookWebhookEvent {
   event_id: string;
   event_type: string;
   gateway: string;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
   status: 'pending' | 'processed' | 'failed' | 'ignored';
   processed_at: string | null;
   error_message: string | null;
@@ -438,7 +438,7 @@ export interface EBookReconciliationReport {
   discrepanciesCount: number;
   discrepancies: EBookReconciliationItem[];
   providerReachable: boolean;
-  settlementDetails: Record<string, any>;
+  settlementDetails: Record<string, unknown>;
 }
 
 

@@ -387,15 +387,19 @@ export interface CreateUpgradeOrderResult {
  */
 export async function createEBookUpgradeOrder(
   bookId: string,
-  editionId?: string | null
+  editionId?: string | null,
+  explicitCustomer?: VerifiedCustomer
 ): Promise<CreateUpgradeOrderResult> {
-  const authResult = await getVerifiedCustomer();
-  if (!authResult.success) {
-    const err = new Error(authResult.message) as any;
-    err.status = authResult.status;
-    throw err;
+  let customer = explicitCustomer;
+  if (!customer) {
+    const authResult = await getVerifiedCustomer();
+    if (!authResult.success) {
+      const err = new Error(authResult.message) as any;
+      err.status = authResult.status;
+      throw err;
+    }
+    customer = authResult.customer;
   }
-  const customer = authResult.customer;
 
   // 1. Evaluate upgrade eligibility on the server
   const quote = await getUpgradeQuote(bookId, editionId, customer);

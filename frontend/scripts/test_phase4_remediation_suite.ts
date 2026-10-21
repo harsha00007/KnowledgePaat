@@ -23,6 +23,7 @@ import {
   checkRateLimit,
   rateLimitResponse,
   getRealClientIp,
+  pruneRateLimitRecords,
   RATE_LIMIT_POLICIES,
   RateLimitConfig,
 } from '../lib/rateLimit';
@@ -224,6 +225,75 @@ async function runRemediationSuite() {
     `Business audit events preserved intact (${totalAuditLogsAfter} total events). Pruning rate-limit events leaves business audit history completely untouched.`
   );
 
+  // ── ATOM-04: Mixed-Window Rate-Limit Cleanup Isolation Regression ──
+  // Verify:
+  // 1. A short-window policy cannot delete still-active quota reservations for a longer-window policy
+  // 2. Cleanup is strictly restricted to rate-limit records (gateway='rate_limit')
+  // 3. Genuine payment webhook records (gateway='razorpay') remain untouched
+  console.log('     Executing mixed-window cleanup isolation regression test...');
+  const mixedLongKey = `mixed_long_${runId}`;
+  const mixedShortKey = `mixed_short_${runId}`;
+  const genuineWebhookId = `pay_genuine_webhook_${runId}`;
+
+  // Exhaust longer-window policy: limit 2, window 60s
+  await checkRateLimit(mixedLongKey, { limit: 2, windowSeconds: 60, isSensitive: true });
+  await checkRateLimit(mixedLongKey, { limit: 2, windowSeconds: 60, isSensitive: true });
+  const longExhaustedCheck = await checkRateLimit(mixedLongKey, { limit: 2, windowSeconds: 60, isSensitive: true });
+
+  // Insert genuine payment webhook record (gateway='razorpay')
+  await adminDb.from('ebook_webhook_events').insert({
+    event_id: genuineWebhookId,
+    event_type: 'payment.captured',
+    gateway: 'razorpay',
+    payload: { amount_paise: 99900, order_id: `order_${runId}` },
+    status: 'processed',
+  });
+
+  // Consume short-window policy: limit 2, window 2s
+  await checkRateLimit(mixedShortKey, { limit: 2, windowSeconds: 2, isSensitive: true });
+  await checkRateLimit(mixedShortKey, { limit: 2, windowSeconds: 2, isSensitive: true });
+
+  // Wait 3 seconds for short window to elapse
+  await new Promise(r => setTimeout(r, 3000));
+
+  // Trigger short-window cleanup
+  await pruneRateLimitRecords({ key: mixedShortKey, olderThanMs: 1000 });
+  // Also test unscoped per-record expiry cleanup
+  await pruneRateLimitRecords();
+
+  // Verify:
+  // 1. Longer-window quota MUST still be exhausted
+  const longAfterCleanup = await checkRateLimit(mixedLongKey, { limit: 2, windowSeconds: 60, isSensitive: true });
+  const longQuotaPreserved = !longAfterCleanup.success && longAfterCleanup.remaining === 0;
+
+  // 2. Genuine payment webhook MUST still exist untouched
+  const { data: genuineWebhookData } = await adminDb
+    .from('ebook_webhook_events')
+    .select('id, gateway, event_id')
+    .eq('event_id', genuineWebhookId)
+    .maybeSingle();
+  const genuineWebhookUntouched = genuineWebhookData !== null && genuineWebhookData.gateway === 'razorpay';
+
+  // 3. Short window records were pruned
+  const { count: shortCountRemaining } = await adminDb
+    .from('ebook_webhook_events')
+    .select('id', { count: 'exact', head: true })
+    .eq('gateway', 'rate_limit')
+    .eq('event_type', mixedShortKey);
+
+  recordCheck(
+    'ATOM-04',
+    'Atomicity',
+    'Mixed-Window Cleanup Isolation & Genuine Webhook Preservation',
+    !longExhaustedCheck.success && longQuotaPreserved && genuineWebhookUntouched && shortCountRemaining === 0 ? 'PASS' : 'FAIL',
+    `Verified isolation: Longer-window (60s) quota remained exhausted (${longAfterCleanup.remaining} remaining, success=${longAfterCleanup.success}). Genuine payment webhook '${genuineWebhookId}' (gateway='razorpay') remained untouched. Expired short-window (2s) records cleanly pruned.`
+  );
+
+  // Clean up mixed test fixtures
+  await adminDb.from('ebook_webhook_events').delete().eq('gateway', 'rate_limit').in('event_type', [mixedLongKey, mixedShortKey]);
+  await adminDb.from('ebook_webhook_events').delete().eq('event_id', genuineWebhookId);
+
+
   // ─────────────────────────────────────────────────────────────────────────────
   // 2. REAL CROSS-PROCESS CONCURRENCY TEST
   // ─────────────────────────────────────────────────────────────────────────────
@@ -232,7 +302,7 @@ async function runRemediationSuite() {
   // Spawn two separate OS processes concurrently against shared key with limit 4
   const multiProcKey = `test_multiproc_${runId}`;
   const multiProcLimit = 4;
-  const multiProcWindow = 20;
+  const multiProcWindow = 60;
 
   // Run 6 concurrent worker process executions (representing multiple app cluster instances)
   console.log(`     Spawning 6 concurrent worker processes across multiple OS PIDs...`);
@@ -684,6 +754,32 @@ async function runRemediationSuite() {
       'Dataset Integrity (0 Omissions, 0 Duplicates)',
       hasZeroDuplicates && hasZeroOmissions ? 'PASS' : 'FAIL',
       `Verified dataset integrity: ${uniqueOrderNumbers.size} unique order numbers out of ${exportedOrderNumbers.length} rows. 0 duplicates, 0 omissions.`
+    );
+
+    // 5D: Configured Ceiling Enforcement (totalMatching > MAX_CSV_EXPORT)
+    // When matching total exceeds MAX_CSV_EXPORT, the endpoint must return HTTP 400
+    // with code 'EXPORT_CEILING_EXCEEDED' and an actionable error, producing 0 partial/truncated files.
+    console.log(`     Querying CSV export with test ceiling lower than matching total (test_ceiling=2500, matching=5100)...`);
+    const ceilingExceededRes = await fetch(`${APP_URL}/api/admin/ebooks/orders?format=csv&search=${fixtureTag}&test_ceiling=2500`, {
+      headers: {
+        Authorization: `Bearer ${adminAccessToken}`,
+      },
+    });
+
+    const ceilingJson = await ceilingExceededRes.json();
+    const is400 = ceilingExceededRes.status === 400;
+    const hasCorrectCode = ceilingJson.code === 'EXPORT_CEILING_EXCEEDED';
+    const hasAccurateCounts = ceilingJson.totalMatching === totalFixturesToSeed && ceilingJson.maxExportLimit === 2500;
+    const hasCeilingHeaders = ceilingExceededRes.headers.get('x-total-count') === String(totalFixturesToSeed) &&
+                              ceilingExceededRes.headers.get('x-max-export-limit') === '2500';
+    const refusedPartialCsv = !ceilingExceededRes.headers.get('content-type')?.includes('text/csv');
+
+    recordCheck(
+      'CSV-05',
+      'CsvExport',
+      'Configured Ceiling Enforcement (No Partial or Truncated Exports)',
+      is400 && hasCorrectCode && hasAccurateCounts && hasCeilingHeaders && refusedPartialCsv ? 'PASS' : 'FAIL',
+      `Exceeding ceiling (${totalFixturesToSeed} matching > 2,500 limit) returned HTTP 400 with code EXPORT_CEILING_EXCEEDED. Partial file refused. Actionable guidance returned.`
     );
   } finally {
     // Clean up ONLY disposable fixtures

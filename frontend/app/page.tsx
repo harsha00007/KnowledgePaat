@@ -64,7 +64,7 @@ export default function Home() {
               {/* Trust Pill */}
               <div className="inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200/90 px-3 py-1 sm:px-3.5 sm:py-1.5 text-[11px] sm:text-xs font-semibold text-[#2563EB] mb-4 sm:mb-6 shadow-2xs font-display max-w-full text-center">
                 <span className="flex h-2 w-2 rounded-full bg-[#22D3A2] shrink-0" />
-                <span className="truncate">From Knowledge to Opportunity • India's Career Platform</span>
+                <span className="truncate">From Knowledge to Opportunity • India&apos;s Career Platform</span>
               </div>
 
               {/* Main Headline */}
@@ -575,7 +575,7 @@ function TestimonialCard({
           <Star key={i} className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-amber-400 text-amber-400" />
         ))}
       </div>
-      <p className="text-xs sm:text-sm text-[#475569] leading-relaxed mb-4 sm:mb-5 italic">"{quote}"</p>
+      <p className="text-xs sm:text-sm text-[#475569] leading-relaxed mb-4 sm:mb-5 italic">&quot;{quote}&quot;</p>
       <div className="flex items-center gap-3">
         <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-blue-50 text-[#2563EB] border border-blue-200 flex items-center justify-center text-xs font-bold shrink-0">
           {initial}

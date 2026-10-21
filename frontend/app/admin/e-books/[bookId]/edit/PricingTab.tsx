@@ -651,7 +651,7 @@ export function PricingTab({
 
             {/* Upgrade banner preview */}
             <div className="p-3 bg-purple-50/70 border border-purple-200 rounded-lg flex items-center justify-between text-xs text-purple-900">
-              <span>Existing online readers will see: <strong>"Upgrade this edition to PDF Download for ₹{(upgradeCalc.finalPricePaise / 100).toFixed(0)}"</strong></span>
+              <span>Existing online readers will see: <strong>&quot;Upgrade this edition to PDF Download for ₹{(upgradeCalc.finalPricePaise / 100).toFixed(0)}&quot;</strong></span>
               {upgradeCalc.discountAmountPaise > 0 && (
                 <span className="font-bold bg-purple-200/80 px-2 py-0.5 rounded">Special Upgrade Offer</span>
               )}

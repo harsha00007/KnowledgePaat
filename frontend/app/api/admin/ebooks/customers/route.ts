@@ -251,9 +251,9 @@ export async function GET(req: NextRequest) {
     const customerIds = (profiles || []).map(p => p.id);
 
     // Aggregate entitlements and orders for page customers
-    let entitlementsByCustomer = new Map<string, any[]>();
-    let ordersByCustomer = new Map<string, any[]>();
-    let progressByCustomer = new Map<string, any[]>();
+    const entitlementsByCustomer = new Map<string, any[]>();
+    const ordersByCustomer = new Map<string, any[]>();
+    const progressByCustomer = new Map<string, any[]>();
 
     if (customerIds.length > 0) {
       const [entsRes, ordersRes, progRes] = await Promise.all([

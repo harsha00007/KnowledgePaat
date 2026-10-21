@@ -95,9 +95,6 @@ export function ReaderClient({
   chapterId,
   currentUserId,
 }: ReaderClientProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
   // If initialError is present, render safe error view
   if (initialError || !initialData) {
     const isUnauth = initialError?.status === 401;
@@ -135,7 +132,30 @@ export function ReaderClient({
     );
   }
 
-  const { book, edition, chapter, navigation, progress: initialProgress, ownedEditions, preferences: initialPrefs, entitlement } = initialData;
+  return (
+    <ReaderWorkspace
+      data={initialData}
+      bookId={bookId}
+      chapterId={chapterId}
+      currentUserId={currentUserId}
+    />
+  );
+}
+
+function ReaderWorkspace({
+  data,
+  bookId,
+  chapterId,
+  currentUserId: _currentUserId,
+}: {
+  data: NonNullable<ReaderClientProps['initialData']>;
+  bookId: string;
+  chapterId: string;
+  currentUserId?: string;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const { book, edition, chapter, navigation, progress: initialProgress, ownedEditions, preferences: initialPrefs, entitlement } = data;
 
   // UI States
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -185,10 +205,10 @@ export function ReaderClient({
         message: `Download started: ${data.filename || 'PDF'}`,
       });
       setTimeout(() => setReaderDownloadStatus(null), 4000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setReaderDownloadStatus({
         type: 'error',
-        message: err.message || 'Error initiating download.',
+        message: err instanceof Error ? err.message : 'Error initiating download.',
       });
       setTimeout(() => setReaderDownloadStatus(null), 4000);
     } finally {
@@ -222,7 +242,6 @@ export function ReaderClient({
 
   // 1. Fetch Bookmarks for this edition
   const loadBookmarks = useCallback(async () => {
-    setIsLoadingBookmarks(true);
     try {
       const res = await fetch(`/api/ebooks/${book.id}/bookmarks?editionId=${edition.id}`);
       const json = await res.json();
@@ -239,8 +258,25 @@ export function ReaderClient({
   }, [book.id, edition.id, chapter.id]);
 
   useEffect(() => {
-    loadBookmarks();
-  }, [loadBookmarks]);
+    let ignore = false;
+    async function fetchInitialBookmarks() {
+      try {
+        const res = await fetch(`/api/ebooks/${book.id}/bookmarks?editionId=${edition.id}`);
+        const json = await res.json();
+        if (!ignore && json.success && Array.isArray(json.bookmarks)) {
+          setBookmarks(json.bookmarks);
+          const match = json.bookmarks.some((b: BookmarkItem) => b.chapterId === chapter.id);
+          setIsCurrentChapterBookmarked(match);
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    fetchInitialBookmarks();
+    return () => {
+      ignore = true;
+    };
+  }, [book.id, edition.id, chapter.id]);
 
   // 2. Toggle Bookmark for Current Chapter
   const toggleBookmark = async () => {
@@ -347,7 +383,7 @@ export function ReaderClient({
   }, [chapter.id, initialProgress]);
 
   // 4. Update Reading Preferences
-  const updatePreference = async (key: keyof ReadingPreferences, val: any) => {
+  const updatePreference = async <K extends keyof ReadingPreferences>(key: K, val: ReadingPreferences[K]) => {
     const previous = { ...preferences };
     const updated = { ...preferences, [key]: val };
     setPreferences(updated);
@@ -442,12 +478,6 @@ export function ReaderClient({
     light: 'bg-white text-slate-800',
     sepia: 'bg-[#FBF0D9] text-[#5F4B32]',
     dark: 'bg-[#0B1D3A] text-slate-100',
-  }[preferences.theme];
-
-  const surfaceClasses = {
-    light: 'bg-slate-50 border-slate-200 text-slate-700',
-    sepia: 'bg-[#F4EFE6] border-[#E8DEC8] text-[#5F4B32]',
-    dark: 'bg-[#0f274e] border-slate-700 text-slate-200',
   }[preferences.theme];
 
   const fontClasses = {

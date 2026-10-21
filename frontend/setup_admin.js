@@ -48,7 +48,7 @@ async function setupAdmin() {
   console.log(`Configuring admin account: ${email}`);
 
   // Fetch or create user
-  let { data: users, error: listError } = await adminSupabase.auth.admin.listUsers();
+  const { data: users, error: listError } = await adminSupabase.auth.admin.listUsers();
   
   if (listError) {
     console.error("Error listing users:", listError);

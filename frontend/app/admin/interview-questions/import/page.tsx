@@ -595,7 +595,7 @@ export default function BulkImportPage() {
                     {validationSummary.unmappedCategories.map(unmapped => (
                       <div key={unmapped} className="p-2.5 rounded-[var(--radius-md)] bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-between gap-2">
                         <span className="text-xs font-semibold text-[var(--color-text-primary)] truncate max-w-[120px]" title={unmapped}>
-                          "{unmapped}"
+                          &quot;{unmapped}&quot;
                         </span>
                         <span className="text-xs text-[var(--color-text-tertiary)]">→</span>
                         <select

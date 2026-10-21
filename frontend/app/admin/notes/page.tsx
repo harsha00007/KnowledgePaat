@@ -642,7 +642,7 @@ export default function AdminNotesPage() {
         {selectedNote && (
           <div className="space-y-4 text-xs">
             <p className="text-[var(--color-text-secondary)] leading-relaxed">
-              Are you sure you want to <strong>{selectedNote.status === 'Active' ? 'deactivate' : 'activate'}</strong> "{selectedNote.title}"?
+              Are you sure you want to <strong>{selectedNote.status === 'Active' ? 'deactivate' : 'activate'}</strong> &quot;{selectedNote.title}&quot;?
             </p>
             <div className="flex justify-end gap-2.5 pt-3 border-t border-[var(--color-border)]">
               <Button variant="outline" size="sm" onClick={() => setIsStatusModalOpen(false)} disabled={isProcessing}>Cancel</Button>
@@ -669,7 +669,7 @@ export default function AdminNotesPage() {
               <div>
                 <p className="font-bold text-red-950">Warning: This action cannot be undone.</p>
                 <p className="mt-1 leading-relaxed text-red-900">
-                  Are you sure you want to delete <strong>"{selectedNote.title}"</strong>? The PDF file in storage will also be deleted.
+                  Are you sure you want to delete <strong>&quot;{selectedNote.title}&quot;</strong>? The PDF file in storage will also be deleted.
                 </p>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer-core';
 import fs from 'fs';
 import path from 'path';
+import { setupPuppeteerSession } from './testAuthHelper';
 
 const screenshotsDir = '/home/harsha/.gemini/antigravity-ide/brain/651141cd-1942-4961-ad67-66a54539bfed/screenshots';
 if (!fs.existsSync(screenshotsDir)) {
@@ -70,8 +71,8 @@ async function capture() {
 
     // 6. Authenticated Student My Books in EBookLayout
     console.log('6. Capturing Authenticated /my-books in EBookLayout...');
-    const studentUrl = 'http://localhost:3000/api/test-session?email=student%40knowledgepaat.test&password=StudentPassword%402026!&redirectTo=%2Fmy-books';
-    await page.goto(studentUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+    await setupPuppeteerSession(page, 'student@knowledgepaat.test');
+    await page.goto('http://localhost:3000/my-books', { waitUntil: 'networkidle2', timeout: 30000 });
     await new Promise(r => setTimeout(r, 2000));
     const shotMyBooks = path.join(screenshotsDir, 'ui_phase2_my_books_ebook_layout.png');
     await page.screenshot({ path: shotMyBooks, clip: { x: 0, y: 0, width: 1440, height: 800 } });

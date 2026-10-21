@@ -81,7 +81,7 @@ export function validateImportRows(
 
     // 2. Validate MCQ or Normal Question
     let validCorrectOption: 'A' | 'B' | 'C' | 'D' | undefined = undefined;
-    let answerType: 'short' | 'long' = raw.answer_type === 'long' || raw.answer_type === 'short' 
+    const answerType: 'short' | 'long' = raw.answer_type === 'long' || raw.answer_type === 'short' 
       ? raw.answer_type 
       : (answer && answer.length > 200 ? 'long' : 'short');
 

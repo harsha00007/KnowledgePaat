@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer-core';
 import fs from 'fs';
 import path from 'path';
+import { setupPuppeteerSession } from './testAuthHelper';
 
 const screenshotsDir = '/home/harsha/.gemini/antigravity-ide/brain/651141cd-1942-4961-ad67-66a54539bfed/screenshots';
 if (!fs.existsSync(screenshotsDir)) {
@@ -89,8 +90,8 @@ async function capture() {
 
     // 7. My Books Customer Shelf (Authenticated)
     console.log('7. Capturing Authenticated /my-books...');
-    const studentUrl = `${APP_URL}/api/test-session?email=student%40knowledgepaat.test&password=StudentPassword%402026!&redirectTo=%2Fmy-books`;
-    await desktopPage.goto(studentUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await setupPuppeteerSession(desktopPage, 'student@knowledgepaat.test');
+    await desktopPage.goto(`${APP_URL}/my-books`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await desktopPage.waitForSelector('h1', { timeout: 20000 }).catch(() => null);
     await new Promise((r) => setTimeout(r, 1500));
 

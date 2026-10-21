@@ -103,13 +103,10 @@ function recordTest(
   }
 }
 
-async function getAuthCookie(email: string, pass: string): Promise<string> {
-  const sessionRes = await fetch(
-    `${appBaseUrl}/api/test-session?email=${encodeURIComponent(email)}&password=${encodeURIComponent(pass)}&redirectTo=/admin/e-books`,
-    { redirect: 'manual' }
-  );
-  const setCookies = (sessionRes.headers as any).getSetCookie ? (sessionRes.headers as any).getSetCookie() : [sessionRes.headers.get('set-cookie') || ''];
-  return setCookies.map((c: string) => c.split(';')[0]).filter(Boolean).join('; ');
+import { getTestAuthCookieHeader } from './testAuthHelper';
+
+async function getAuthCookie(email: string, pass?: string): Promise<string> {
+  return getTestAuthCookieHeader(email, pass);
 }
 
 async function runSuite() {
@@ -121,9 +118,9 @@ async function runSuite() {
   console.log('='.repeat(80));
 
   const adminEmail = 'admin@knowledgepaat.test';
-  const adminPass = 'AdminPassword@2026!';
+  const adminPass = process.env.STAGING_TEST_ADMIN_PASSWORD;
   const studentEmail = 'student@knowledgepaat.test';
-  const studentPass = 'StudentPassword@2026!';
+  const studentPass = process.env.STAGING_TEST_STUDENT_PASSWORD;
 
   // Obtain cookies
   let adminCookie = '';

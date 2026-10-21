@@ -38,9 +38,9 @@ import dotenv from 'dotenv';
 import path from 'path';
 import crypto from 'crypto';
 import fs from 'fs';
-import { execSync } from 'child_process';
-
+import puppeteer from 'puppeteer-core';
 import { executeEBookRefund, syncRefundStatusWithGateway } from '../lib/ebook/refunds';
+import { getTestAuthCookieHeader, setupPuppeteerSession } from './testAuthHelper';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
@@ -96,34 +96,39 @@ function recordJourney(
   }
 }
 
-function captureChromeScreenshot(params: {
+async function captureBrowserScreenshot(params: {
   url: string;
   outputPath: string;
-  userDataDir: string;
+  auth?: { email: string; password?: string };
+  userDataDir?: string;
   width?: number;
   height?: number;
 }) {
-  const { url, outputPath, userDataDir, width = 1280, height = 800 } = params;
+  const { url, outputPath, auth, userDataDir, width = 1280, height = 800 } = params;
 
-  if (!fs.existsSync(userDataDir)) {
+  if (userDataDir && !fs.existsSync(userDataDir)) {
     fs.mkdirSync(userDataDir, { recursive: true });
   }
-  const lockPath = path.join(userDataDir, 'SingletonLock');
-  const cookieLock = path.join(userDataDir, 'SingletonCookie');
-  const socketLock = path.join(userDataDir, 'SingletonSocket');
-  try { if (fs.existsSync(lockPath)) fs.unlinkSync(lockPath); } catch {}
-  try { if (fs.existsSync(cookieLock)) fs.unlinkSync(cookieLock); } catch {}
-  try { if (fs.existsSync(socketLock)) fs.unlinkSync(socketLock); } catch {}
 
-  const cmd = `/usr/bin/google-chrome --headless=new --no-sandbox --disable-gpu --disable-background-networking --disable-default-apps --disable-sync --disable-translate --metrics-recording-only --no-first-run --safebrowsing-disable-auto-update --user-data-dir="${userDataDir}" --window-size=${width},${height} --screenshot="${outputPath}" "${url}"`;
+  const browser = await puppeteer.launch({
+    executablePath: '/usr/bin/google-chrome',
+    headless: true,
+    userDataDir,
+    args: ['--no-sandbox', '--disable-gpu', `--window-size=${width},${height}`],
+    defaultViewport: { width, height },
+  });
 
   try {
-    execSync(cmd, { stdio: 'pipe', timeout: 30000 });
-  } catch (err: any) {
-    console.warn(`[WARN] Chrome screenshot command warning: ${err.message}`);
+    const page = await browser.newPage();
+    if (auth) {
+      await setupPuppeteerSession(page, auth.email, auth.password);
+    }
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await new Promise((r) => setTimeout(r, 1500));
+    await page.screenshot({ path: outputPath });
+  } finally {
+    await browser.close();
   }
-
-  try { if (fs.existsSync(lockPath)) fs.unlinkSync(lockPath); } catch {}
 
   if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size === 0) {
     throw new Error(`Screenshot failed to generate at ${outputPath}`);
@@ -131,14 +136,8 @@ function captureChromeScreenshot(params: {
   return outputPath;
 }
 
-async function fetchAuthenticatedApi(apiPath: string, email: string, password: string) {
-  const sessionRes = await fetch(
-    `http://localhost:3000/api/test-session?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&redirectTo=${encodeURIComponent(apiPath)}`,
-    { redirect: 'manual' }
-  );
-  const setCookies = (sessionRes.headers as any).getSetCookie ? (sessionRes.headers as any).getSetCookie() : [sessionRes.headers.get('set-cookie') || ''];
-  const cookieHeader = setCookies.map((c: string) => c.split(';')[0]).filter(Boolean).join('; ');
-
+async function fetchAuthenticatedApi(apiPath: string, email: string, password?: string) {
+  const cookieHeader = await getTestAuthCookieHeader(email, password);
   return fetch(`http://localhost:3000${apiPath}`, {
     headers: {
       'Cookie': cookieHeader,
@@ -225,7 +224,7 @@ async function runBrowserAcceptanceSuite() {
 
     // Step A: Capture empty / initial cart page as guest
     const shot01 = path.join(screenshotsDir, '01_guest_cart_empty_view.png');
-    captureChromeScreenshot({
+    await captureBrowserScreenshot({
       url: 'http://localhost:3000/cart',
       outputPath: shot01,
       userDataDir: guestUserDataDir,
@@ -253,7 +252,7 @@ async function runBrowserAcceptanceSuite() {
     );
 
     const shot02 = path.join(screenshotsDir, '02_guest_cart_with_items.png');
-    captureChromeScreenshot({
+    await captureBrowserScreenshot({
       url: `file://${launcherHtmlPath}`,
       outputPath: shot02,
       userDataDir: guestUserDataDir,
@@ -261,10 +260,10 @@ async function runBrowserAcceptanceSuite() {
 
     // Step C: Customer signs in via auth bridge within the same user profile
     const shot03 = path.join(screenshotsDir, '03_cart_restored_authenticated.png');
-    const authCartUrl = `http://localhost:3000/api/test-session?email=${encodeURIComponent(customerEmail)}&password=${encodeURIComponent(testPassword)}&redirectTo=/cart`;
-    captureChromeScreenshot({
-      url: authCartUrl,
+    await captureBrowserScreenshot({
+      url: 'http://localhost:3000/cart',
       outputPath: shot03,
+      auth: { email: customerEmail, password: testPassword },
       userDataDir: guestUserDataDir,
     });
 
@@ -309,11 +308,11 @@ async function runBrowserAcceptanceSuite() {
     }, { onConflict: 'customer_id,ebook_id,edition_id' });
 
     // Open reader in Chrome authenticated as customer
-    const readerAuthUrl = `http://localhost:3000/api/test-session?email=${encodeURIComponent(customerEmail)}&password=${encodeURIComponent(testPassword)}&redirectTo=/read/${bookId}/${chapterId}`;
     const shot04 = path.join(screenshotsDir, '04_reader_online_persisted_progress.png');
-    captureChromeScreenshot({
-      url: readerAuthUrl,
+    await captureBrowserScreenshot({
+      url: `http://localhost:3000/read/${bookId}/${chapterId}`,
       outputPath: shot04,
+      auth: { email: customerEmail, password: testPassword },
       userDataDir: custUserDataDir,
     });
 
@@ -389,10 +388,10 @@ async function runBrowserAcceptanceSuite() {
 
     // Open /my-books in Chrome authenticated
     const shot05 = path.join(screenshotsDir, '05_my_books_full_download_active.png');
-    const myBooksUrl = `http://localhost:3000/api/test-session?email=${encodeURIComponent(fullCustEmail)}&password=${encodeURIComponent(testPassword)}&redirectTo=/my-books`;
-    captureChromeScreenshot({
-      url: myBooksUrl,
+    await captureBrowserScreenshot({
+      url: 'http://localhost:3000/my-books',
       outputPath: shot05,
+      auth: { email: fullCustEmail, password: testPassword },
       userDataDir: `/tmp/chrome_jrn3_shelf_${runId}`,
     });
 
@@ -448,10 +447,10 @@ async function runBrowserAcceptanceSuite() {
 
     // Open /my-books in Chrome to show upgrade reflected
     const shot06 = path.join(screenshotsDir, '06_upgraded_shelf_pdf_unlocked.png');
-    const upgradedShelfUrl = `http://localhost:3000/api/test-session?email=${encodeURIComponent(customerEmail)}&password=${encodeURIComponent(testPassword)}&redirectTo=/my-books`;
-    captureChromeScreenshot({
-      url: upgradedShelfUrl,
+    await captureBrowserScreenshot({
+      url: 'http://localhost:3000/my-books',
       outputPath: shot06,
+      auth: { email: customerEmail, password: testPassword },
       userDataDir: `/tmp/chrome_jrn4_upgraded_${runId}`,
     });
 
@@ -532,10 +531,10 @@ async function runBrowserAcceptanceSuite() {
 
     // Step A: View order in Admin Panel
     const shot07 = path.join(screenshotsDir, '07_admin_order_details_refund_panel.png');
-    const adminOrderUrl = `http://localhost:3000/api/test-session?email=${encodeURIComponent(adminEmail)}&password=${encodeURIComponent(testPassword)}&redirectTo=/admin/e-book-orders/${order5.id}`;
-    captureChromeScreenshot({
-      url: adminOrderUrl,
+    await captureBrowserScreenshot({
+      url: `http://localhost:3000/admin/e-book-orders/${order5.id}`,
       outputPath: shot07,
+      auth: { email: adminEmail, password: testPassword },
       userDataDir: `/tmp/chrome_jrn5_admin_${runId}`,
     });
 
@@ -565,10 +564,10 @@ async function runBrowserAcceptanceSuite() {
 
     // Step C: Customer views digital shelf after refund confirmed
     const shot08 = path.join(screenshotsDir, '08_customer_shelf_after_confirmed_refund.png');
-    const custShelfAfterUrl = `http://localhost:3000/api/test-session?email=${encodeURIComponent(customerEmail)}&password=${encodeURIComponent(testPassword)}&redirectTo=/my-books`;
-    captureChromeScreenshot({
-      url: custShelfAfterUrl,
+    await captureBrowserScreenshot({
+      url: 'http://localhost:3000/my-books',
       outputPath: shot08,
+      auth: { email: customerEmail, password: testPassword },
       userDataDir: `/tmp/chrome_jrn5_shelf_after_${runId}`,
     });
 
@@ -663,10 +662,10 @@ async function runBrowserAcceptanceSuite() {
 
     // Step A: View order in Admin Panel showing pending / uncertain status
     const shot09 = path.join(screenshotsDir, '09_interrupted_refund_recovery_panel.png');
-    const adminInterruptedUrl = `http://localhost:3000/api/test-session?email=${encodeURIComponent(adminEmail)}&password=${encodeURIComponent(testPassword)}&redirectTo=/admin/e-book-orders/${order6.id}`;
-    captureChromeScreenshot({
-      url: adminInterruptedUrl,
+    await captureBrowserScreenshot({
+      url: `http://localhost:3000/admin/e-book-orders/${order6.id}`,
       outputPath: shot09,
+      auth: { email: adminEmail, password: testPassword },
       userDataDir: `/tmp/chrome_jrn6_admin_unc_${runId}`,
     });
 
@@ -707,9 +706,10 @@ async function runBrowserAcceptanceSuite() {
 
     // Step C: Capture order state after recovery
     const shot10 = path.join(screenshotsDir, '10_recovered_refund_state.png');
-    captureChromeScreenshot({
-      url: adminInterruptedUrl,
+    await captureBrowserScreenshot({
+      url: `http://localhost:3000/admin/e-book-orders/${order6.id}`,
       outputPath: shot10,
+      auth: { email: adminEmail, password: testPassword },
       userDataDir: `/tmp/chrome_jrn6_admin_rec_${runId}`,
     });
 

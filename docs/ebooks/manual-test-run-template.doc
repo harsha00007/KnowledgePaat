@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8">
+  <title>KnowledgePaat eBook Platform — Manual Test Run Execution Template</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+      <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 1in;
+    }
+    body {
+      font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.5;
+      color: #1a1a1a;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 20pt;
+      font-weight: 800;
+      color: #0B1D3A;
+      border-bottom: 2.5pt solid #2563EB;
+      padding-bottom: 6pt;
+      margin-top: 0;
+      margin-bottom: 12pt;
+    }
+    h2 {
+      font-size: 14pt;
+      font-weight: 700;
+      color: #0B1D3A;
+      border-bottom: 1pt solid #cbd5e1;
+      padding-bottom: 4pt;
+      margin-top: 18pt;
+      margin-bottom: 8pt;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 12pt;
+      font-weight: 700;
+      color: #1e3a8a;
+      margin-top: 14pt;
+      margin-bottom: 6pt;
+      page-break-after: avoid;
+    }
+    p, li {
+      font-size: 10.5pt;
+      line-height: 1.55;
+      margin-bottom: 6pt;
+    }
+    ul, ol {
+      margin-top: 2pt;
+      margin-bottom: 8pt;
+      padding-left: 20pt;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 10pt 0 14pt 0;
+      font-size: 9.5pt;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1pt solid #cbd5e1;
+      padding: 6pt 8pt;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background-color: #f1f5f9;
+      font-weight: 700;
+      color: #0B1D3A;
+    }
+    tr:nth-child(even) td {
+      background-color: #f8fafc;
+    }
+    pre {
+      background: #0B1D3A;
+      color: #f8fafc;
+      padding: 10pt;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 9pt;
+      border-radius: 4pt;
+      overflow-x: auto;
+      line-height: 1.4;
+      margin: 8pt 0;
+    }
+    code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 9pt;
+      background: #f1f5f9;
+      padding: 1.5pt 3pt;
+      border-radius: 2pt;
+      color: #0f172a;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+    }
+    blockquote {
+      border-left: 3.5pt solid #2563EB;
+      margin: 8pt 0 10pt 0;
+      padding: 6pt 12pt;
+      background: #eff6ff;
+      color: #1e3a8a;
+      font-size: 10pt;
+      border-radius: 0 4pt 4pt 0;
+    }
+    hr {
+      border: 0;
+      border-top: 1pt solid #e2e8f0;
+      margin: 16pt 0;
+    }
+  </style>
+</head>
+<body>
+<h1>KnowledgePaat eBook Platform — Manual Test Run Execution Template</h1>
+<p><strong>Document Purpose:</strong> Standard execution record and evidence capture log for manual testing of the KnowledgePaat eBook platform. Testers must complete this document during each manual QA cycle.</p>
+<hr>
+<h2>1. Test Session Metadata &amp; Pre-Configured Test Accounts</h2>
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="left">Tester Entry / Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Tester Name:</strong></td>
+<td align="left">[Your Name / QA Lead]</td>
+</tr>
+<tr>
+<td align="left"><strong>Execution Date:</strong></td>
+<td align="left">2026-10-21</td>
+</tr>
+<tr>
+<td align="left"><strong>Primary Browser &amp; Version:</strong></td>
+<td align="left">Google Chrome (Window 1 - Admin)</td>
+</tr>
+<tr>
+<td align="left"><strong>Secondary Browser (Customer):</strong></td>
+<td align="left">Incognito Window / Firefox (Window 2 - Customer A)</td>
+</tr>
+<tr>
+<td align="left"><strong>Boundary Browser (Customer B):</strong></td>
+<td align="left">Guest Window / Chrome Profile 2 (Window 3 - Customer B)</td>
+</tr>
+<tr>
+<td align="left"><strong>Target Environment:</strong></td>
+<td align="left">Staging Supabase (<code>lzuinimbsdxnhzmjpxmr</code>)</td>
+</tr>
+<tr>
+<td align="left"><strong>Gateway Mode:</strong></td>
+<td align="left">Razorpay Test Mode (<code>rzp_test_TpFcydlpI44Xn1</code>)</td>
+</tr>
+<tr>
+<td align="left"><strong>Base Application URL:</strong></td>
+<td align="left"><code>http://localhost:3000</code></td>
+</tr>
+</tbody></table>
+<h3>Pre-Configured Staging Credentials &amp; Test Assets</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Role / Asset</th>
+<th align="left">Target URL / Value</th>
+<th align="left">Login Credentials / Details</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Administrator</strong></td>
+<td align="left"><code>http://localhost:3000/admin/login</code></td>
+<td align="left"><strong>Email:</strong> <code>admin@knowledgepaat.test</code><br><strong>Password:</strong> <code>ihNLdMKsXxdBueZ2aGKGMqSayS8uSoX7!Kp1A</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Customer A (Student)</strong></td>
+<td align="left"><code>http://localhost:3000/login</code></td>
+<td align="left"><strong>Email:</strong> <code>student@knowledgepaat.test</code><br><strong>Password:</strong> <code>5iqSoH1eJbWy9fUeBflgzdaeQ5LQET7V!Kp1A</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Customer B (Boundary)</strong></td>
+<td align="left"><code>http://localhost:3000/login</code></td>
+<td align="left"><strong>Email:</strong> <code>phase5.api.test@knowledgepaat.test</code><br><strong>Password:</strong> <code>Kp!ZIXTlfByFmLsbBzm#9z</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Razorpay Test Card (Success)</strong></td>
+<td align="left">Razorpay Modal</td>
+<td align="left"><strong>Card:</strong> <code>4100 2800 0000 1007</code><br><strong>Exp:</strong> Any future (e.g. <code>12/28</code>) | <strong>CVV:</strong> <code>123</code> | <strong>OTP:</strong> <code>123456</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Razorpay Test Card (Failure)</strong></td>
+<td align="left">Razorpay Modal</td>
+<td align="left"><strong>Card:</strong> <code>4000 0000 0000 0002</code> (Simulates bank decline)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>2. Disposable Staging Records Tracking</h2>
+<p>Record all disposable IDs created during this test session to enable post-test auditing or cleanup:</p>
+<table>
+<thead>
+<tr>
+<th align="left">Record Type</th>
+<th align="left">Description / Title</th>
+<th align="left">Generated ID / Reference</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Test Book ID 1 (Base):</strong></td>
+<td align="left"><code>Manual Test Guide to Cloud Architecture</code></td>
+<td align="left"><code>[e.g., 550e8400-e29b-41d4-a716-446655440000]</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Edition ID 1 (Published):</strong></td>
+<td align="left"><code>Edition 1 (Initial Release)</code></td>
+<td align="left"><code>[e.g., a8c1...-edition-1]</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Edition ID 2 (Revision):</strong></td>
+<td align="left"><code>Edition 2 (Major Update)</code></td>
+<td align="left"><code>[e.g., b9d2...-edition-2]</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Test Book ID 2 (Draft):</strong></td>
+<td align="left"><code>Secret Unpublished Draft Book</code></td>
+<td align="left"><code>[e.g., c1e3...-draft-book]</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Base Order Number:</strong></td>
+<td align="left">Customer A ₹49 Read Online Purchase</td>
+<td align="left"><code>[e.g., KP-EB-20261021-001]</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Base Razorpay Payment ID:</strong></td>
+<td align="left">Test Mode Payment ID</td>
+<td align="left"><code>[e.g., pay_Qz123456789abc]</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Upgrade Order Number:</strong></td>
+<td align="left">Customer A ₹50 PDF Upgrade Order</td>
+<td align="left"><code>[e.g., KP-EB-20261021-002]</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Upgrade Payment ID:</strong></td>
+<td align="left">Test Mode Payment ID</td>
+<td align="left"><code>[e.g., pay_Qz987654321def]</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Base Refund ID:</strong></td>
+<td align="left">Full/Partial Base Refund Provider ID</td>
+<td align="left"><code>[e.g., rfnd_Qz111222333aaa]</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Upgrade Refund ID:</strong></td>
+<td align="left">Upgrade Refund Provider ID</td>
+<td align="left"><code>[e.g., rfnd_Qz444555666bbb]</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>3. Test Execution Log by Suite</h2>
+<p>Record status as <strong>PASS</strong>, <strong>FAIL</strong>, <strong>BLOCKED</strong>, or <strong>NOT RUN</strong>. Describe actual observed behavior and paste links to screenshots or terminal logs.</p>
+<h3>Suite A: Administrator Prepares Books</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Test ID</th>
+<th align="left">Test Title</th>
+<th align="left">Result</th>
+<th align="left">Actual Behavior Observed</th>
+<th align="left">Evidence Reference / Screenshot</th>
+<th align="left">Issue Reference</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>TC-ADM-01</strong></td>
+<td align="left">Sign In as Administrator</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-ADM-02</strong></td>
+<td align="left">Create Draft Book &amp; Metadata</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-ADM-03</strong></td>
+<td align="left">Upload Public Cover Asset</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-ADM-04</strong></td>
+<td align="left">Upload Private Publication PDF</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-ADM-05</strong></td>
+<td align="left">Author Chapters, Readiness &amp; Sample</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-ADM-06</strong></td>
+<td align="left">Configure Dynamic Pricing</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-ADM-07</strong></td>
+<td align="left">Publication with Missing Prereqs</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-ADM-08</strong></td>
+<td align="left">Satisfy Prereqs &amp; Publish Edition</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Suite B: Public Visitor Explores Bookstore</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Test ID</th>
+<th align="left">Test Title</th>
+<th align="left">Result</th>
+<th align="left">Actual Behavior Observed</th>
+<th align="left">Evidence Reference / Screenshot</th>
+<th align="left">Issue Reference</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>TC-VIS-01</strong></td>
+<td align="left">Portal Entry &amp; Slide Transition</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-VIS-02</strong></td>
+<td align="left">Logo Navigation Back to Main Home</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-VIS-03</strong></td>
+<td align="left">Dedicated Header &amp; Cart Placement</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-VIS-04</strong></td>
+<td align="left">Search, Topic Filtering &amp; Pagination</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-VIS-05</strong></td>
+<td align="left">Book Details &amp; Authoritative Pricing</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-VIS-06</strong></td>
+<td align="left">Read Free Sample Without Auth</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-VIS-07</strong></td>
+<td align="left">Paid Chapters Access Protection</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Suite C: Guest Cart and Authentication</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Test ID</th>
+<th align="left">Test Title</th>
+<th align="left">Result</th>
+<th align="left">Actual Behavior Observed</th>
+<th align="left">Evidence Reference / Screenshot</th>
+<th align="left">Issue Reference</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>TC-CRT-01</strong></td>
+<td align="left">Add Books Under Both Plans</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-CRT-02</strong></td>
+<td align="left">Duplicate Re-Add Prevention</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-CRT-03</strong></td>
+<td align="left">Cart Plan Switch &amp; Price Recalc</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-CRT-04</strong></td>
+<td align="left">Remove Item &amp; Clear Cart Modal</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-CRT-05</strong></td>
+<td align="left">Refresh &amp; Multi-Tab Persistence</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-CRT-06</strong></td>
+<td align="left">Sign In With Safe Return Path</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-CRT-07</strong></td>
+<td align="left">Cart Preservation Through Login</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-CRT-08</strong></td>
+<td align="left">Student Portal Freedom</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Suite D: Checkout and Payment Recovery</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Test ID</th>
+<th align="left">Test Title</th>
+<th align="left">Result</th>
+<th align="left">Actual Behavior Observed</th>
+<th align="left">Evidence Reference / Screenshot</th>
+<th align="left">Issue Reference</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>TC-CHK-01</strong></td>
+<td align="left">Order Summary Price Verification</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-CHK-02</strong></td>
+<td align="left">Successful Test Mode Card Payment</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-CHK-03</strong></td>
+<td align="left">Failure, Dismissal &amp; Reuse Order</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-CHK-04</strong></td>
+<td align="left">&quot;Check Payment Status&quot; Recovery</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-CHK-05</strong></td>
+<td align="left">Success Page Refresh Idempotency</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-CHK-06</strong></td>
+<td align="left">Unpaid/Failed Payment Protection</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-CHK-07</strong></td>
+<td align="left">Order Record Comparison</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Suite E: Customer Library and Reader</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Test ID</th>
+<th align="left">Test Title</th>
+<th align="left">Result</th>
+<th align="left">Actual Behavior Observed</th>
+<th align="left">Evidence Reference / Screenshot</th>
+<th align="left">Issue Reference</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>TC-LIB-01</strong></td>
+<td align="left">Digital Library Shelf Inspection</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-RDR-02</strong></td>
+<td align="left">Launch Reader &amp; Chapter Nav</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-RDR-03</strong></td>
+<td align="left">Progress Tracking &amp; Auto-Resume</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-RDR-04</strong></td>
+<td align="left">Bookmarks Add, View &amp; Delete</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-RDR-05</strong></td>
+<td align="left">In-Book Search &amp; Snippets</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-RDR-06</strong></td>
+<td align="left">Display Preferences Persistence</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-RDR-07</strong></td>
+<td align="left">Mobile Responsive &amp; Drawers</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-RDR-08</strong></td>
+<td align="left">Offline Progress Save Recovery</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-RDR-09</strong></td>
+<td align="left">Multi-User Tenant Isolation</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Suite F: Downloads and Upgrades</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Test ID</th>
+<th align="left">Test Title</th>
+<th align="left">Result</th>
+<th align="left">Actual Behavior Observed</th>
+<th align="left">Evidence Reference / Screenshot</th>
+<th align="left">Issue Reference</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>TC-DWN-01</strong></td>
+<td align="left">Online-Only Tier Download Blocked</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-DWN-02</strong></td>
+<td align="left">Read + Download Secure Delivery</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-UPG-03</strong></td>
+<td align="left">Upgrade Modal &amp; Admin ₹50 Quote</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-UPG-04</strong></td>
+<td align="left">Complete Test Mode ₹50 Upgrade</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-UPG-05</strong></td>
+<td align="left">Separate Upgrade Order &amp; History</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-UPG-06</strong></td>
+<td align="left">Historical Edition PDF Delivery</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-DWN-07</strong></td>
+<td align="left">Revocation &amp; Signed URL Expiry</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Suite G: Admin Management and Edition Protection</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Test ID</th>
+<th align="left">Test Title</th>
+<th align="left">Result</th>
+<th align="left">Actual Behavior Observed</th>
+<th align="left">Evidence Reference / Screenshot</th>
+<th align="left">Issue Reference</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>TC-ADM-09</strong></td>
+<td align="left">Orders Ledger &amp; CSV Export</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-ADM-10</strong></td>
+<td align="left">Edit Pricing with Audit Reason</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-ADM-11</strong></td>
+<td align="left">Protection for Past Orders</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-ADM-12</strong></td>
+<td align="left">Storefront Immediate Reflection</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-ADM-13</strong></td>
+<td align="left">Optimistic Concurrency 409</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-ADM-14</strong></td>
+<td align="left">Immutability of Published Edition</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-ADM-15</strong></td>
+<td align="left">Create &amp; Publish Revision Ed. 2</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-ADM-16</strong></td>
+<td align="left">Customer Edition Preservation</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-ADM-17</strong></td>
+<td align="left">Withdraw Book from Active Sale</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-ADM-18</strong></td>
+<td align="left">Complimentary Grant &amp; Audit</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-ADM-19</strong></td>
+<td align="left">Homepage CMS Draft &amp; Publish</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Suite H: Refunds</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Test ID</th>
+<th align="left">Test Title</th>
+<th align="left">Result</th>
+<th align="left">Actual Behavior Observed</th>
+<th align="left">Evidence Reference / Screenshot</th>
+<th align="left">Issue Reference</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>TC-RFD-01</strong></td>
+<td align="left">Full Refund on Base Purchase</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-RFD-02</strong></td>
+<td align="left">Partial Refund (Retain Access)</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-RFD-03</strong></td>
+<td align="left">Upgrade Refund (Online Kept)</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-RFD-04</strong></td>
+<td align="left">Rule C Base Refund Protection</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-RFD-05</strong></td>
+<td align="left">Linked Dual Refund (Co-Refund)</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-RFD-06</strong></td>
+<td align="left">Repeated Refund Prevention</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>TC-RFD-07</strong></td>
+<td align="left">Interrupted Refund Recovery</td>
+<td align="left">NOT RUN</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Suite I: External Dependencies and Technical Checks</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Test ID</th>
+<th align="left">Test Title</th>
+<th align="left">Result</th>
+<th align="left">Actual Behavior Observed</th>
+<th align="left">Evidence Reference / Screenshot</th>
+<th align="left">Issue Reference</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>TC-TECH-01</strong></td>
+<td align="left">Email Receipts &amp; Notifications</td>
+<td align="left"><strong>BLOCKED</strong></td>
+<td align="left">Outbox queue verified; live email delivery blocked pending provider API keys &amp; DNS.</td>
+<td align="left"><code>scripts/test_email_acceptance.ts</code></td>
+<td align="left">Launch Gate 2</td>
+</tr>
+<tr>
+<td align="left"><strong>TC-TECH-02</strong></td>
+<td align="left">UPI Merchant Activation &amp; Fallback</td>
+<td align="left"><strong>BLOCKED (UPI)</strong><br><strong>PASS (Fallback)</strong></td>
+<td align="left">Razorpay account <code>upi: false</code>; modal cleanly presents Card/Netbanking fallback.</td>
+<td align="left"><code>scripts/test_upi_intent_qr_suite.ts</code></td>
+<td align="left">Launch Gate 1</td>
+</tr>
+<tr>
+<td align="left"><strong>TC-TECH-03</strong></td>
+<td align="left">Mobile Browser Intent &amp; Desktop QR</td>
+<td align="left">NOT RUN</td>
+<td align="left">Pending physical hardware testing post-merchant UPI activation.</td>
+<td align="left"></td>
+<td align="left">Section 5</td>
+</tr>
+<tr>
+<td align="left"><strong>TC-TECH-04</strong></td>
+<td align="left">API Rate Limiting &amp; Recovery</td>
+<td align="left"><strong>PASS</strong></td>
+<td align="left">HTTP 429 after 20 req/min; Retry-After header verified; DB invariant.</td>
+<td align="left"><code>scripts/rate_limit_worker.ts</code></td>
+<td align="left">Remediation W1</td>
+</tr>
+<tr>
+<td align="left"><strong>TC-TECH-05</strong></td>
+<td align="left">Production Proxy Trust Configuration</td>
+<td align="left"><strong>UNVERIFIED PROD</strong></td>
+<td align="left">Bug fixed (<code>rateLimit.ts</code>). Requires deployment behind real load balancer.</td>
+<td align="left"><code>lib/rateLimit.ts</code> code audit</td>
+<td align="left">Launch Gate 3</td>
+</tr>
+<tr>
+<td align="left"><strong>TC-TECH-06</strong></td>
+<td align="left">Code Quality, Lint &amp; Build</td>
+<td align="left"><strong>PASS</strong></td>
+<td align="left"><code>next build</code> exits 0; <code>tsc --noEmit</code> exits 0; 0 blocking lint errors.</td>
+<td align="left"><code>npm run build &amp;&amp; npm run lint</code></td>
+<td align="left">Remediation W2</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>4. Final Execution Totals Rollup</h2>
+<table>
+<thead>
+<tr>
+<th align="left">Status Category</th>
+<th align="left">Count</th>
+<th align="left">Percentage</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Total Test Cases:</strong></td>
+<td align="left"><strong>68</strong></td>
+<td align="left"><strong>100%</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>PASS:</strong></td>
+<td align="left"><code>[Enter count]</code></td>
+<td align="left"><code>[%]</code></td>
+</tr>
+<tr>
+<td align="left"><strong>FAIL:</strong></td>
+<td align="left"><code>[Enter count]</code></td>
+<td align="left"><code>[%]</code></td>
+</tr>
+<tr>
+<td align="left"><strong>BLOCKED:</strong></td>
+<td align="left"><code>2</code> (Email Delivery, Native UPI)</td>
+<td align="left"><code>2.9%</code></td>
+</tr>
+<tr>
+<td align="left"><strong>NOT RUN:</strong></td>
+<td align="left"><code>[Enter count]</code></td>
+<td align="left"><code>[%]</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>5. Defects &amp; Issues Identified</h2>
+<p>List any unexpected discrepancies, UI rendering defects, or errors encountered during your manual run:</p>
+<table>
+<thead>
+<tr>
+<th align="left">Issue #</th>
+<th align="left">Related Test ID</th>
+<th align="left">Severity (Low / Med / High / Blocker)</th>
+<th align="left">Brief Description</th>
+<th align="left">Reproduction Steps / Screenshot</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>DEF-01</strong></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><strong>DEF-02</strong></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>6. Tester Sign-Off</h2>
+<ul>
+<li><strong>Tester Signature:</strong> <code>___________________________</code></li>
+<li><strong>Date Signed:</strong> <code>___________________________</code></li>
+<li><strong>Recommended Verdict:</strong> <code>[ ] READY FOR PRODUCTION   [ ] CONDITIONAL GO   [X] BLOCKED BY GATES</code></li>
+</ul>
+
+
+</body>
+</html>

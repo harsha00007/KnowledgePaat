@@ -1240,7 +1240,7 @@ export default function StudentInterviewPrepPage() {
                       <XCircle className={`w-5 h-5 ${currAns === 'skipped' ? 'text-slate-600' : 'text-slate-300'}`} />
                       <div>
                         <span className="text-xs font-bold block">Unfamiliar Concept</span>
-                        <span className="text-[10px] text-[var(--color-text-tertiary)]">Haven't prepared this topic yet</span>
+                        <span className="text-[10px] text-[var(--color-text-tertiary)]">Haven&apos;t prepared this topic yet</span>
                       </div>
                     </button>
                   </div>

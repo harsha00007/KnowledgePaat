@@ -129,7 +129,7 @@ export async function evaluateAndGenerateAdaptiveNextStep(
   const words = (lastAnswer || '').trim().split(/\s+/).filter(Boolean).length;
   const length = (lastAnswer || '').trim().length;
 
-  let baseScore = length === 0 ? 0 : words < 20 ? 52 : words < 50 ? 74 : words < 120 ? 86 : 94;
+  const baseScore = length === 0 ? 0 : words < 20 ? 52 : words < 50 ? 74 : words < 120 ? 86 : 94;
   const commScore = Math.min(95, Math.max(30, baseScore + (words > 40 ? 5 : -5)));
   const techScore = Math.min(95, Math.max(30, baseScore + (context.interviewType === 'technical' ? 4 : 0)));
   const confScore = Math.min(95, Math.max(30, baseScore));

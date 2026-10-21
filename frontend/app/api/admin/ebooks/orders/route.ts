@@ -72,8 +72,35 @@ export async function GET(req: NextRequest) {
       }
 
       const total = totalMatching || 0;
-      const MAX_CSV_EXPORT = 10000; // Safe upper bound for memory and gateway timeouts
-      const exportTarget = Math.min(total, MAX_CSV_EXPORT);
+      const requestedCeiling = process.env.NODE_ENV !== 'production' && searchParams.get('test_ceiling')
+        ? parseInt(searchParams.get('test_ceiling')!, 10)
+        : NaN;
+      const MAX_CSV_EXPORT = !isNaN(requestedCeiling) && requestedCeiling > 0
+        ? requestedCeiling
+        : parseInt(process.env.MAX_CSV_EXPORT || '10000', 10); // Configured ceiling (default 10,000)
+
+      // Return explicit actionable error if matching records exceed configured ceiling
+      // to guarantee that no partial or silently truncated CSV is ever generated.
+      if (total > MAX_CSV_EXPORT) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Export exceeds the maximum supported ceiling of ${MAX_CSV_EXPORT.toLocaleString()} orders (found ${total.toLocaleString()} matching records). To prevent partial or truncated exports, please narrow your filter criteria (e.g. by date range, payment status, or search term).`,
+            code: 'EXPORT_CEILING_EXCEEDED',
+            totalMatching: total,
+            maxExportLimit: MAX_CSV_EXPORT,
+          },
+          {
+            status: 400,
+            headers: {
+              'X-Total-Count': String(total),
+              'X-Max-Export-Limit': String(MAX_CSV_EXPORT),
+            },
+          }
+        );
+      }
+
+      const exportTarget = total;
       const BATCH_SIZE = 1000; // PostgREST max rows per request limit
 
       const allOrders: any[] = [];

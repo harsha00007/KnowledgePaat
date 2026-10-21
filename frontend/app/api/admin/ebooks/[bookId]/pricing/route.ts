@@ -41,7 +41,7 @@ export async function GET(
     const requestedEditionId = searchParams.get('editionId');
 
     // 1. Fetch book record
-    let bookQuery = adminClient
+    const bookQuery = adminClient
       .from('ebooks')
       .select('id, title, slug, status')
       .eq('id', bookId);

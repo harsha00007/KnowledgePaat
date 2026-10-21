@@ -821,7 +821,7 @@ export default function AdminJobsPage() {
               <div>
                 <p className="font-bold text-red-950">Warning: This action cannot be undone.</p>
                 <p className="mt-1 leading-relaxed text-red-900">
-                  Are you sure you want to delete the job posting for <strong>"{selectedJob.title}"</strong> at <strong>{selectedJob.company_name}</strong>?
+                  Are you sure you want to delete the job posting for <strong>&quot;{selectedJob.title}&quot;</strong> at <strong>{selectedJob.company_name}</strong>?
                 </p>
               </div>
             </div>

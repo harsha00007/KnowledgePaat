@@ -113,19 +113,33 @@ The following visual artifacts have been generated and archived in the project a
 
 ---
 
-## 5. Deployment Edge-Proxy Architecture & Launch Pre-Requisites
+## 5. Deployment Edge-Proxy Architecture & Decoupled Launch Gates
 
-> [!IMPORTANT]
-> **Edge-Proxy Deployment Architecture Requirement (`PROXY-04: UNVERIFIED in local runner`)**:
-> In the production hosting environment (e.g., Cloudflare, AWS ALB, Nginx reverse proxy):
-> 1. The reverse proxy MUST terminate TLS, strip client-supplied `cf-connecting-ip` and `x-real-ip` headers, and set `cf-connecting-ip` or `x-real-ip` authoritatively.
-> 2. The upstream application MUST be configured with `TRUST_PROXY=true`.
-> 3. In unverified or direct local socket environments, `TRUST_PROXY` MUST remain unset/false so that spoofed forwarding headers are ignored.
+> [!NOTE]
+> **Initiative Closure**: The four-phase UI Enhancement initiative is formally closed and certified on Staging. The operational launch gates below are separate prerequisites governing production deployment.
 
-> [!WARNING]
-> **Outstanding Production Launch Blockers (Non-UI Pre-Requisites)**:
-> While UI Enhancement Phase 4 remediation is complete on Staging, the system is **NOT production-ready** until the following infrastructure items are resolved:
-> 1. **Payment Provider Live Keys**: Razorpay keys remain in test mode (`rzp_test_...`). Live keys (`rzp_live_...`) must be provisioned and verified in production environment.
-> 2. **Webhook Secrets**: `RAZORPAY_WEBHOOK_SECRET` must be configured with live webhook secret to enable payment auto-capture.
-> 3. **Transactional Email Service**: Resend/SMTP production credentials must be configured for customer purchase receipt delivery.
-> 4. **Production Database Cutover**: Production Supabase `csjywuflkvohytbvglxf` must be migrated with schema updates prior to DNS switch.
+### Gate A: UI Implementation & Staging Verification (STATUS: COMPLETE)
+- All 4 UI Enhancement phases (Design Foundation, Catalogue & Pricing, Reader Experience, Section Transitions & Rate Limiting) are implemented, verified, and stabilized on Staging Supabase `lzuinimbsdxnhzmjpxmr`.
+- Production database `csjywuflkvohytbvglxf` remained 100% blocked from mutations.
+
+### Gate B: Edge-Proxy Configuration (STATUS: UNVERIFIED in local runner)
+- **Check ID**: `PROXY-04`.
+- In the production hosting environment (Cloudflare, AWS ALB, or Nginx):
+  1. The reverse proxy MUST terminate TLS, strip client-supplied `cf-connecting-ip`, `x-real-ip`, and untrusted `x-forwarded-for` headers, and set `cf-connecting-ip` or `x-real-ip` authoritatively.
+  2. The upstream application container MUST run with `TRUST_PROXY=true`.
+  3. In unverified or direct local socket environments, `TRUST_PROXY` MUST remain unset/false so that spoofed forwarding headers are ignored.
+
+### Gate C: Payment Capture Configuration vs Webhook Secret (STATUS: CORRECTED SPECIFICATION)
+- **Clarification**: Setting `RAZORPAY_WEBHOOK_SECRET` does NOT enable payment capture!
+  - `RAZORPAY_WEBHOOK_SECRET` is used exclusively for HMAC-SHA256 signature verification (`x-razorpay-signature`) of incoming webhook payloads.
+- **Capture Configuration**:
+  - Payment capture is configured either at order creation via `payment_capture: 1` (`frontend/lib/razorpay.ts` line 148) or in the Razorpay Merchant Dashboard under **Settings → Payment Capture** (Automatic vs Manual Capture).
+  - Capture configuration and webhook signature verification must be validated independently.
+
+### Gate D: Genuine Test Mode & Provider Acceptance (STATUS: PENDING PRE-LAUNCH VALIDATION)
+Before recommending or switching to live production payments (`rzp_live_...`), the following genuine operational checks must be completed:
+1. **Genuine Test Mode Transactions**: Complete end-to-end payment flows with Razorpay test cards and UPI on staging.
+2. **Provider-Delivered Webhook Delivery**: Verify delivery of `payment.captured` and `order.paid` webhooks sent directly from Razorpay test servers to the staging webhook endpoint.
+3. **Genuine Transactional Email Delivery**: Verify receipt email dispatch and receipt in real mailboxes via Resend / SMTP production credentials.
+4. **Genuine Test Mode Refund Acceptance**: Verify initiate and reconcile workflows using Razorpay test mode refund APIs.
+5. **Production Database Cutover**: Apply verified schema migrations to production Supabase `csjywuflkvohytbvglxf` prior to public DNS switch.

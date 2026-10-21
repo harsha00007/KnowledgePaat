@@ -3,7 +3,7 @@
 
 **Target System:** KnowledgePaat LMS & Technical Bookstore ([https://www.knowledgepaat.com](https://www.knowledgepaat.com))  
 **Target Phase:** UI Enhancement Phase 4 of 4: Section Transitions, Rate Limiting, Pagination, and Final Verification (Remediation Pass)  
-**Status:** Remediation Complete & Verified (19/20 Automated Remediation Checks Passed, 1 UNVERIFIED Edge Proxy Requirement, 21/21 Phase 4 Regression Checks Passed, Clean Build)  
+**Status:** Remediation Complete & Verified (21/22 Automated Remediation Checks Passed, 1 UNVERIFIED Edge Proxy Requirement, 21/21 Phase 4 Regression Checks Passed, Clean Build)  
 **Environment:** Staging Supabase `lzuinimbsdxnhzmjpxmr`  
 **Production Guard:** `csjywuflkvohytbvglxf` strictly guarded and blocked from mutations  
 **Audit Date:** 2026-10-20  
@@ -44,6 +44,7 @@
 - [x] **ATOM-01**: In-process `withKeyLock` mutex eliminated completely. Cross-instance synchronization delegated to shared backend (`PASS`).
 - [x] **ATOM-02**: Dedicated rate-limit storage verified in `public.ebook_webhook_events` (`gateway='rate_limit'`). `public.ebook_audit_logs` contains 0 rate-limit rows (`PASS`).
 - [x] **ATOM-03**: Bounded retention prunes expired rate-limit slots without deleting business audit events (`PASS`).
+- [x] **ATOM-04**: Mixed-window rate-limit cleanup isolation & genuine payment webhook preservation. Short-window (2s) cleanup leaves longer-window (60s) quota exhausted and genuine payment webhooks (`gateway='razorpay'`) completely untouched (`PASS`).
 - [x] **PROC-01**: Real multi-process concurrency executed across 6 distinct OS child processes. Combined allowed requests strictly capped at configured limit (4 allowed, 2 blocked) (`PASS`).
 - [x] **PROC-02**: Excess requests receive HTTP 429, `remaining: 0`, and valid `Retry-After` header (`PASS`).
 - [x] **PROC-03**: Restarting application process does not reset quota. Brand-new process PID immediately blocked with remaining: 0 (`PASS`).
@@ -68,6 +69,7 @@
 - [x] **CSV-02**: Bounded batched retrieval (`BATCH_SIZE=1000`) overcomes PostgREST 1,000-row limit to export all 5,100 records (`PASS`).
 - [x] **CSV-03**: Filtered CSV export returns exact matching subset (2,600 paid orders out of 5,100 total) (`PASS`).
 - [x] **CSV-04**: Exported CSV dataset contains 0 duplicate IDs and 0 omissions (`PASS`).
+- [x] **CSV-05**: Configured ceiling enforcement (`MAX_CSV_EXPORT`). When matching total exceeds configured limit, endpoint returns HTTP 400 (`EXPORT_CEILING_EXCEEDED`) with actionable guidance, preventing partial or truncated export files (`PASS`).
 - [x] **PAG-07**: Dedicated paginated endpoints created for `/api/admin/ebooks/audit-logs` and `/api/admin/ebooks/download-logs` (`PASS`).
 
 ### Section 5: Visual, Formatting & Content Verification

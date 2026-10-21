@@ -7,7 +7,7 @@
  */
 
 import { createClient, createAdminClient } from '@/utils/supabase/server';
-import { getVerifiedCustomer } from './customerAuth';
+import { getVerifiedCustomer, VerifiedCustomer } from './customerAuth';
 import { evaluatePurchaseIntent } from './entitlements';
 import { getAuthoritativeEditionPricing } from './pricing';
 import {
@@ -53,18 +53,25 @@ export interface CreateEBookOrderResult {
   }>;
 }
 
+export const PENDING_ORDER_EXPIRY_MINUTES = 15;
+
 /**
  * Authoritatively creates a pending eBook order on the server.
  * Strict pricing: ignores any browser-supplied prices and recomputes from published editions.
+ * Reuses existing active pending order if created within PENDING_ORDER_EXPIRY_MINUTES.
  */
 export async function createEBookServerOrder(
-  items: CreateOrderRequestItem[]
+  items: CreateOrderRequestItem[],
+  explicitCustomer?: VerifiedCustomer
 ): Promise<CreateEBookOrderResult> {
-  const authResult = await getVerifiedCustomer();
-  if (!authResult.success) {
-    throw new Error(authResult.message);
+  let customer = explicitCustomer;
+  if (!customer) {
+    const authResult = await getVerifiedCustomer();
+    if (!authResult.success) {
+      throw new Error(authResult.message);
+    }
+    customer = authResult.customer;
   }
-  const customer = authResult.customer;
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     throw new Error('Order items cannot be empty.');
@@ -170,6 +177,42 @@ export async function createEBookServerOrder(
 
   if (totalAmountPaise <= 0) {
     throw new Error('Total order amount must be greater than zero.');
+  }
+
+  // Check if an active pending base order for this customer with identical amount exists within 15 minutes
+  const fifteenMinutesAgo = new Date(Date.now() - PENDING_ORDER_EXPIRY_MINUTES * 60 * 1000).toISOString();
+  const { data: existingPendingOrders } = await supabase
+    .from('ebook_orders')
+    .select('id, order_number, gateway_order_id, total_amount_paise, currency, created_at')
+    .eq('customer_id', customer.userId)
+    .eq('payment_status', 'pending')
+    .eq('order_status', 'pending')
+    .neq('order_type', 'upgrade')
+    .eq('total_amount_paise', totalAmountPaise)
+    .gte('created_at', fifteenMinutesAgo)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (existingPendingOrders && existingPendingOrders.length > 0 && existingPendingOrders[0].gateway_order_id) {
+    const pending = existingPendingOrders[0];
+    const { keyId } = getRazorpayCredentials();
+    logger.info('Reusing existing active pending order to prevent duplicate gateway sessions', {
+      module: 'ebook_orders',
+      orderId: pending.id,
+      orderNumber: pending.order_number,
+      customerId: customer.userId,
+    });
+    return {
+      success: true,
+      orderId: pending.id,
+      orderNumber: pending.order_number,
+      razorpayOrderId: pending.gateway_order_id,
+      amountPaise: pending.total_amount_paise,
+      amountRupees: Math.round(pending.total_amount_paise / 100),
+      currency: pending.currency || 'INR',
+      keyId,
+      items: validatedItems,
+    };
   }
 
   // Generate unique order number (e.g. EB-20261018-A1B2C3D4)
@@ -477,7 +520,7 @@ export interface ReconcileOrderResult {
   success: boolean;
   orderId: string;
   orderNumber: string;
-  paymentStatus: 'paid' | 'pending' | 'authorized' | 'failed' | 'not_found';
+  paymentStatus: 'paid' | 'pending' | 'authorized' | 'failed' | 'not_found' | 'refunded';
   alreadyPaid: boolean;
   reconciled: boolean;
   paymentId?: string;
@@ -522,7 +565,27 @@ export async function checkAndReconcileOrderPayment(
     throw new Error('Unauthorized to check status of this order.');
   }
 
-  // 2. If already paid, return early (idempotent)
+  // 2a. Guard: If already refunded or partially refunded, recovery cannot resurrect access
+  if (
+    order.payment_status === 'refunded' ||
+    order.payment_status === 'partially_refunded' ||
+    order.refund_status === 'full' ||
+    order.refund_status === 'partial'
+  ) {
+    return {
+      success: true,
+      orderId: order.id,
+      orderNumber: order.order_number,
+      paymentStatus: 'refunded',
+      alreadyPaid: false,
+      reconciled: false,
+      paymentId: order.gateway_payment_id || undefined,
+      totalAmountPaise: order.total_amount_paise,
+      message: 'Order has already been refunded or partially refunded. Entitlements cannot be resurrected.',
+    };
+  }
+
+  // 2b. If already paid, return early (idempotent)
   if (order.payment_status === 'paid' && order.order_status === 'completed') {
     return {
       success: true,
@@ -534,6 +597,20 @@ export async function checkAndReconcileOrderPayment(
       paymentId: order.gateway_payment_id || undefined,
       totalAmountPaise: order.total_amount_paise,
       message: 'Order is already confirmed and library access is unlocked.',
+    };
+  }
+
+  // 2c. Guard: Cancelled order without payment cannot create access
+  if (order.order_status === 'cancelled' && order.payment_status !== 'paid') {
+    return {
+      success: true,
+      orderId: order.id,
+      orderNumber: order.order_number,
+      paymentStatus: 'failed',
+      alreadyPaid: false,
+      reconciled: false,
+      totalAmountPaise: order.total_amount_paise,
+      message: 'Order was cancelled.',
     };
   }
 
@@ -576,11 +653,13 @@ export async function checkAndReconcileOrderPayment(
     );
 
     if (rpcErr || !rpcResult || !rpcResult.success) {
-      logger.error('Failed to atomically finalize order during payment status reconciliation', rpcErr, {
+      const errMsg = rpcResult?.error || rpcErr?.message || 'Database error during payment reconciliation.';
+      logger.error('Failed to atomically finalize order during payment status reconciliation', rpcErr || new Error(errMsg), {
         orderId: order.id,
         paymentId: capturedPayment.id,
+        rpcResult,
       });
-      throw new Error(rpcErr?.message || 'Database error during payment reconciliation.');
+      throw new Error(errMsg);
     }
 
     // Trigger receipt outbox non-blocking
@@ -640,6 +719,29 @@ export async function checkAndReconcileOrderPayment(
       paymentId: failedPayment.id,
       totalAmountPaise: order.total_amount_paise,
       message: failedPayment.error_description || 'Payment was declined or failed at the gateway.',
+    };
+  }
+
+  // Check if order has expired past the 15-minute pending window without capture
+  const orderAgeMs = Date.now() - new Date(order.created_at).getTime();
+  const isOrderExpired = orderAgeMs > PENDING_ORDER_EXPIRY_MINUTES * 60 * 1000;
+
+  if (isOrderExpired && order.order_status === 'pending') {
+    await supabase
+      .from('ebook_orders')
+      .update({ order_status: 'cancelled' })
+      .eq('id', order.id)
+      .eq('order_status', 'pending');
+
+    return {
+      success: true,
+      orderId: order.id,
+      orderNumber: order.order_number,
+      paymentStatus: 'failed',
+      alreadyPaid: false,
+      reconciled: false,
+      totalAmountPaise: order.total_amount_paise,
+      message: `Pending order expired after ${PENDING_ORDER_EXPIRY_MINUTES} minutes without captured payment. Please initiate a new checkout.`,
     };
   }
 

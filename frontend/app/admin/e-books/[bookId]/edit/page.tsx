@@ -793,7 +793,7 @@ export default function AdminEditEBookPage({ params }: { params: Promise<{ bookI
 
               {chapters.length === 0 ? (
                 <div className="p-8 text-center border border-dashed border-slate-200 rounded-lg text-slate-400 text-xs">
-                  No chapters authored yet. Click "+ Add" to create Chapter 1.
+                  No chapters authored yet. Click &quot;+ Add&quot; to create Chapter 1.
                 </div>
               ) : (
                 <div className="space-y-1.5">
@@ -956,7 +956,7 @@ export default function AdminEditEBookPage({ params }: { params: Promise<{ bookI
                 </>
               ) : (
                 <div className="py-20 text-center text-slate-400 text-sm">
-                  Select a chapter on the left to edit its content, or click "+ Add" to create one.
+                  Select a chapter on the left to edit its content, or click &quot;+ Add&quot; to create one.
                 </div>
               )}
             </div>
@@ -1396,7 +1396,7 @@ export default function AdminEditEBookPage({ params }: { params: Promise<{ bookI
         >
           <div className="space-y-4">
             <p className="text-sm text-slate-600">
-              Are you sure you want to permanently delete chapter <strong>"{chapterToDelete?.title}"</strong>?
+              Are you sure you want to permanently delete chapter <strong>&quot;{chapterToDelete?.title}&quot;</strong>?
             </p>
             {activeEdition?.status === 'published' ? (
               <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs">

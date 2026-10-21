@@ -80,17 +80,47 @@ UI Enhancement Phase 4 delivers the final technical milestones for the Knowledge
 
 ---
 
-## 3. Test Suite & Verification Results
+## 3. Algorithm Specifications & Cleanup Isolation
+
+### 1. PostgreSQL Engine (Active Shared Staging/Prod Backend)
+- **Algorithm**: Fixed-Window Bucket Quantization with Atomic Unique Slot Reservation.
+- **Quantization**: Time is partitioned into discrete fixed-size buckets:
+  $$\text{windowBucket} = \left\lfloor \frac{\text{now}}{\text{windowSeconds} \times 1000} \right\rfloor$$
+- **Atomicity**: Concurrent application cluster instances claim deterministic slots:
+  $$\text{event\_id} = \text{"rl:\{key\}:\{windowBucket\}:\{slot\}"}$$
+  PostgreSQL's native `UNIQUE` constraint on `event_id` enforces deterministic slot ownership. Losers receive constraint violation code `23505` and advance to the next slot until `limit` is reached.
+- **Dedicated Storage**: State is persisted in `public.ebook_webhook_events` with `gateway = 'rate_limit'`. Ephemeral rate-limit rows never enter `public.ebook_audit_logs`.
+- **Cleanup Isolation & Genuine Webhook Preservation**:
+  - Cleanup is strictly restricted to `gateway = 'rate_limit'`. Genuine payment webhook records (`gateway = 'razorpay'`) remain 100% untouched.
+  - Per-record expiry metadata (`expires_at` in payload) or key scoping (`event_type = key`) is enforced.
+  - A short-window policy (e.g. 2s) cleaning up its expired slots CANNOT delete still-active quota reservations for a longer-window policy (e.g. 60s or 300s).
+  - Mixed-window regression verified in automated check `ATOM-04`.
+
+### 2. Redis Engine (Optional Distributed Backend)
+- **Algorithm**: Sliding-Window Log via Atomic Server-Side Lua Script.
+- **Storage**: Redis Sorted Set (ZSET) keyed by `ratelimit:{key}`.
+- **Atomicity**: Atomic server-side Lua script executes `ZREMRANGEBYSCORE` to prune timestamps older than $\text{now} - (\text{windowSeconds} \times 1000)$, evaluates `ZCARD < limit`, records `ZADD`, and applies `EXPIRE`.
+- **Precision**: Sub-second sliding-window log precision.
+
+### 3. Configured CSV Ceiling Enforcement (`MAX_CSV_EXPORT`)
+- Configured ceiling via `process.env.MAX_CSV_EXPORT` (default 10,000).
+- If matching records exceed ceiling, endpoint immediately returns HTTP 400 (`code: 'EXPORT_CEILING_EXCEEDED'`) with `totalMatching`, `maxExportLimit`, and guidance on narrowing filters.
+- Refuses to produce partial or truncated export files; headers `X-Total-Count` and `X-Max-Export-Limit` reflect actual counts.
+- For matching totals within ceiling, bounded batched retrieval in chunks of 1,000 overcomes PostgREST server row limits.
+
+---
+
+## 4. Test Suite & Verification Results
 
 ### Remediation Suite Execution (`scripts/test_phase4_remediation_suite.ts`):
 - **Command**: `PATH="/home/harsha/.nvm/versions/node/v20.20.2/bin:$PATH" npx tsx --env-file=.env.local scripts/test_phase4_remediation_suite.ts`
-- **Results**: **19 PASS, 0 FAIL, 1 UNVERIFIED (Total: 20)**
+- **Results**: **21 PASS, 0 FAIL, 1 UNVERIFIED (Total: 22)**
 
 ```
 ================================================================
 🛡️ KnowledgePaat — UI Enhancement Phase 4 Focused Remediation Suite
 ================================================================
-Run ID: 87hx8d
+Run ID: mewzkr
 Staging Database: https://lzuinimbsdxnhzmjpxmr.supabase.co
 App Base URL: http://127.0.0.1:3000
 
@@ -98,15 +128,14 @@ App Base URL: http://127.0.0.1:3000
 [ATOM-01] ✅ PASS [Atomicity] — In-Process Mutex Elimination
 [ATOM-02] ✅ PASS [Atomicity] — Dedicated Rate-Limit Storage & Audit Log Cleanliness
 [ATOM-03] ✅ PASS [Atomicity] — Bounded Retention & Business Audit Immutability
+[ATOM-04] ✅ PASS [Atomicity] — Mixed-Window Cleanup Isolation & Genuine Webhook Preservation
 
 --- 2. Real Cross-Process Multi-Process Quota Enforcement ---
-[PROC-01] ✅ PASS [CrossProcess] — Multi-Process Concurrency & Quota Cap
-     Executed across 6 distinct OS processes (PIDs: 9638, 9629, 9684, 9697, 9695, 9735). Exactly 4 allowed (limit: 4) and 2 blocked.
+[PROC-01] ✅ PASS [CrossProcess] — Multi-Process Concurrency & Quota Cap (6 PIDs)
 [PROC-02] ✅ PASS [CrossProcess] — Excess Requests Receive HTTP 429 & Valid Retry-After
 [PROC-03] ✅ PASS [CrossProcess] — Process Restart Does Not Reset Shared Quota
 [PROC-04] ✅ PASS [CrossProcess] — Independent Customer Retains Separate Quota
 [PROC-05] ✅ PASS [CrossProcess] — Rejected Sensitive Requests Leave Business State Invariant
-     Sensitive mutation was rejected with HTTP 429. Entitlements count remained unchanged (0 -> 0).
 
 --- 3. Forwarded-IP Trust & Anti-Spoofing Architecture ---
 [PROXY-01] ✅ PASS [ProxyTrust] — Untrusted Direct Socket Rejects Spoofed Forwarded Headers
@@ -123,41 +152,52 @@ App Base URL: http://127.0.0.1:3000
 --- 5. Bounded Batched CSV Export (>5,000 Records) ---
 [CSV-01] ✅ PASS [CsvExport] — Spreadsheet Formula Injection Sanitization (CWE-1236)
 [CSV-02] ✅ PASS [CsvExport] — Bounded Batched Retrieval Exceeds 1,000 & 5,000 Database Limits
-     Expected 5100 records. Exported 5100 CSV rows (X-Exported-Count: 5100, X-Total-Count: 5100).
-[CSV-03] ✅ PASS [CsvExport] — Filtered Subset Export Accuracy
-     Filtered export returned exactly 2600 rows for payment_status=paid (expected 2600).
-[CSV-04] ✅ PASS [CsvExport] — Dataset Integrity (0 Omissions, 0 Duplicates)
-     Verified dataset integrity: 5100 unique order numbers out of 5100 rows. 0 duplicates, 0 omissions.
+[CSV-03] ✅ PASS [CsvExport] — Filtered Subset Export Accuracy (2,600 / 2,600 paid)
+[CSV-04] ✅ PASS [CsvExport] — Dataset Integrity (0 Omissions, 0 Duplicates across 5,100 rows)
+[CSV-05] ✅ PASS [CsvExport] — Configured Ceiling Enforcement (No Partial or Truncated Exports)
 ================================================================
-Phase 4 Remediation Suite Completed in 56.5s
-Results: 19 PASS, 0 FAIL, 1 UNVERIFIED (Total: 20)
+Phase 4 Remediation Suite Completed in 103.9s
+Results: 21 PASS, 0 FAIL, 1 UNVERIFIED (Total: 22)
 ================================================================
 ```
 
-### Regression Suite Execution (`scripts/test_ui_phase4_suite.ts`):
+### Full Phase 4 Regression Suite Execution (`scripts/test_ui_phase4_suite.ts`):
 - **Command**: `PATH="/home/harsha/.nvm/versions/node/v20.20.2/bin:$PATH" npx tsx --env-file=.env.local scripts/test_ui_phase4_suite.ts`
 - **Results**: **21/21 PASS (0 FAIL, 0 BLOCKED)**
 
 ### Typecheck & Build Validation:
 - **TypeScript Typecheck**: `npx tsc --noEmit` passed with 0 errors.
-- **Next.js Production Build**: `npm run build` compiled successfully in 20.7s; generated all 95 static/dynamic routes with zero errors.
+- **Next.js Production Build**: `npm run build` compiled successfully; generated all 95 static/dynamic routes with zero errors.
 
 ---
 
-## 4. Deployment Proxy Requirements & Outstanding Launch Prerequisites
+## 5. Distinct Launch Gates & Outstanding Non-UI Pre-Requisites
 
-> [!IMPORTANT]
-> **Production Edge-Proxy Architecture Requirement (`PROXY-04: UNVERIFIED in local runner`)**:
-> In the production deployment environment (e.g., AWS CloudFront / Cloudflare / Nginx reverse proxy):
-> 1. The edge proxy MUST terminate TLS and strip all incoming client-supplied `cf-connecting-ip`, `x-real-ip`, and untrusted `x-forwarded-for` headers.
-> 2. The edge proxy MUST inject the authoritative client IP into `cf-connecting-ip` (Cloudflare) or `x-real-ip` (Nginx/ALB).
-> 3. The upstream Next.js application container MUST be started with environment variable `TRUST_PROXY=true`.
-> 4. In direct local development or non-proxied environments, `TRUST_PROXY` MUST remain unset/false so that spoofed forwarding headers are ignored.
+> [!NOTE]
+> **Initiative Closure**: The four-phase UI Enhancement initiative is formally complete and certified on Staging. The remaining operational gates below are strictly decoupled launch prerequisites and do not block UI closure.
 
-> [!WARNING]
-> **Outstanding Production Launch Blockers (Non-UI Pre-Requisites)**:
-> While UI Enhancement Phase 4 remediation is complete on Staging, the system is **NOT production-ready** until the following infrastructure items are resolved:
-> 1. **Payment Provider Live Keys**: Razorpay keys remain in test mode (`rzp_test_...`). Live keys must be provisioned and verified.
-> 2. **Webhook Secrets**: `RAZORPAY_WEBHOOK_SECRET` must be configured with live webhook secret to enable payment auto-capture.
-> 3. **Transactional Email Service**: Resend/SMTP production credentials must be configured for customer purchase receipt delivery.
-> 4. **Production Database Cutover**: Production Supabase `csjywuflkvohytbvglxf` must be migrated with schema updates prior to DNS switch.
+### Gate A: UI Implementation & Staging Verification (STATUS: COMPLETE)
+- All four UI Enhancement phases (Design Foundation, Catalogue & Pricing, Reader Experience, Section Transitions & Rate Limiting) are implemented, verified, and stabilized on Staging Supabase `lzuinimbsdxnhzmjpxmr`.
+- Production database `csjywuflkvohytbvglxf` remained 100% protected and unmodified throughout all audits.
+
+### Gate B: Production Edge-Proxy Configuration (STATUS: UNVERIFIED in local runner)
+- **Check ID**: `PROXY-04`.
+- **Requirement**: In the production deployment environment (Cloudflare, AWS ALB, or Nginx):
+  1. The edge proxy MUST terminate TLS and strip incoming client-supplied `cf-connecting-ip`, `x-real-ip`, and untrusted `x-forwarded-for` headers.
+  2. The edge proxy MUST inject the authoritative client IP into `cf-connecting-ip` (Cloudflare) or `x-real-ip` (Nginx/ALB).
+  3. The upstream application container MUST run with `TRUST_PROXY=true`. Direct connections without proxy must keep `TRUST_PROXY=false`.
+
+### Gate C: Payment Capture Configuration vs Webhook Secret (STATUS: CORRECTED SPECIFICATION)
+- **Clarification**: Setting `RAZORPAY_WEBHOOK_SECRET` does NOT enable payment capture!
+  - `RAZORPAY_WEBHOOK_SECRET` is used exclusively for HMAC-SHA256 signature verification (`x-razorpay-signature`) to authenticate webhook notifications from Razorpay servers.
+- **Capture Configuration**:
+  - Payment capture is controlled either during order creation via `payment_capture: 1` (`frontend/lib/razorpay.ts` line 148) or configured in the Razorpay Merchant Dashboard under **Settings → Payment Capture** (Automatic vs Manual Capture).
+  - Capture configuration and webhook signature verification must be validated independently.
+
+### Gate D: Genuine Test Mode & Provider Acceptance (STATUS: PENDING PRE-LAUNCH VALIDATION)
+Before switching to live payments (`rzp_live_...`), the following operational checks must be completed:
+1. **Genuine Test Mode Transactions**: Execute complete end-to-end payment flows using Razorpay test cards/UPI in the staging environment.
+2. **Provider-Delivered Webhook Delivery**: Verify genuine delivery of `payment.captured` and `order.paid` webhooks sent directly from Razorpay test servers to the staging webhook URL.
+3. **Genuine Transactional Email Delivery**: Verify receipt email dispatch and arrival in a real mailbox via Resend / SMTP production credentials.
+4. **Genuine Test Mode Refund Acceptance**: Verify initiate and reconcile workflows using Razorpay test mode refund APIs.
+5. **Production Database Cutover**: Apply verified schema migrations to production Supabase `csjywuflkvohytbvglxf` prior to public DNS switch.

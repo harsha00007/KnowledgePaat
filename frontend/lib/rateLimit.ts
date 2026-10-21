@@ -82,7 +82,11 @@ function getSharedSupabaseClient(): SupabaseClient | null {
  *    they bind strictly to the server-verified user ID (from verified Supabase JWT).
  */
 export function getRealClientIp(req: NextRequest): string {
-  const trustProxy = process.env.TRUST_PROXY === 'true' || process.env.NODE_ENV === 'production';
+  // SECURITY: Proxy trust is ONLY enabled by the explicit TRUST_PROXY=true flag.
+  // Do NOT auto-enable based on NODE_ENV=production; without a verified proxy chain
+  // (e.g. Cloudflare, AWS ALB) any client can spoof x-forwarded-for and bypass rate limits.
+  // This must be set deliberately after confirming the production load-balancer path.
+  const trustProxy = process.env.TRUST_PROXY === 'true';
 
   if (trustProxy) {
     // 1. Cloudflare authoritative edge header
@@ -125,11 +129,32 @@ function isValidIp(ip: string): boolean {
 }
 
 /**
- * Check and Consume Rate Limit atomically across application instances
- * using active configured backend:
- * - Upstash / Native Redis (atomic Lua script with sliding window log)
- * - PostgreSQL Shared Storage (dedicated rate limit events with atomic unique slot reservation)
- * - In-Memory Sliding Window (local fallback for non-sensitive operations during outage)
+ * Check and Consume Rate Limit atomically across application instances.
+ * 
+ * ALGORITHM SPECIFICATIONS:
+ * -------------------------
+ * 1. PostgreSQL Engine (Active Shared Staging/Prod Backend):
+ *    - Algorithm: Fixed-Window Quantization with Atomic Unique Slot Reservation.
+ *    - Quantization: Time is partitioned into discrete fixed-size buckets:
+ *        windowBucket = Math.floor(now / (windowSeconds * 1000))
+ *    - Atomicity: Concurrent cluster instances claim deterministic slots:
+ *        event_id = "rl:${key}:${windowBucket}:${slot}"
+ *      PostgreSQL's native UNIQUE constraint on event_id enforces slot ownership.
+ *      Losers receive code 23505 and advance to the next slot until limit is reached.
+ *    - Retention & Isolation: Expired slot cleanup is strictly scoped to
+ *      gateway='rate_limit' AND event_type=key. A short-window policy NEVER deletes
+ *      active reservations of a longer-window policy or genuine payment webhooks.
+ * 
+ * 2. Redis Engine (Optional Distributed Backend):
+ *    - Algorithm: Sliding-Window Log via Atomic Server-Side Lua Script.
+ *    - Storage: Redis Sorted Set (ZSET) keyed by `ratelimit:${key}`.
+ *    - Execution: Atomically executes ZREMRANGEBYSCORE to prune timestamps older than
+ *      now - (windowSeconds * 1000), checks ZCARD < limit, and records ZADD.
+ *    - Precision: Sub-second sliding window log precision.
+ * 
+ * 3. In-Memory Store (Local Fallback):
+ *    - Algorithm: In-Memory Sliding Window Log for local development and non-sensitive
+ *      fail-open public search operations during database degradation.
  */
 export async function checkRateLimit(
   key: string,
@@ -215,6 +240,7 @@ export async function checkRateLimit(
       const windowBucket = Math.floor(now / windowMs);
       const windowStartIso = new Date(windowBucket * windowMs).toISOString();
       const windowEndMs = (windowBucket + 1) * windowMs;
+      const windowEndIso = new Date(windowEndMs).toISOString();
       const retryAfter = Math.max(1, Math.ceil((windowEndMs - now) / 1000));
 
       // Query existing claimed slots within current window bucket
@@ -260,7 +286,7 @@ export async function checkRateLimit(
             event_type: key,
             gateway: 'rate_limit',
             status: 'processed',
-            payload: { slot, limit, windowSeconds, bucket: windowBucket },
+            payload: { slot, limit, windowSeconds, bucket: windowBucket, expires_at: windowEndIso },
           });
 
         if (!insErr) {
@@ -281,12 +307,16 @@ export async function checkRateLimit(
       if (claimed) {
         const remaining = Math.max(0, limit - claimedSlot);
 
-        // Bounded retention: Opportunistically prune rate limit rows older than 2 windows
+        // Bounded retention: Scoped cleanup strictly restricted to THIS key and window.
+        // Critical: Must NEVER delete still-active quota reservations for longer-window policies
+        // or other keys. Scoping by event_type=key and gateway='rate_limit' guarantees
+        // cross-policy isolation and leaves genuine payment webhooks ('razorpay') 100% untouched.
         const pruneBeforeIso = new Date(now - (windowMs * 2)).toISOString();
         supabase
           .from('ebook_webhook_events')
           .delete()
           .eq('gateway', 'rate_limit')
+          .eq('event_type', key)
           .lt('created_at', pruneBeforeIso)
           .then(() => {}, () => {}); // Fire and forget cleanup
 
@@ -485,3 +515,43 @@ export const RATE_LIMIT_POLICIES = {
   CONTACT_SUBMIT: { limit: 10, windowSeconds: 300, isSensitive: false },
   TEST_SUBMIT: { limit: 30, windowSeconds: 60, isSensitive: false },
 } as const;
+
+/**
+ * Safely prune expired rate-limit records without ever affecting:
+ * - Active reservations of longer-window policies
+ * - Genuine payment webhook records (gateway='razorpay')
+ * - Business audit history (ebook_audit_logs is completely separate)
+ * 
+ * Uses per-record expiry metadata (payload->>expires_at) or appropriately scoped
+ * event_type filtering so that short-window cleanups never delete active long-window quotas.
+ */
+export async function pruneRateLimitRecords(options?: {
+  key?: string;
+  olderThanMs?: number;
+}): Promise<{ deletedCount?: number }> {
+  const supabase = getSharedSupabaseClient();
+  if (!supabase) return {};
+
+  const nowIso = new Date().toISOString();
+  let query = supabase
+    .from('ebook_webhook_events')
+    .delete()
+    .eq('gateway', 'rate_limit');
+
+  if (options?.key) {
+    query = query.eq('event_type', options.key);
+    if (options.olderThanMs !== undefined) {
+      const pruneBeforeIso = new Date(Date.now() - options.olderThanMs).toISOString();
+      query = query.lt('created_at', pruneBeforeIso);
+    } else {
+      query = query.lt('payload->>expires_at', nowIso);
+    }
+  } else {
+    // Unscoped/global cleanup: strictly enforce per-record expiry check
+    // Active reservations for longer-window policies (expires_at in the future) are preserved
+    query = query.lt('payload->>expires_at', nowIso);
+  }
+
+  const { data } = await query.select('id');
+  return { deletedCount: data?.length || 0 };
+}

@@ -96,7 +96,7 @@ export default function AdminDashboardPage() {
 
       if (subRows && subRows.length > 0) {
         const studentIds = Array.from(new Set(subRows.map(s => s.student_id).filter(Boolean)));
-        let pMap: Record<string, { full_name: string; email: string }> = {};
+        const pMap: Record<string, { full_name: string; email: string }> = {};
 
         if (studentIds.length > 0) {
           const { data: profs } = await supabase
