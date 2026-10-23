@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,600;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,600;1,700&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -8,17 +8,27 @@
   --font-sans: var(--font-inter, "Inter"), "system-ui", "sans-serif";
   --font-display: "Manrope", var(--font-inter, "Inter"), "sans-serif";
   --font-serif: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-jakarta: "Plus Jakarta Sans", var(--font-inter, "Inter"), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-  /* ── EBOOK PHASE 3 DESIGN TOKENS (Deep Purple & Gold System) ──────────── */
-  --color-ebook-deep:        #130B24;   /* Header, Hero & Footer Canvas */
-  --color-ebook-purple:      #1B0E36;   /* Stage background & card backdrops */
-  --color-ebook-surface:     #241447;   /* Search inputs, dark controls */
-  --color-ebook-border:      #3D256E;   /* Subtle purple stroke on dark */
-  --color-ebook-gold:        #FBBF24;   /* Highlighted text, stars, badges */
-  --color-ebook-amber:       #F59E0B;   /* Primary CTA button gradient */
-  --color-ebook-amber-dark:  #D97706;   /* Primary CTA button hover/edge */
-  --color-ebook-lavender:    #FAF9FD;   /* Content background canvas */
-  --color-ebook-card-border: #EBE5F5;   /* White card subtle purple border */
+  /* ── EBOOK APPROVED DESIGN TOKENS (Visual Authority) ─────────────────── */
+  --color-ebook-indigo:       #1D1855;   /* Deep Indigo: Navigation & Footer */
+  --color-ebook-violet:       #6F42DD;   /* Violet: Accents & Selected States */
+  --color-ebook-violet-hover: #5B32BF;   /* Violet Hover */
+  --color-ebook-gold:         #FFCB35;   /* Warm Gold: Primary Buttons & Stars */
+  --color-ebook-amber:        #F5A000;   /* Amber: Primary Button Accent */
+  --color-ebook-bg:           #F8F7FF;   /* Pale Lavender: Page Background */
+  --color-ebook-card:         #FFFFFF;   /* White Card Background */
+  --color-ebook-card-border:  #E8E5F5;   /* Subtle Lavender/Violet Card Border */
+  --color-ebook-text:         #18143F;   /* Dark Navy: Headings & Primary Text */
+  --color-ebook-text-muted:   #4D4775;   /* Muted Supporting Text */
+  --color-ebook-text-light:   #756F99;   /* Light Metadata Text */
+
+  /* Legacy aliases for backward compatibility */
+  --color-ebook-deep:        #1D1855;
+  --color-ebook-purple:      #1D1855;
+  --color-ebook-surface:     #241447;
+  --color-ebook-border:      #3D256E;
+  --color-ebook-lavender:    #F8F7FF;
 
   /* ── BRAND — Growth Blue & Deep Navy (KnowledgePaat Official) ────────── */
   --color-brand-50:  #eff6ff;
@@ -347,35 +357,57 @@
   .text-subheading { @apply text-lg sm:text-xl font-semibold font-display; }
   .text-overline { @apply text-xs font-bold uppercase tracking-widest font-display; }
 
-  /* ── UI Phase 3 eBook Tokens & Utilities ── */
+  /* ── eBook Approved Design Utilities ── */
+  .font-ebook {
+    font-family: var(--font-jakarta), var(--font-sans);
+  }
+
   .font-serif {
     font-family: var(--font-serif);
   }
 
-  .btn-gold {
+  /* Warm Gold / Amber Primary Action Button */
+  .btn-gold, .btn-ebook-primary {
     @apply inline-flex items-center justify-center font-bold rounded-xl transition-all duration-200 cursor-pointer;
-    background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 50%, #D97706 100%);
-    color: #130B24;
-    box-shadow: 0 4px 18px rgba(245, 158, 11, 0.35);
+    background: linear-gradient(135deg, #FFCB35 0%, #F5A000 100%);
+    color: #18143F;
+    box-shadow: 0 4px 14px rgba(245, 160, 0, 0.28);
   }
-  .btn-gold:hover {
-    background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 50%, #B45309 100%);
-    box-shadow: 0 6px 24px rgba(245, 158, 11, 0.45);
+  .btn-gold:hover, .btn-ebook-primary:hover {
+    background: linear-gradient(135deg, #FFE066 0%, #FFB300 100%);
+    box-shadow: 0 6px 20px rgba(245, 160, 0, 0.38);
     transform: translateY(-1px);
   }
-  .btn-gold:active {
+  .btn-gold:active, .btn-ebook-primary:active {
     transform: translateY(0);
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    box-shadow: 0 2px 6px rgba(245, 160, 0, 0.25);
+  }
+
+  /* Violet Accent Action Button */
+  .btn-ebook-violet {
+    @apply inline-flex items-center justify-center font-bold rounded-xl transition-all duration-200 cursor-pointer;
+    background: #6F42DD;
+    color: #FFFFFF;
+    box-shadow: 0 4px 14px rgba(111, 66, 221, 0.28);
+  }
+  .btn-ebook-violet:hover {
+    background: #5B32BF;
+    box-shadow: 0 6px 20px rgba(111, 66, 221, 0.38);
+    transform: translateY(-1px);
+  }
+  .btn-ebook-violet:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(111, 66, 221, 0.25);
   }
 
   .card-ebook {
     @apply bg-white rounded-2xl border transition-all duration-200;
-    border-color: #EBE5F5;
-    box-shadow: 0 4px 20px rgba(19, 11, 36, 0.05);
+    border-color: #E8E5F5;
+    box-shadow: 0 4px 20px -2px rgba(29, 24, 85, 0.05), 0 2px 6px -1px rgba(29, 24, 85, 0.03);
   }
   .card-ebook:hover {
-    border-color: #DDD4ED;
-    box-shadow: 0 12px 32px rgba(124, 58, 237, 0.1);
+    border-color: #D3CBED;
+    box-shadow: 0 10px 28px -4px rgba(111, 66, 221, 0.12), 0 4px 10px -2px rgba(29, 24, 85, 0.04);
   }
 }
 

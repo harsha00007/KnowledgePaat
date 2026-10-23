@@ -25,8 +25,16 @@ import {
   BookOpen,
   MessageSquare,
   ShieldCheck,
-  History
+  History,
+  Film,
+  Video,
+  Image as ImageIcon,
+  PlayCircle,
+  Smartphone,
+  Monitor
 } from 'lucide-react';
+import { MediaCard } from '@/components/ebook/MediaCard';
+import { DEFAULT_MEDIA_CARD, MediaCardConfig, MediaSlide } from '@/types/ebook';
 
 interface CatalogBook {
   id: string;
@@ -45,11 +53,16 @@ interface Testimonial {
 }
 
 export default function AdminEBooksHomepagePage() {
-  const [activeTab, setActiveTab] = useState<'hero' | 'featured' | 'categories' | 'banner' | 'testimonials' | 'visibility' | 'preview'>('hero');
+  const [activeTab, setActiveTab] = useState<'media_card' | 'hero' | 'featured' | 'categories' | 'banner' | 'testimonials' | 'visibility' | 'preview'>('media_card');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // 0. Media Card state
+  const [mediaCard, setMediaCard] = useState<MediaCardConfig>(DEFAULT_MEDIA_CARD);
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const [uploadingSlideIndex, setUploadingSlideIndex] = useState<{ index: number; field: 'media_url' | 'poster_url' } | null>(null);
 
   const [catalogBooks, setCatalogBooks] = useState<CatalogBook[]>([]);
   const [auditHistory, setAuditHistory] = useState<any[]>([]);
@@ -156,6 +169,15 @@ export default function AdminEBooksHomepagePage() {
       });
 
       setTestimonials(Array.isArray(draft.testimonials) ? draft.testimonials : []);
+
+      if (draft.media_card && typeof draft.media_card === 'object') {
+        setMediaCard({
+          is_visible: typeof draft.media_card.is_visible === 'boolean' ? draft.media_card.is_visible : true,
+          slides: Array.isArray(draft.media_card.slides) && draft.media_card.slides.length > 0
+            ? draft.media_card.slides
+            : DEFAULT_MEDIA_CARD.slides,
+        });
+      }
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Error loading homepage settings.' });
     } finally {
@@ -187,6 +209,7 @@ export default function AdminEBooksHomepagePage() {
       link: bannerLink.trim(),
     },
     section_visibility: visibility,
+    media_card: mediaCard,
     testimonials,
   });
 
@@ -275,6 +298,106 @@ export default function AdminEBooksHomepagePage() {
     const [moved] = copy.splice(index, 1);
     copy.splice(newIdx, 0, moved);
     setCategoryOrder(copy);
+  };
+
+  // Media Card Slide Management Helpers
+  const handleAddSlide = () => {
+    setMediaCard(prev => ({
+      ...prev,
+      slides: [
+        ...prev.slides,
+        {
+          id: `slide-${Date.now()}`,
+          type: 'image',
+          media_url: '',
+          poster_url: null,
+          heading: 'New Promotional Title',
+          description: 'Highlight an architectural topic, new release, or publication milestone.',
+          cta_label: 'Explore Technical Guides',
+          cta_url: '#catalogue',
+          is_active: true,
+          order: prev.slides.length,
+          alt_text: 'KnowledgePaat Technical Guide',
+        }
+      ]
+    }));
+  };
+
+  const handleRemoveSlide = (index: number) => {
+    setMediaCard(prev => ({
+      ...prev,
+      slides: prev.slides.filter((_, i) => i !== index).map((s, idx) => ({ ...s, order: idx })),
+    }));
+  };
+
+  const handleMoveSlide = (index: number, direction: 'up' | 'down') => {
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= mediaCard.slides.length) return;
+    setMediaCard(prev => {
+      const copy = [...prev.slides];
+      const [moved] = copy.splice(index, 1);
+      copy.splice(targetIdx, 0, moved);
+      return {
+        ...prev,
+        slides: copy.map((s, idx) => ({ ...s, order: idx })),
+      };
+    });
+  };
+
+  const handleUpdateSlide = (index: number, updates: Partial<MediaSlide>) => {
+    setMediaCard(prev => {
+      const slides = [...prev.slides];
+      slides[index] = { ...slides[index], ...updates };
+      return { ...prev, slides };
+    });
+  };
+
+  const handleSlideFileUpload = async (
+    slideIndex: number,
+    e: React.ChangeEvent<HTMLInputElement>,
+    targetField: 'media_url' | 'poster_url'
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingSlideIndex({ index: slideIndex, field: targetField });
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/admin/ebooks/homepage/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to upload promotional file.');
+      }
+
+      setMediaCard(prev => {
+        const slides = [...prev.slides];
+        slides[slideIndex] = {
+          ...slides[slideIndex],
+          [targetField]: data.url,
+          ...(targetField === 'media_url' && { type: data.type }),
+        };
+        return { ...prev, slides };
+      });
+
+      setFeedback({
+        type: 'success',
+        message: `Uploaded "${file.name}" successfully.`
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err.message || 'Error uploading promotional media.'
+      });
+    } finally {
+      setUploadingSlideIndex(null);
+      e.target.value = '';
+    }
   };
 
   return (
@@ -379,6 +502,16 @@ export default function AdminEBooksHomepagePage() {
         {/* NAVIGATION TABS */}
         <div className="flex border-b border-slate-200 space-x-6 text-sm font-medium overflow-x-auto pb-px">
           <button
+            onClick={() => setActiveTab('media_card')}
+            className={`pb-3 border-b-2 flex items-center gap-2 whitespace-nowrap transition-colors ${
+              activeTab === 'media_card' ? 'border-[#6F42DD] text-[#6F42DD] font-bold' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <Film className="w-4 h-4" /> Media Card ({mediaCard.slides.length})
+            {mediaCard.is_visible && <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />}
+          </button>
+
+          <button
             onClick={() => setActiveTab('hero')}
             className={`pb-3 border-b-2 flex items-center gap-2 whitespace-nowrap transition-colors ${
               activeTab === 'hero' ? 'border-blue-600 text-blue-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700'
@@ -432,6 +565,351 @@ export default function AdminEBooksHomepagePage() {
             <MessageSquare className="w-4 h-4" /> Testimonials ({testimonials.length})
           </button>
         </div>
+
+        {/* TAB 0: MEDIA CARD (PROMOTIONAL CAROUSEL) */}
+        {activeTab === 'media_card' && (
+          <div className="space-y-6">
+            {/* Master Control & Live Preview Card */}
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div>
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">
+                    Admin-Managed Media Card
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Controls the primary hero promotional media carousel positioned directly below navigation on the eBook storefront.
+                  </p>
+                </div>
+
+                {/* Master Visibility Switch */}
+                <label className="flex items-center gap-3 cursor-pointer bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={mediaCard.is_visible}
+                    onChange={(e) => setMediaCard(prev => ({ ...prev, is_visible: e.target.checked }))}
+                    className="w-4 h-4 text-[#6F42DD] rounded border-slate-300 focus:ring-[#6F42DD]"
+                  />
+                  <div>
+                    <span className="text-xs font-bold text-navy block">Display on Storefront</span>
+                    <span className="text-[10px] text-slate-500">
+                      {mediaCard.is_visible ? 'Visible to visitors' : 'Hidden from storefront'}
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Live Preview Container */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-navy uppercase tracking-wider">Live Preview</span>
+                    <span className="text-[11px] text-slate-500 font-normal">
+                      (Includes visitor-initiated video playback and poster overlays)
+                    </span>
+                  </div>
+
+                  {/* Device Switcher */}
+                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewDevice('desktop')}
+                      className={`px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                        previewDevice === 'desktop'
+                          ? 'bg-white text-navy shadow-xs'
+                          : 'text-slate-500 hover:text-navy'
+                      }`}
+                    >
+                      <Monitor className="w-3.5 h-3.5" /> Desktop
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewDevice('mobile')}
+                      className={`px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                        previewDevice === 'mobile'
+                          ? 'bg-white text-navy shadow-xs'
+                          : 'text-slate-500 hover:text-navy'
+                      }`}
+                    >
+                      <Smartphone className="w-3.5 h-3.5" /> Mobile
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-4 sm:p-6 bg-[#F8F7FF] rounded-2xl border border-[#E8E5F5] overflow-hidden">
+                  <div className={previewDevice === 'mobile' ? 'max-w-sm mx-auto transition-all' : 'w-full transition-all'}>
+                    <MediaCard config={mediaCard} isAdminPreview={true} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Slides Manager */}
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-6">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">
+                    Carousel Slides ({mediaCard.slides.length})
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Reorder slides, configure image or video media, set video posters, and customize action links.
+                  </p>
+                </div>
+
+                <Button
+                  size="sm"
+                  onClick={handleAddSlide}
+                  className="bg-[#6F42DD] hover:bg-[#5b33be] text-white"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Add Slide
+                </Button>
+              </div>
+
+              {mediaCard.slides.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-xl">
+                  <Film className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <p className="text-sm font-bold text-slate-700">No slides configured</p>
+                  <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                    Add at least one promotional image or video slide to activate the media card.
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleAddSlide}
+                    className="mt-4"
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Create First Slide
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {mediaCard.slides.map((slide, index) => {
+                    const isUploadingMedia = uploadingSlideIndex?.index === index && uploadingSlideIndex?.field === 'media_url';
+                    const isUploadingPoster = uploadingSlideIndex?.index === index && uploadingSlideIndex?.field === 'poster_url';
+
+                    return (
+                      <div
+                        key={slide.id || index}
+                        className="p-5 border border-slate-200 rounded-xl bg-slate-50/50 space-y-4 relative"
+                      >
+                        {/* Slide Top Bar */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200">
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-6 h-6 rounded-full bg-[#1D1855] text-white text-xs font-bold flex items-center justify-center">
+                              {index + 1}
+                            </span>
+                            <span className="text-xs font-bold text-navy">
+                              {slide.heading || `Slide #${index + 1}`}
+                            </span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                              slide.type === 'video'
+                                ? 'bg-purple-100 text-purple-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {slide.type}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {/* Active Slide Toggle */}
+                            <label className="flex items-center gap-1.5 cursor-pointer text-xs font-medium text-slate-700 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+                              <input
+                                type="checkbox"
+                                checked={slide.is_active !== false}
+                                onChange={(e) => handleUpdateSlide(index, { is_active: e.target.checked })}
+                                className="w-3.5 h-3.5 text-[#6F42DD] rounded border-slate-300 focus:ring-[#6F42DD]"
+                              />
+                              <span>Active</span>
+                            </label>
+
+                            {/* Move Up */}
+                            <button
+                              type="button"
+                              disabled={index === 0}
+                              onClick={() => handleMoveSlide(index, 'up')}
+                              className="p-1 rounded bg-white border border-slate-200 text-slate-500 hover:text-navy disabled:opacity-40"
+                              title="Move Slide Up"
+                            >
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Move Down */}
+                            <button
+                              type="button"
+                              disabled={index === mediaCard.slides.length - 1}
+                              onClick={() => handleMoveSlide(index, 'down')}
+                              className="p-1 rounded bg-white border border-slate-200 text-slate-500 hover:text-navy disabled:opacity-40"
+                              title="Move Slide Down"
+                            >
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Delete Slide */}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSlide(index)}
+                              className="p-1 rounded bg-white border border-slate-200 text-rose-500 hover:text-rose-700 hover:bg-rose-50"
+                              title="Remove Slide"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Slide Fields Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Slide Media Type */}
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                              Media Type
+                            </label>
+                            <select
+                              value={slide.type}
+                              onChange={(e) => handleUpdateSlide(index, { type: e.target.value as 'image' | 'video' })}
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold text-navy bg-white"
+                            >
+                              <option value="image">Image (JPG, PNG, WEBP)</option>
+                              <option value="video">Video (MP4, WEBM with visitor playback)</option>
+                            </select>
+                          </div>
+
+                          {/* Media URL & File Upload */}
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                              {slide.type === 'video' ? 'Video File / URL' : 'Image File / URL'}
+                            </label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={slide.media_url}
+                                onChange={(e) => handleUpdateSlide(index, { media_url: e.target.value })}
+                                placeholder={slide.type === 'video' ? 'https://.../promo.mp4' : 'https://.../promo.jpg'}
+                                className="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-mono text-slate-800 bg-white"
+                              />
+                              <label className="px-3 py-1.5 bg-[#6F42DD] hover:bg-[#5b33be] text-white rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer shrink-0">
+                                <Upload className={`w-3.5 h-3.5 ${isUploadingMedia ? 'animate-spin' : ''}`} />
+                                <span>{isUploadingMedia ? 'Uploading...' : 'Upload'}</span>
+                                <input
+                                  type="file"
+                                  accept={slide.type === 'video' ? 'video/mp4,video/webm' : 'image/jpeg,image/png,image/webp'}
+                                  onChange={(e) => handleSlideFileUpload(index, e, 'media_url')}
+                                  className="hidden"
+                                  disabled={isUploadingMedia}
+                                />
+                              </label>
+                            </div>
+                            <span className="text-[10px] text-slate-400 mt-0.5 block">
+                              {slide.type === 'video' ? 'Max 50MB (MP4, WEBM)' : 'Max 5MB (JPG, PNG, WEBP)'}
+                            </span>
+                          </div>
+
+                          {/* Video Poster URL & Upload (Only for videos) */}
+                          {slide.type === 'video' && (
+                            <div className="md:col-span-2">
+                              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                Video Poster Image (Recommended for visitor-initiated playback)
+                              </label>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={slide.poster_url || ''}
+                                  onChange={(e) => handleUpdateSlide(index, { poster_url: e.target.value })}
+                                  placeholder="https://.../poster.jpg"
+                                  className="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-mono text-slate-800 bg-white"
+                                />
+                                <label className="px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer shrink-0">
+                                  <Upload className={`w-3.5 h-3.5 ${isUploadingPoster ? 'animate-spin' : ''}`} />
+                                  <span>{isUploadingPoster ? 'Uploading...' : 'Upload Poster'}</span>
+                                  <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    onChange={(e) => handleSlideFileUpload(index, e, 'poster_url')}
+                                    className="hidden"
+                                    disabled={isUploadingPoster}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Slide Heading */}
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                              Slide Heading *
+                            </label>
+                            <input
+                              type="text"
+                              value={slide.heading}
+                              onChange={(e) => handleUpdateSlide(index, { heading: e.target.value })}
+                              placeholder="e.g. Master Practical Software Engineering"
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-bold text-navy bg-white"
+                              required
+                            />
+                          </div>
+
+                          {/* Slide Description */}
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                              Slide Description
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={slide.description}
+                              onChange={(e) => handleUpdateSlide(index, { description: e.target.value })}
+                              placeholder="e.g. Production-ready architectures, system design principles, and career insights."
+                              className="w-full p-2.5 border border-slate-200 rounded-lg text-xs text-slate-800 bg-white"
+                            />
+                          </div>
+
+                          {/* CTA Label */}
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                              CTA Button Label (Optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={slide.cta_label || ''}
+                              onChange={(e) => handleUpdateSlide(index, { cta_label: e.target.value })}
+                              placeholder="e.g. Explore Technical Guides"
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-800 bg-white"
+                            />
+                          </div>
+
+                          {/* CTA URL */}
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                              CTA Target URL (Optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={slide.cta_url || ''}
+                              onChange={(e) => handleUpdateSlide(index, { cta_url: e.target.value })}
+                              placeholder="e.g. #catalogue or /e-books/system-design"
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono text-slate-800 bg-white"
+                            />
+                          </div>
+
+                          {/* Alt Text */}
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                              Accessibility Alt Text
+                            </label>
+                            <input
+                              type="text"
+                              value={slide.alt_text || ''}
+                              onChange={(e) => handleUpdateSlide(index, { alt_text: e.target.value })}
+                              placeholder="e.g. KnowledgePaat Distributed Systems Preview"
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-800 bg-white"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* TAB 1: HERO SECTION */}
         {activeTab === 'hero' && (

@@ -198,12 +198,12 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FAF9FD] text-[#130B24] font-sans antialiased selection:bg-purple-200 selection:text-purple-950">
+    <div className="min-h-screen flex flex-col bg-[#F8F7FF] text-[#18143F] font-ebook antialiased selection:bg-[#6F42DD]/20 selection:text-[#18143F]">
 
-      {/* ── DEDICATED EBOOK HEADER (Deep Purple & Gold System) ───────── */}
+      {/* ── DEDICATED EBOOK HEADER (Deep Indigo #1D1855 & Gold System) ───────── */}
       <header
-        className={`sticky top-0 z-40 w-full bg-[#130B24]/98 backdrop-blur-md border-b transition-all duration-200 ${
-          isScrolled ? 'border-purple-900/60 shadow-lg shadow-black/20' : 'border-purple-900/40'
+        className={`sticky top-0 z-40 w-full bg-[#1D1855] backdrop-blur-md border-b transition-all duration-200 ${
+          isScrolled ? 'border-indigo-950/70 shadow-lg shadow-black/25' : 'border-indigo-900/40'
         }`}
       >
         <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
@@ -215,7 +215,7 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
                 href="/"
                 direction="to-main"
                 id="ebook-header-logo-link"
-                className="flex items-center bg-white/95 hover:bg-white px-2 sm:px-2.5 py-1 rounded-xl transition-all shadow-xs border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#FBBF24]"
+                className="flex items-center bg-white hover:bg-white/95 px-2.5 py-1.5 rounded-xl transition-all shadow-xs border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#FFCB35]"
                 aria-label="KnowledgePaat — Return to main home"
               >
                 <Logo size="sm" />
@@ -224,11 +224,11 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
               {/* Dedicated eBook Portal Badge */}
               <Link
                 href="/e-books"
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-400/10 text-[#FBBF24] border border-amber-400/30 hover:bg-amber-400/20 transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#6F42DD]/25 text-[#FFCB35] border border-[#6F42DD]/40 hover:bg-[#6F42DD]/35 transition-colors"
                 aria-label="eBooks Bookstore Home"
               >
-                <BookOpen className="w-3.5 h-3.5 text-[#FBBF24]" />
-                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider font-display">
+                <BookOpen className="w-3.5 h-3.5 text-[#FFCB35]" />
+                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider font-ebook">
                   eBooks
                 </span>
               </Link>
@@ -239,10 +239,10 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
               {/* eBook Home */}
               <Link
                 href="/e-books"
-                className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold font-display transition-colors focus:outline-none focus:ring-2 focus:ring-[#FBBF24] ${
+                className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold font-ebook transition-colors focus:outline-none focus:ring-2 focus:ring-[#FFCB35] ${
                   pathname === '/e-books'
-                    ? 'text-[#FBBF24] bg-amber-400/15 border border-amber-400/30 shadow-xs'
-                    : 'text-purple-200/90 hover:text-white hover:bg-purple-900/40'
+                    ? 'text-[#FFCB35] bg-[#6F42DD]/30 border border-[#6F42DD]/50 shadow-xs'
+                    : 'text-indigo-100/90 hover:text-white hover:bg-white/10'
                 }`}
               >
                 Store Home
@@ -251,7 +251,7 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
               {/* Browse E-Books / Catalogue Anchor */}
               <Link
                 href="/e-books#catalogue"
-                className="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold font-display text-purple-200/90 hover:text-white hover:bg-purple-900/40 transition-colors focus:outline-none focus:ring-2 focus:ring-[#FBBF24]"
+                className="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold font-ebook text-indigo-100/90 hover:text-white hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#FFCB35]"
               >
                 Browse Books
               </Link>
@@ -266,10 +266,10 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
                       setIsCategoryDropdownOpen(true);
                     }
                   }}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold font-display transition-colors focus:outline-none focus:ring-2 focus:ring-[#FBBF24] ${
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold font-ebook transition-colors focus:outline-none focus:ring-2 focus:ring-[#FFCB35] ${
                     isCategoryDropdownOpen
-                      ? 'text-[#FBBF24] bg-purple-900/50 border border-purple-500/30'
-                      : 'text-purple-200/90 hover:text-white hover:bg-purple-900/40'
+                      ? 'text-[#FFCB35] bg-[#6F42DD]/30 border border-[#6F42DD]/50'
+                      : 'text-indigo-100/90 hover:text-white hover:bg-white/10'
                   }`}
                   aria-expanded={isCategoryDropdownOpen}
                   aria-haspopup="true"
@@ -281,12 +281,12 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
 
                 {isCategoryDropdownOpen && (
                   <div
-                    className="absolute top-full left-0 mt-2 w-56 rounded-2xl bg-[#1C1037] border border-purple-500/30 p-2 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-150 z-50"
+                    className="absolute top-full left-0 mt-2 w-56 rounded-2xl bg-[#1D1855] border border-[#6F42DD]/40 p-2 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-150 z-50"
                     role="menu"
                     aria-label="Categories menu"
                   >
-                    <div className="px-3 py-1.5 border-b border-purple-800/40 mb-1">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#FBBF24] font-display">
+                    <div className="px-3 py-1.5 border-b border-indigo-900/60 mb-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#FFCB35] font-ebook">
                         Filter by Topic
                       </p>
                     </div>
@@ -298,11 +298,11 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
                             key={cat.name}
                             href={href}
                             onClick={() => setIsCategoryDropdownOpen(false)}
-                            className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-purple-100 hover:bg-purple-800/50 hover:text-[#FBBF24] transition-colors font-display"
+                            className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-indigo-100 hover:bg-[#6F42DD]/30 hover:text-[#FFCB35] transition-colors font-ebook"
                             role="menuitem"
                           >
                             <span>{cat.name}</span>
-                            <ChevronRight className="w-3 h-3 text-purple-400" />
+                            <ChevronRight className="w-3 h-3 text-indigo-300" />
                           </Link>
                         );
                       })}
@@ -314,10 +314,10 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
               {/* My Books (Visible to visitors; prompts login if unauthenticated) */}
               <Link
                 href="/my-books"
-                className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold font-display transition-colors focus:outline-none focus:ring-2 focus:ring-[#FBBF24] ${
+                className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold font-ebook transition-colors focus:outline-none focus:ring-2 focus:ring-[#FFCB35] ${
                   pathname === '/my-books'
-                    ? 'text-[#FBBF24] bg-amber-400/15 border border-amber-400/30 shadow-xs'
-                    : 'text-purple-200/90 hover:text-white hover:bg-purple-900/40'
+                    ? 'text-[#FFCB35] bg-[#6F42DD]/30 border border-[#6F42DD]/50 shadow-xs'
+                    : 'text-indigo-100/90 hover:text-white hover:bg-white/10'
                 }`}
               >
                 My Books
@@ -337,14 +337,14 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
                       placeholder="Search technical eBooks..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-44 sm:w-64 pl-8 pr-7 py-1.5 rounded-full border border-purple-500/40 bg-[#231545] text-xs font-medium text-white placeholder-purple-300/60 focus:outline-none focus:border-[#FBBF24] focus:ring-1 focus:ring-[#FBBF24] shadow-inner"
+                      className="w-44 sm:w-64 pl-8 pr-7 py-1.5 rounded-full border border-[#6F42DD]/50 bg-[#140F3E] text-xs font-medium text-white placeholder-indigo-300/60 focus:outline-none focus:border-[#FFCB35] focus:ring-1 focus:ring-[#FFCB35] shadow-inner font-ebook"
                       autoFocus
                     />
-                    <Search className="w-3.5 h-3.5 text-purple-400 absolute left-2.5 pointer-events-none" />
+                    <Search className="w-3.5 h-3.5 text-indigo-300 absolute left-2.5 pointer-events-none" />
                     <button
                       type="button"
                       onClick={() => setIsSearchOpen(false)}
-                      className="absolute right-2 text-purple-400 hover:text-white p-0.5"
+                      className="absolute right-2 text-indigo-300 hover:text-white p-0.5"
                       aria-label="Close search input"
                     >
                       <X className="w-3 h-3" />
@@ -357,7 +357,7 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
                       setIsSearchOpen(true);
                       setTimeout(() => searchInputRef.current?.focus(), 50);
                     }}
-                    className="flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-full text-purple-200 hover:bg-purple-900/50 hover:text-white transition-colors border border-purple-800/60 shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#FBBF24]"
+                    className="flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-full text-indigo-100 hover:bg-white/10 hover:text-white transition-colors border border-indigo-800/60 shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#FFCB35]"
                     aria-label="Search technical eBooks"
                   >
                     <Search className="w-4 h-4 stroke-[2.2]" />
@@ -369,8 +369,8 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
               <Link
                 href="/cart"
                 id="ebook-header-cart-btn"
-                className={`relative flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-full text-purple-200 hover:bg-purple-900/50 hover:text-white transition-colors border shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#FBBF24] ${
-                  pathname === '/cart' ? 'bg-amber-400/20 border-amber-400/40 text-[#FBBF24]' : 'border-purple-800/60'
+                className={`relative flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-full text-indigo-100 hover:bg-white/10 hover:text-white transition-colors border shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#FFCB35] ${
+                  pathname === '/cart' ? 'bg-[#6F42DD]/30 border-[#6F42DD]/50 text-[#FFCB35]' : 'border-indigo-800/60'
                 }`}
                 aria-label={`eBook Shopping Cart with ${cartCount} items`}
               >
@@ -378,7 +378,7 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
                 {cartCount > 0 && (
                   <span
                     id="ebook-header-cart-badge"
-                    className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#F59E0B] text-[10px] font-black text-[#130B24] shadow-md animate-in zoom-in-75"
+                    className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#FFCB35] text-[10px] font-black text-[#1D1855] shadow-md animate-in zoom-in-75 font-ebook"
                   >
                     {cartCount}
                   </span>
@@ -390,13 +390,13 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
                 {user ? (
                   <div className="flex items-center gap-1.5">
                     <Link href={dashboardHref}>
-                      <button className="px-3 py-1.5 rounded-xl text-xs font-bold text-purple-200 hover:text-white bg-purple-900/50 border border-purple-700/60 transition-colors">
+                      <button className="px-3 py-1.5 rounded-xl text-xs font-bold text-indigo-100 hover:text-white bg-[#6F42DD]/30 border border-[#6F42DD]/50 transition-colors font-ebook">
                         Dashboard
                       </button>
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-purple-300 hover:text-red-400 hover:bg-purple-900/40 transition-colors font-display cursor-pointer"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-indigo-200 hover:text-red-400 hover:bg-white/10 transition-colors font-ebook cursor-pointer"
                       title="Sign out of account"
                     >
                       <LogOut className="w-3.5 h-3.5" />
@@ -407,13 +407,13 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
                   <div className="flex items-center gap-2.5">
                     <Link
                       href={loginReturnHref}
-                      className="font-bold text-xs sm:text-sm text-purple-200 hover:text-white px-2.5 py-1.5 rounded-xl transition-colors font-display whitespace-nowrap"
+                      className="font-bold text-xs sm:text-sm text-indigo-100 hover:text-white px-2.5 py-1.5 rounded-xl transition-colors font-ebook whitespace-nowrap"
                     >
                       Sign In
                     </Link>
                     <Link href={registerReturnHref} className="shrink-0">
                       <button
-                        className="btn-gold px-3.5 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap flex items-center gap-1"
+                        className="btn-gold px-3.5 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap flex items-center gap-1 font-ebook"
                       >
                         <span>Get Started</span>
                         <ArrowRight className="w-3.5 h-3.5 hidden lg:inline" />
@@ -428,7 +428,7 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
                 ref={menuButtonRef}
                 type="button"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="flex md:hidden items-center justify-center h-9 w-9 rounded-xl text-purple-200 hover:bg-purple-900/50 hover:text-white transition-colors border border-purple-800/60 shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#FBBF24]"
+                className="flex md:hidden items-center justify-center h-9 w-9 rounded-xl text-indigo-100 hover:bg-white/10 hover:text-white transition-colors border border-indigo-800/60 shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#FFCB35]"
                 aria-label="Toggle eBook navigation menu"
                 aria-expanded={isMobileMenuOpen}
                 aria-controls="ebook-mobile-menu"
@@ -465,16 +465,16 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
           {/* Drawer Panel */}
           <div
             ref={mobileMenuRef}
-            className="relative ml-auto w-full max-w-xs sm:max-w-sm h-full bg-[#130B24] border-l border-purple-900/60 shadow-2xl flex flex-col justify-between overflow-y-auto overflow-x-hidden animate-in slide-in-from-right duration-200 z-10 p-5 text-purple-100"
+            className="relative ml-auto w-full max-w-xs sm:max-w-sm h-full bg-[#1D1855] border-l border-indigo-900/60 shadow-2xl flex flex-col justify-between overflow-y-auto overflow-x-hidden animate-in slide-in-from-right duration-200 z-10 p-5 text-indigo-100 font-ebook"
           >
             {/* Top Bar inside Drawer */}
             <div>
-              <div className="flex items-center justify-between pb-4 border-b border-purple-900/40">
+              <div className="flex items-center justify-between pb-4 border-b border-indigo-900/40">
                 <div className="flex items-center gap-2">
-                  <div className="bg-white/95 px-2 py-0.5 rounded-lg border border-white/20">
+                  <div className="bg-white hover:bg-white/95 px-2.5 py-1 rounded-xl border border-white/20">
                     <Logo size="xs" />
                   </div>
-                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-400/10 text-[#FBBF24] border border-amber-400/30 uppercase tracking-wider font-display">
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#6F42DD]/25 text-[#FFCB35] border border-[#6F42DD]/40 uppercase tracking-wider font-ebook">
                     eBooks
                   </span>
                 </div>
@@ -484,7 +484,7 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
                     setIsMobileMenuOpen(false);
                     menuButtonRef.current?.focus();
                   }}
-                  className="p-2 rounded-xl text-purple-300 hover:text-white hover:bg-purple-900/50 transition-colors focus:outline-none focus:ring-2 focus:ring-[#FBBF24]"
+                  className="p-2 rounded-xl text-indigo-200 hover:text-white hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#FFCB35]"
                   aria-label="Close navigation menu"
                 >
                   <X className="w-5 h-5 stroke-[2.2]" />
@@ -498,24 +498,24 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
                   placeholder="Search technical eBooks..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 rounded-xl border border-purple-500/40 bg-[#1F123B] text-xs font-medium text-white placeholder-purple-300/60 focus:bg-[#251547] focus:border-[#FBBF24] focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+                  className="w-full pl-9 pr-4 py-2 rounded-xl border border-[#6F42DD]/50 bg-[#140F3E] text-xs font-medium text-white placeholder-indigo-300/60 focus:bg-[#1A144F] focus:border-[#FFCB35] focus:outline-none focus:ring-2 focus:ring-[#FFCB35]/20 font-ebook"
                 />
-                <Search className="w-4 h-4 text-purple-400 absolute left-3 top-2.5 pointer-events-none" />
+                <Search className="w-4 h-4 text-indigo-300 absolute left-3 top-2.5 pointer-events-none" />
               </form>
 
               {/* Primary eBook Navigation Links */}
               <nav className="mt-5 space-y-1.5" aria-label="Mobile Navigation Links">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-[#FBBF24] font-display px-2 mb-2">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#FFCB35] font-ebook px-2 mb-2">
                   Bookstore Navigation
                 </p>
 
                 <Link
                   href="/e-books"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-bold font-display transition-colors ${
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-bold font-ebook transition-colors ${
                     pathname === '/e-books'
-                      ? 'bg-amber-400/15 text-[#FBBF24] border border-amber-400/30'
-                      : 'text-purple-200 hover:bg-purple-900/40 hover:text-white'
+                      ? 'bg-[#6F42DD]/30 text-[#FFCB35] border border-[#6F42DD]/50'
+                      : 'text-indigo-100 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -660,10 +660,10 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
         {children}
       </div>
 
-      {/* ── DEDICATED EBOOK FOOTER (Deep Purple Reference Design) ───── */}
-      <footer className="border-t border-purple-900/50 bg-[#130B24] pt-12 sm:pt-16 pb-8 sm:pb-12 text-purple-200/80 font-sans">
+      {/* ── DEDICATED EBOOK FOOTER (Deep Indigo #1D1855 & Gold System) ───── */}
+      <footer className="border-t border-indigo-900/50 bg-[#1D1855] pt-12 sm:pt-16 pb-8 sm:pb-12 text-indigo-200/80 font-ebook">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-10 pb-12 border-b border-purple-900/40">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-10 pb-12 border-b border-indigo-900/40">
 
             {/* Col 1 & 2: Brand & Bookstore Mission */}
             <div className="lg:col-span-2 space-y-4">
@@ -671,22 +671,22 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
                 <SectionTransitionLink
                   href="/"
                   direction="to-main"
-                  className="bg-white/95 hover:bg-white px-2.5 py-1 rounded-xl transition-all shadow-xs border border-white/20 inline-block"
+                  className="bg-white hover:bg-white/95 px-2.5 py-1.5 rounded-xl transition-all shadow-xs border border-white/20 inline-block focus:outline-none focus:ring-2 focus:ring-[#FFCB35]"
                 >
                   <Logo size="sm" />
                 </SectionTransitionLink>
-                <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-400/10 text-[#FBBF24] border border-amber-400/30 uppercase tracking-wider font-display">
+                <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#6F42DD]/25 text-[#FFCB35] border border-[#6F42DD]/40 uppercase tracking-wider font-ebook">
                   Bookstore
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-purple-300/80 leading-relaxed max-w-sm">
+              <p className="text-xs sm:text-sm text-indigo-200/80 leading-relaxed max-w-sm font-ebook">
                 Authoritative technical publications and engineering guides from KnowledgePaat. Instant browser reading, offline PDF editions, and continuous curriculum updates.
               </p>
               <div className="pt-2">
                 <SectionTransitionLink
                   href="/"
                   direction="to-main"
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FBBF24] hover:text-amber-300 font-display transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FFCB35] hover:text-amber-300 font-ebook transition-colors"
                 >
                   <span>← Return to KnowledgePaat Platform Home</span>
                 </SectionTransitionLink>
@@ -695,7 +695,7 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
 
             {/* Col 3: Bookstore Navigation */}
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-[#FBBF24] font-display mb-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#FFCB35] font-ebook mb-3">
                 eBook Bookstore
               </p>
               <ul className="space-y-2 text-xs sm:text-sm font-medium">
@@ -734,7 +734,7 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
 
             {/* Col 4: Platform Resources */}
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-[#FBBF24] font-display mb-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#FFCB35] font-ebook mb-3">
                 Career Platform
               </p>
               <ul className="space-y-2 text-xs sm:text-sm font-medium">
@@ -773,7 +773,7 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
 
             {/* Col 5: Account & Governance */}
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-[#FBBF24] font-display mb-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#FFCB35] font-ebook mb-3">
                 Account & Governance
               </p>
               <ul className="space-y-2 text-xs sm:text-sm font-medium">
@@ -803,7 +803,7 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/admin/login" className="text-purple-400 hover:text-amber-400 transition-colors">
+                  <Link href="/admin/login" className="text-indigo-300 hover:text-[#FFCB35] transition-colors">
                     Admin Console →
                   </Link>
                 </li>
@@ -813,7 +813,7 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Bottom Bar: Copyright & Social Links */}
-          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-purple-400">
+          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-indigo-300">
             <p>
               © {new Date().getFullYear()} KnowledgePaat. All rights reserved. Authoritative commercial technical publications.
             </p>
@@ -827,7 +827,7 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
                     href={socialLinks[platform.key]?.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center h-8 w-8 rounded-lg bg-purple-900/50 border border-purple-700/50 text-purple-200 hover:text-[#FBBF24] hover:border-amber-400/40 hover:bg-purple-800/60 transition-all p-1.5 focus:outline-none focus:ring-2 focus:ring-[#FBBF24]"
+                    className="flex items-center justify-center h-8 w-8 rounded-lg bg-indigo-950/60 border border-indigo-800/50 text-indigo-200 hover:text-[#FFCB35] hover:border-[#FFCB35]/40 hover:bg-[#6F42DD]/30 transition-all p-1.5 focus:outline-none focus:ring-2 focus:ring-[#FFCB35]"
                     aria-label={`KnowledgePaat on ${platform.label}`}
                   >
                     <SocialIcon platformKey={platform.key} />

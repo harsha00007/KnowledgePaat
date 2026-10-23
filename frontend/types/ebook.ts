@@ -441,5 +441,45 @@ export interface EBookReconciliationReport {
   settlementDetails: Record<string, unknown>;
 }
 
+export type MediaSlideType = 'image' | 'video';
+
+export interface MediaSlide {
+  id: string;
+  type: MediaSlideType;
+  media_url: string;
+  poster_url?: string | null;
+  alt_text?: string;
+  heading: string;
+  description: string;
+  cta_label?: string | null;
+  cta_url?: string | null;
+  is_active: boolean;
+  order: number;
+}
+
+export interface MediaCardConfig {
+  is_visible: boolean;
+  slides: MediaSlide[];
+}
+
+export const DEFAULT_MEDIA_CARD: MediaCardConfig = {
+  is_visible: true,
+  slides: [
+    {
+      id: 'default-slide-1',
+      type: 'image',
+      media_url: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1600&auto=format&fit=crop&q=80',
+      heading: 'Master Practical Software Engineering',
+      description: 'Production-ready architectures, system design principles, and career-accelerating insights written by experienced practitioners.',
+      cta_label: 'Explore Technical Guides',
+      cta_url: '#catalogue',
+      is_active: true,
+      order: 0,
+      alt_text: 'KnowledgePaat Technical Library'
+    }
+  ]
+};
+
+
 
 

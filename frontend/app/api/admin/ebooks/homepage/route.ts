@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/utils/supabase/server';
 import { logger } from '@/lib/logger';
 import { checkRateLimit, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
+import { DEFAULT_MEDIA_CARD, MediaCardConfig } from '@/types/ebook';
 
 export const dynamic = 'force-dynamic';
 
@@ -209,6 +210,45 @@ export async function PUT(req: NextRequest) {
     };
     const testimonials = Array.isArray(content.testimonials) ? content.testimonials : [];
 
+    // Media Card validation & sanitization
+    let media_card: MediaCardConfig = DEFAULT_MEDIA_CARD;
+    if (content.media_card && typeof content.media_card === 'object') {
+      const is_visible = typeof content.media_card.is_visible === 'boolean' ? content.media_card.is_visible : true;
+      const rawSlides = Array.isArray(content.media_card.slides) ? content.media_card.slides : [];
+      const slides = rawSlides.map((s: any, idx: number) => {
+        const type = s.type === 'video' ? 'video' : 'image';
+        const media_url = String(s.media_url || '').trim();
+        const poster_url = s.poster_url ? String(s.poster_url).trim() : null;
+        const cta_url = s.cta_url ? String(s.cta_url).trim() : null;
+
+        if (media_url && !isSafeUrl(media_url)) {
+          throw new Error(`Slide media URL is invalid or unsafe: ${media_url}`);
+        }
+        if (poster_url && !isSafeUrl(poster_url)) {
+          throw new Error(`Slide poster URL is invalid or unsafe: ${poster_url}`);
+        }
+        if (cta_url && !isSafeUrl(cta_url)) {
+          throw new Error(`Slide CTA URL is invalid or unsafe: ${cta_url}`);
+        }
+
+        return {
+          id: String(s.id || `slide-${Date.now()}-${idx}`),
+          type,
+          media_url,
+          poster_url,
+          alt_text: String(s.alt_text || '').trim(),
+          heading: String(s.heading || '').trim(),
+          description: String(s.description || '').trim(),
+          cta_label: s.cta_label ? String(s.cta_label).trim() : null,
+          cta_url,
+          is_active: typeof s.is_active === 'boolean' ? s.is_active : true,
+          order: typeof s.order === 'number' ? s.order : idx,
+        };
+      });
+
+      media_card = { is_visible, slides };
+    }
+
     const adminClient = createAdminClient();
     const now = new Date().toISOString();
 
@@ -233,6 +273,7 @@ export async function PUT(req: NextRequest) {
           category_order,
           promotional_banner,
           section_visibility,
+          media_card,
           testimonials,
           updated_at: now,
           updated_by: auth.user.id,
@@ -313,6 +354,7 @@ export async function PUT(req: NextRequest) {
           category_order,
           promotional_banner,
           section_visibility,
+          media_card,
           testimonials,
           version: nextVersion,
           published_at: now,
@@ -348,6 +390,7 @@ export async function PUT(req: NextRequest) {
           category_order,
           promotional_banner,
           section_visibility,
+          media_card,
           testimonials,
           version: nextVersion,
           updated_at: now,

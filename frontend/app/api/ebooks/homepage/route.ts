@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/utils/supabase/server';
 import { getAuthoritativeEditionPricing } from '@/lib/ebook/pricing';
+import { DEFAULT_MEDIA_CARD } from '@/types/ebook';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 60;
@@ -206,6 +207,7 @@ export async function GET(req: NextRequest) {
       category_order: activeConfig.category_order,
       promotional_banner: activeConfig.promotional_banner,
       section_visibility: activeConfig.section_visibility,
+      media_card: activeConfig.media_card || DEFAULT_MEDIA_CARD,
       testimonials: activeConfig.testimonials,
     }, {
       headers: {

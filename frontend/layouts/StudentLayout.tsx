@@ -33,6 +33,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { useFeatureFlags } from '@/context/FeatureFlagContext';
 import { FeatureComingSoon } from '@/components/FeatureComingSoon';
 import { FeatureKey } from '@/lib/featureFlags';
+import { SectionTransitionLink } from '@/components/SectionTransition';
 
 interface NavLinkItem {
   name: string;
@@ -264,6 +265,25 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
             <Link href="/student/dashboard" className="md:hidden flex items-center gap-1.5">
               <Logo size="sm" />
             </Link>
+
+            {/* E-Book Option next to KnowledgePaat logo and above the words of Student Dashboard */}
+            <SectionTransitionLink
+              href="/e-books"
+              direction="to-ebooks"
+              id="student-header-ebooks-link"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#1D1855] bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 border border-purple-200/80 hover:border-purple-300 shadow-2xs hover:shadow-xs transition-all duration-150 group focus:outline-none focus:ring-2 focus:ring-[#6F42DD] focus:ring-offset-1 shrink-0"
+              aria-label="KnowledgePaat eBooks"
+            >
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#6F42DD]/10 text-[#6F42DD] group-hover:bg-[#6F42DD] group-hover:text-white transition-colors">
+                <BookOpen className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
+              </span>
+              <span className="font-bold tracking-tight text-[#1D1855]">
+                E-Books
+              </span>
+              <span className="hidden sm:inline-flex items-center text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#FFCB35]/25 text-amber-900 border border-[#FFCB35]/60 font-sans">
+                Store
+              </span>
+            </SectionTransitionLink>
           </div>
 
           <div className="flex items-center gap-2">

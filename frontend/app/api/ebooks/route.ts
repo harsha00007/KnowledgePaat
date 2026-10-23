@@ -19,10 +19,11 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search')?.trim() || '';
     const category = searchParams.get('category')?.trim() || '';
     const readerRole = searchParams.get('reader_role')?.trim() || '';
+    const sort = searchParams.get('sort')?.trim() || 'latest';
 
-    // Bounded pagination: 1-indexed page, max 50 items per page
+    // Bounded pagination: 1-indexed page, max 50 items per page, default 10 per requirement
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
-    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '12', 10) || 12));
+    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '10', 10) || 10));
     const offset = (page - 1) * limit;
 
     // Deterministic query on published books only
@@ -64,9 +65,7 @@ export async function GET(req: NextRequest) {
       `, { count: 'exact' })
       .eq('status', 'published')
       .eq('editions.status', 'published')
-      .eq('editions.is_current_edition', true)
-      .order('created_at', { ascending: false })
-      .order('id', { ascending: true });
+      .eq('editions.is_current_edition', true);
 
     if (category && category !== 'all' && category !== 'All') {
       query = query.eq('category', category);
@@ -81,20 +80,38 @@ export async function GET(req: NextRequest) {
       query = query.or(`title.ilike.%${search}%,author.ilike.%${search}%,slug.ilike.%${search}%,description.ilike.%${search}%`);
     }
 
+    // Deterministic sorting with unique tie-breaker on id
+    if (sort === 'title_asc') {
+      query = query.order('title', { ascending: true }).order('id', { ascending: true });
+    } else if (sort === 'title_desc') {
+      query = query.order('title', { ascending: false }).order('id', { ascending: true });
+    } else {
+      // Default 'latest'
+      query = query.order('created_at', { ascending: false }).order('id', { ascending: true });
+    }
+
     query = query.range(offset, offset + limit - 1);
 
     const { data: booksData, count, error } = await query;
 
     if (error) {
       if (error.code === 'PGRST103' || String(error.message || '').toLowerCase().includes('range')) {
-        // Out-of-range page requested: get total count and return empty page
-        const { count: exactTotal } = await supabase
+        // Out-of-range page requested: get filtered total count and return empty page
+        let countQuery = supabase
           .from('ebooks')
           .select('id, editions:ebook_editions!inner(id)', { count: 'exact', head: true })
           .eq('status', 'published')
           .eq('editions.status', 'published')
           .eq('editions.is_current_edition', true);
 
+        if (category && category !== 'all' && category !== 'All') {
+          countQuery = countQuery.eq('category', category);
+        }
+        if (search) {
+          countQuery = countQuery.or(`title.ilike.%${search}%,author.ilike.%${search}%,slug.ilike.%${search}%,description.ilike.%${search}%`);
+        }
+
+        const { count: exactTotal } = await countQuery;
         const total = exactTotal || 0;
         const totalPages = Math.ceil(total / limit) || 1;
 
