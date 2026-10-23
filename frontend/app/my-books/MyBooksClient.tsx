@@ -219,12 +219,12 @@ export function MyBooksClient() {
   // 2. Unverified Email Warning State
   if (errorCode === 'EMAIL_NOT_VERIFIED') {
     return (
-      <div className="min-h-[70vh] bg-[#F8FAFC] flex items-center justify-center py-16 px-4">
+      <div className="min-h-[70vh] bg-[#F8FAFC] flex items-center justify-center py-16 px-4 font-ebook">
         <div className="max-w-md w-full bg-white rounded-2xl border border-amber-200 p-8 shadow-sm text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 border border-amber-200 text-amber-600 mb-5">
             <ShieldAlert className="h-7 w-7" />
           </div>
-          <h2 className="text-xl font-bold text-[#0B1D3A] mb-2 font-display">
+          <h2 className="text-xl font-bold text-[#0B1D3A] mb-2">
             Email Verification Required
           </h2>
           <p className="text-sm text-slate-600 mb-6 leading-relaxed">
@@ -253,12 +253,12 @@ export function MyBooksClient() {
   // 3. Error State with Retry
   if (error) {
     return (
-      <div className="min-h-[70vh] bg-[#F8FAFC] flex items-center justify-center py-16 px-4">
+      <div className="min-h-[70vh] bg-[#F8FAFC] flex items-center justify-center py-16 px-4 font-ebook">
         <div className="max-w-md w-full bg-white rounded-2xl border border-rose-200 p-8 shadow-sm text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 border border-rose-200 text-rose-600 mb-5">
             <AlertCircle className="h-7 w-7" />
           </div>
-          <h2 className="text-xl font-bold text-[#0B1D3A] mb-2 font-display">
+          <h2 className="text-xl font-bold text-[#0B1D3A] mb-2">
             Failed to Load Library
           </h2>
           <p className="text-sm text-slate-600 mb-6 leading-relaxed">
@@ -278,18 +278,18 @@ export function MyBooksClient() {
   }
 
   return (
-    <div className="min-h-[75vh] bg-[#FAF9FD] text-[#130B24] py-8 sm:py-10 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-[75vh] bg-[#FAF9FD] text-[#130B24] py-8 sm:py-10 px-4 sm:px-6 lg:px-8 font-ebook">
       <div className="mx-auto max-w-7xl">
         {/* Header & Title */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-400/15 text-amber-800 border border-amber-400/30 font-display">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-400/15 text-amber-800 border border-amber-400/30">
                 <BookOpen className="w-3.5 h-3.5 text-amber-600" />
                 Customer Digital Shelf
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black font-serif text-[#130B24] tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#130B24] tracking-tight">
               My Books
             </h1>
             <p className="text-xs sm:text-sm text-purple-900/60 mt-1">
@@ -324,7 +324,7 @@ export function MyBooksClient() {
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
               <button
                 onClick={() => setSelectedPlanFilter('all')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap font-display ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
                   selectedPlanFilter === 'all'
                     ? 'bg-[#130B24] text-[#FBBF24] shadow-2xs border border-amber-400/30'
                     : 'text-purple-900/70 hover:bg-purple-50 hover:text-purple-950'
@@ -334,7 +334,7 @@ export function MyBooksClient() {
               </button>
               <button
                 onClick={() => setSelectedPlanFilter('read_online')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap font-display ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
                   selectedPlanFilter === 'read_online'
                     ? 'bg-[#130B24] text-[#FBBF24] shadow-2xs border border-amber-400/30'
                     : 'text-purple-900/70 hover:bg-purple-50 hover:text-purple-950'
@@ -344,7 +344,7 @@ export function MyBooksClient() {
               </button>
               <button
                 onClick={() => setSelectedPlanFilter('read_download')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap font-display ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
                   selectedPlanFilter === 'read_download'
                     ? 'bg-[#130B24] text-[#FBBF24] shadow-2xs border border-amber-400/30'
                     : 'text-purple-900/70 hover:bg-purple-50 hover:text-purple-950'
@@ -374,7 +374,7 @@ export function MyBooksClient() {
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-blue-50/80 border border-blue-100 text-[#2563EB] mb-5">
               <BookOpen className="h-10 w-10 stroke-[1.8]" />
             </div>
-            <h2 className="text-2xl font-bold text-[#0B1D3A] mb-2 font-display tracking-tight">
+            <h2 className="text-2xl font-bold text-[#0B1D3A] mb-2 tracking-tight">
               Your Library is Empty
             </h2>
             <p className="text-sm text-slate-600 mb-8 max-w-sm mx-auto leading-relaxed">
@@ -733,7 +733,7 @@ function CustomerOrderHistoryModal({ onClose }: { onClose: () => void }) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 font-ebook">
       <div className="bg-white rounded-3xl max-w-xl w-full p-6 space-y-5 border border-slate-200 shadow-2xl animate-in zoom-in-95 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
           <div className="flex items-center gap-2">
@@ -1065,7 +1065,7 @@ function EBookUpgradeModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 font-ebook">
       <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 border border-slate-200 shadow-2xl animate-in zoom-in-95">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">

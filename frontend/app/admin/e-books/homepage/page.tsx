@@ -402,7 +402,7 @@ export default function AdminEBooksHomepagePage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6 pb-20">
+      <div className="space-y-6 pb-20 font-ebook">
         
         {/* TOP BAR */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

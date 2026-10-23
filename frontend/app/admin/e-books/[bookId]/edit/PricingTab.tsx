@@ -263,7 +263,7 @@ export function PricingTab({
   const selectedEdition = editions.find(e => e.id === activeEditionId) || editions[0];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-ebook">
       {/* EDITION SELECTOR & HEADER */}
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">

@@ -500,7 +500,7 @@ function ReaderWorkspace({
   }[preferences.lineWidth];
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 ${themeClasses} ${fontClasses}`}>
+    <div className={`min-h-screen transition-colors duration-200 font-ebook ${themeClasses}`}>
       {/* ── TOP NAV BAR ────────────────────────────────────────────── */}
       <header className={`sticky top-0 z-30 border-b backdrop-blur-md transition-colors ${
         preferences.theme === 'dark'
@@ -764,7 +764,7 @@ function ReaderWorkspace({
             <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => updatePreference('fontFamily', 'sans')}
-                className={`py-1.5 px-2 rounded-lg border text-xs font-sans ${
+                className={`py-1.5 px-2 rounded-lg border text-xs reader-font-sans ${
                   preferences.fontFamily === 'sans' ? 'border-[#2563EB] bg-blue-50 text-[#2563EB]' : 'border-slate-200'
                 }`}
               >
@@ -772,7 +772,7 @@ function ReaderWorkspace({
               </button>
               <button
                 onClick={() => updatePreference('fontFamily', 'serif')}
-                className={`py-1.5 px-2 rounded-lg border text-xs font-serif ${
+                className={`py-1.5 px-2 rounded-lg border text-xs reader-font-serif ${
                   preferences.fontFamily === 'serif' ? 'border-[#2563EB] bg-blue-50 text-[#2563EB]' : 'border-slate-200'
                 }`}
               >
@@ -780,7 +780,7 @@ function ReaderWorkspace({
               </button>
               <button
                 onClick={() => updatePreference('fontFamily', 'mono')}
-                className={`py-1.5 px-2 rounded-lg border text-xs font-mono ${
+                className={`py-1.5 px-2 rounded-lg border text-xs reader-font-mono ${
                   preferences.fontFamily === 'mono' ? 'border-[#2563EB] bg-blue-50 text-[#2563EB]' : 'border-slate-200'
                 }`}
               >
@@ -1055,7 +1055,7 @@ function ReaderWorkspace({
 
         {/* Authored Content Body (Sanitized HTML) */}
         <article
-          className={`reader-content prose prose-slate max-w-none ${fontSizeClasses}`}
+          className={`reader-content prose prose-slate max-w-none ${fontClasses} ${fontSizeClasses}`}
           dangerouslySetInnerHTML={{ __html: chapter.safeHtml }}
         />
 

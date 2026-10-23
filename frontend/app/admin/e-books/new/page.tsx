@@ -82,7 +82,7 @@ export default function AdminNewEBookPage() {
 
   return (
     <AdminLayout>
-      <div className="max-w-4xl mx-auto space-y-6 pb-12">
+      <div className="max-w-4xl mx-auto space-y-6 pb-12 font-ebook">
         
         {/* HEADER */}
         <div className="flex items-center justify-between">

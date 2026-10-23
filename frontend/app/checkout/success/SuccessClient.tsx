@@ -159,7 +159,7 @@ export function SuccessClient() {
   }).format(order.total_amount_paise / 100);
 
   return (
-    <div className="max-w-3xl mx-auto py-10 sm:py-16 px-4 sm:px-6 space-y-8 animate-in fade-in">
+    <div className="max-w-3xl mx-auto py-10 sm:py-16 px-4 sm:px-6 space-y-8 animate-in fade-in font-ebook">
       {/* ── STATUS HERO CARD ── */}
       <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-8 text-center space-y-4">
         {isPaid && isCompleted ? (
@@ -168,10 +168,10 @@ export function SuccessClient() {
               <CheckCircle2 className="w-9 h-9" />
             </div>
             <div className="space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 font-display">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600">
                 Payment Confirmed
               </span>
-              <h1 className="text-2xl sm:text-3xl font-black text-[#0B1D3A] tracking-tight font-display">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#0B1D3A] tracking-tight">
                 Thank You For Your Purchase!
               </h1>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
@@ -185,10 +185,10 @@ export function SuccessClient() {
               <Clock className="w-9 h-9" />
             </div>
             <div className="space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-[#2563EB] font-display">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-[#2563EB]">
                 Payment Received
               </span>
-              <h1 className="text-2xl sm:text-3xl font-black text-[#0B1D3A] tracking-tight font-display">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#0B1D3A] tracking-tight">
                 Digital Unlocking in Progress
               </h1>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
@@ -202,10 +202,10 @@ export function SuccessClient() {
               <Clock className="w-9 h-9" />
             </div>
             <div className="space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-amber-600 font-display">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-amber-600">
                 Pending Confirmation
               </span>
-              <h1 className="text-2xl sm:text-3xl font-black text-[#0B1D3A] tracking-tight font-display">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#0B1D3A] tracking-tight">
                 Awaiting Gateway Confirmation
               </h1>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
@@ -255,7 +255,7 @@ export function SuccessClient() {
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs space-y-6">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="space-y-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-display">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Order Reference
             </span>
             <p className="text-sm font-black text-slate-900 font-mono">
@@ -263,10 +263,10 @@ export function SuccessClient() {
             </p>
           </div>
           <div className="text-right space-y-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-display">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Total Amount
             </span>
-            <p className="text-base font-black text-[#0B1D3A] font-display">
+            <p className="text-base font-bold text-[#0B1D3A]">
               {formattedAmount}
             </p>
           </div>
@@ -274,7 +274,7 @@ export function SuccessClient() {
 
         {/* Line Items List */}
         <div className="space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 font-display flex items-center gap-1.5">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
             <Receipt className="w-3.5 h-3.5 text-[#2563EB]" />
             Purchased Titles & Access Plans
           </p>

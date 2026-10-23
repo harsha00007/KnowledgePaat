@@ -450,7 +450,7 @@ export default function AdminEditEBookPage({ params }: { params: Promise<{ bookI
   if (isLoading) {
     return (
       <AdminLayout>
-        <div className="max-w-7xl mx-auto py-16 text-center">
+        <div className="max-w-7xl mx-auto py-16 text-center font-ebook">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-3 border-blue-600 border-t-transparent mb-3" />
           <p className="text-sm text-slate-500 font-medium">Loading eBook workspace...</p>
         </div>
@@ -461,7 +461,7 @@ export default function AdminEditEBookPage({ params }: { params: Promise<{ bookI
   if (!book) {
     return (
       <AdminLayout>
-        <div className="max-w-7xl mx-auto py-16 text-center">
+        <div className="max-w-7xl mx-auto py-16 text-center font-ebook">
           <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
           <h2 className="text-lg font-bold text-navy">eBook Not Found</h2>
           <Link href="/admin/e-books" className="mt-4 inline-block">
@@ -474,7 +474,7 @@ export default function AdminEditEBookPage({ params }: { params: Promise<{ bookI
 
   return (
     <AdminLayout>
-      <div className="max-w-7xl mx-auto space-y-6 pb-16">
+      <div className="max-w-7xl mx-auto space-y-6 pb-16 font-ebook">
         
         {/* HEADER BAR */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">

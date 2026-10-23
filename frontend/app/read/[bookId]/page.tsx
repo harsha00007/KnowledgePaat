@@ -25,7 +25,7 @@ export default async function ReadEntryPage({ params, searchParams }: PageProps)
       redirect(`/login?redirectTo=/read/${bookId}`);
     }
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-ebook">
         <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center">
           <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
           <h1 className="text-xl font-bold text-[#0B1D3A] mb-2">Email Verification Required</h1>
@@ -45,7 +45,7 @@ export default async function ReadEntryPage({ params, searchParams }: PageProps)
 
   if (!resolution.authorized || !resolution.edition || !resolution.book) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-ebook">
         <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center">
           <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
           <h1 className="text-xl font-bold text-[#0B1D3A] mb-2">Reading Access Required</h1>
@@ -112,7 +112,7 @@ export default async function ReadEntryPage({ params, searchParams }: PageProps)
 
   if (!targetChapterId) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-ebook">
         <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center">
           <BookOpen className="w-12 h-12 text-slate-400 mx-auto mb-4" />
           <h1 className="text-xl font-bold text-[#0B1D3A] mb-2">Chapters Being Formatted</h1>

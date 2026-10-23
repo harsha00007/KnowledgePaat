@@ -86,7 +86,7 @@ export function HighlightedBookSection({ book, ownership }: HighlightedBookSecti
     <section
       id="spotlight-publication"
       aria-label="Highlighted Publication"
-      className="relative overflow-hidden py-14 sm:py-20 bg-gradient-to-b from-[#FAF9FD] via-[#F3EDFC]/60 to-[#FAF9FD] border-y border-purple-100"
+      className="relative overflow-hidden py-14 sm:py-20 bg-gradient-to-b from-[#FAF9FD] via-[#F3EDFC]/60 to-[#FAF9FD] border-y border-purple-100 font-ebook"
     >
       {/* Decorative ambient violet glow */}
       <div className="absolute top-1/2 left-1/4 -translate-y-1/2 -translate-x-1/2 w-96 h-96 bg-purple-300/20 rounded-full blur-3xl pointer-events-none" />
@@ -95,11 +95,11 @@ export function HighlightedBookSection({ book, ownership }: HighlightedBookSecti
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative">
         {/* Section Header Eyebrow */}
         <div className="flex items-center gap-2 mb-8">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-400/15 text-amber-800 border border-amber-300/60 font-display">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-400/15 text-amber-800 border border-amber-300/60">
             <Sparkles className="w-3.5 h-3.5 text-amber-600" />
             Spotlight Publication
           </span>
-          <span className="text-xs font-bold text-purple-900/60 font-display">
+          <span className="text-xs font-semibold text-purple-900/60">
             Edition {book.edition_number || 1} • {book.category}
           </span>
         </div>
@@ -131,14 +131,14 @@ export function HighlightedBookSection({ book, ownership }: HighlightedBookSecti
                   <div className="w-full h-full bg-gradient-to-br from-[#130B24] via-[#241447] to-[#3D256E] p-6 text-white flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between border-b border-purple-400/20 pb-3 mb-4">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-[#FBBF24] font-display">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-[#FBBF24]">
                           {book.category}
                         </span>
-                        <span className="text-[10px] text-purple-300 font-semibold font-display">
+                        <span className="text-[10px] text-purple-300 font-semibold">
                           Ed. {book.edition_number || 1}
                         </span>
                       </div>
-                      <h3 className="font-serif text-xl sm:text-2xl font-bold leading-snug text-white">
+                      <h3 className="text-xl sm:text-2xl font-bold leading-snug text-white">
                         {book.title}
                       </h3>
                       {book.subtitle && (
@@ -150,7 +150,7 @@ export function HighlightedBookSection({ book, ownership }: HighlightedBookSecti
 
                     <div className="border-t border-purple-400/20 pt-4">
                       <p className="text-xs font-semibold text-purple-200">{book.author}</p>
-                      <p className="text-[10px] text-[#FBBF24] uppercase tracking-wider mt-1 font-display">KnowledgePaat Press</p>
+                      <p className="text-[10px] text-[#FBBF24] uppercase tracking-wider mt-1">KnowledgePaat Press</p>
                     </div>
                   </div>
                 )}
@@ -165,10 +165,10 @@ export function HighlightedBookSection({ book, ownership }: HighlightedBookSecti
           {/* ── CENTER: Title, Description & Benefits (lg:col-span-4) ── */}
           <div className="lg:col-span-4 space-y-4">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-purple-600 font-display">
+              <p className="text-xs font-bold uppercase tracking-wider text-purple-600">
                 Featured Book
               </p>
-              <h2 className="text-2xl sm:text-3xl font-serif font-black text-[#130B24] leading-tight mt-1">
+              <h2 className="text-2xl sm:text-3xl font-bold text-[#130B24] leading-tight mt-1">
                 {book.title}
               </h2>
               <p className="text-xs sm:text-sm text-purple-900/60 font-medium mt-1">
@@ -220,11 +220,11 @@ export function HighlightedBookSection({ book, ownership }: HighlightedBookSecti
                   <div className="p-1.5 rounded-lg bg-purple-50 text-purple-700">
                     <BookOpen className="w-4 h-4" />
                   </div>
-                  <h4 className="font-bold text-sm text-[#130B24] font-display">Read Online</h4>
+                  <h4 className="font-bold text-sm text-[#130B24]">Read Online</h4>
                 </div>
                 {/* Authoritative Selling Price */}
                 <div className="text-right">
-                  <span className="text-base sm:text-lg font-black text-[#130B24] font-display">
+                  <span className="text-base sm:text-lg font-bold text-[#130B24]">
                     {formatPaise(onlinePrice, currency)}
                   </span>
                   {onlineHasDiscount && (
@@ -277,7 +277,7 @@ export function HighlightedBookSection({ book, ownership }: HighlightedBookSecti
               }`}
             >
               {/* Gold "Recommended" badge */}
-              <div className="absolute -top-3 right-4 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-[#130B24] text-[10px] font-black uppercase tracking-wider font-display shadow-xs flex items-center gap-1">
+              <div className="absolute -top-3 right-4 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-[#130B24] text-[10px] font-bold uppercase tracking-wider shadow-xs flex items-center gap-1">
                 <Flame className="w-3 h-3 fill-current" />
                 <span>Recommended</span>
               </div>
@@ -288,12 +288,12 @@ export function HighlightedBookSection({ book, ownership }: HighlightedBookSecti
                     <Download className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-sm text-[#130B24] font-display">Read + Download</h4>
+                    <h4 className="font-bold text-sm text-[#130B24]">Read + Download</h4>
                   </div>
                 </div>
                 {/* Authoritative Selling Price */}
                 <div className="text-right">
-                  <span className="text-base sm:text-lg font-black text-amber-900 font-display">
+                  <span className="text-base sm:text-lg font-bold text-amber-900">
                     {formatPaise(downloadPrice, currency)}
                   </span>
                   {downloadHasDiscount && (

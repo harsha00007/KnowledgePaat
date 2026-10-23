@@ -191,7 +191,7 @@ export default function AdminEBookCustomersPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6 pb-20">
+      <div className="space-y-6 pb-20 font-ebook">
         
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

@@ -360,6 +360,34 @@
   /* ── eBook Approved Design Utilities ── */
   .font-ebook {
     font-family: var(--font-jakarta), var(--font-sans);
+    letter-spacing: -0.011em;
+  }
+
+  .font-ebook button,
+  .font-ebook input,
+  .font-ebook select,
+  .font-ebook textarea,
+  .font-ebook optgroup {
+    font-family: inherit;
+  }
+
+  /* Scoped safety: reset conflicting display font overrides when rendered inside eBook sections */
+  .font-ebook .font-display {
+    font-family: inherit;
+  }
+
+  /* Preserve reader article font preferences */
+  .font-ebook .reader-content.font-serif,
+  .font-ebook .reader-font-serif {
+    font-family: var(--font-serif);
+  }
+  .font-ebook .reader-content.font-sans,
+  .font-ebook .reader-font-sans {
+    font-family: var(--font-sans);
+  }
+  .font-ebook .reader-content.font-mono,
+  .font-ebook .reader-font-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 
   .font-serif {

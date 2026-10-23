@@ -160,7 +160,7 @@ export function FreeSampleDrawer({
       <div className="fixed inset-y-0 right-0 flex max-w-full pl-0 sm:pl-10">
         <div
           ref={drawerRef}
-          className="w-screen max-w-2xl bg-white shadow-2xl flex flex-col h-full transform transition ease-in-out duration-300 animate-in slide-in-from-right"
+          className="w-screen max-w-2xl bg-white shadow-2xl flex flex-col h-full transform transition ease-in-out duration-300 animate-in slide-in-from-right font-ebook"
         >
           {/* Header */}
           <div className="px-4 sm:px-6 py-4 border-b border-slate-200 bg-white sticky top-0 z-10 flex items-center justify-between">
@@ -177,7 +177,7 @@ export function FreeSampleDrawer({
                 </div>
                 <h2
                   id="sample-drawer-title"
-                  className="text-base sm:text-lg font-bold text-[#0B1D3A] truncate font-display"
+                  className="text-base sm:text-lg font-bold text-[#0B1D3A] truncate"
                 >
                   {chapter ? `Chapter ${chapter.chapter_index}: ${chapter.title}` : 'Reading Sample'}
                 </h2>
@@ -241,10 +241,10 @@ export function FreeSampleDrawer({
             ) : chapter ? (
               <article className="max-w-prose mx-auto">
                 <header className="mb-8 pb-6 border-b border-slate-100">
-                  <p className="text-xs font-bold uppercase tracking-widest text-[#2563EB] mb-2 font-display">
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#2563EB] mb-2">
                     Chapter {chapter.chapter_index}
                   </p>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-[#0B1D3A] font-display leading-tight">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[#0B1D3A] leading-tight">
                     {chapter.title}
                   </h1>
                   <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
@@ -256,7 +256,7 @@ export function FreeSampleDrawer({
 
                 {/* Sanitized HTML container */}
                 <div
-                  className="prose prose-slate max-w-none text-slate-700 leading-relaxed font-sans text-sm sm:text-base selection:bg-blue-100 selection:text-blue-900"
+                  className="prose prose-slate max-w-none text-slate-700 leading-relaxed text-sm sm:text-base selection:bg-blue-100 selection:text-blue-900"
                   dangerouslySetInnerHTML={{
                     __html: chapter.safe_html || renderSafeMarkdown(chapter.content_body || '')
                   }}
@@ -267,7 +267,7 @@ export function FreeSampleDrawer({
                   <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#2563EB] text-white">
                     <Sparkles className="h-5 w-5" />
                   </div>
-                  <h3 className="text-base font-bold text-[#0B1D3A] font-display">
+                  <h3 className="text-base font-bold text-[#0B1D3A]">
                     You have finished reading this free sample
                   </h3>
                   <p className="text-xs text-slate-600 max-w-md mx-auto">

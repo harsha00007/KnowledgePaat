@@ -62,7 +62,7 @@ export function FeaturedBookCard({ book, isOwned = false, onQuickAdd }: Featured
 
   return (
     <article
-      className="group relative flex flex-row items-center gap-3.5 p-3 sm:p-3.5 bg-white rounded-2xl border border-purple-100/90 shadow-2xs hover:shadow-md hover:border-purple-300 transition-all duration-200 overflow-hidden"
+      className="group relative flex flex-row items-center gap-3.5 p-3 sm:p-3.5 bg-white rounded-2xl border border-purple-100/90 shadow-2xs hover:shadow-md hover:border-purple-300 transition-all duration-200 overflow-hidden font-ebook"
       aria-labelledby={`featured-book-${book.id}`}
     >
       {/* ── LEFT: Book Cover Thumbnail with 3D Treatment ── */}
@@ -81,10 +81,10 @@ export function FeaturedBookCard({ book, isOwned = false, onQuickAdd }: Featured
         ) : (
           // Rich purple typographic book cover fallback
           <div className="w-full h-full bg-gradient-to-br from-[#130B24] via-[#241447] to-[#3D256E] text-white p-2 flex flex-col justify-between select-none">
-            <span className="text-[7px] font-bold uppercase tracking-wider text-[#FBBF24] font-display truncate">
+            <span className="text-[7px] font-bold uppercase tracking-wider text-[#FBBF24] truncate">
               {book.category}
             </span>
-            <p className="text-[9px] font-bold leading-tight font-serif line-clamp-3 text-white">
+            <p className="text-[9px] font-bold leading-tight line-clamp-3 text-white">
               {book.title}
             </p>
             <p className="text-[7px] text-purple-300 truncate">
@@ -102,7 +102,7 @@ export function FeaturedBookCard({ book, isOwned = false, onQuickAdd }: Featured
         <div>
           {/* Category & Genuine Rating */}
           <div className="flex items-center justify-between gap-1 mb-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 font-display truncate">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 truncate">
               {book.category}
             </span>
 
@@ -121,7 +121,7 @@ export function FeaturedBookCard({ book, isOwned = false, onQuickAdd }: Featured
           {/* Book Title */}
           <h3
             id={`featured-book-${book.id}`}
-            className="text-xs sm:text-sm font-bold font-serif text-[#130B24] leading-snug line-clamp-1 group-hover:text-purple-800 transition-colors"
+            className="text-xs sm:text-sm font-semibold text-[#130B24] leading-snug line-clamp-1 group-hover:text-purple-800 transition-colors"
           >
             <Link href={detailHref}>
               {book.title}
@@ -145,7 +145,7 @@ export function FeaturedBookCard({ book, isOwned = false, onQuickAdd }: Featured
         <div className="mt-2.5 pt-2 border-t border-purple-50 flex items-center justify-between gap-2">
           {/* Price with strikethrough if discounted */}
           <div className="flex items-baseline gap-1.5">
-            <span className="text-xs sm:text-sm font-black text-[#130B24] font-display">
+            <span className="text-xs sm:text-sm font-bold text-[#130B24]">
               {formattedPrice}
             </span>
             {hasDiscount && formattedOrigPrice && (

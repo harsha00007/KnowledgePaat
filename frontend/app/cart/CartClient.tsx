@@ -87,17 +87,17 @@ export function CartClient() {
   const isReadyForCheckout = validationStatus === 'validated' && !isValidating && validatedItems.length > 0;
 
   return (
-    <div className="min-h-screen bg-[#FAF9FD] text-[#130B24] py-10 sm:py-14">
+    <div className="min-h-screen bg-[#FAF9FD] text-[#130B24] py-10 sm:py-14 font-ebook">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         
         {/* ── HEADER ──────────────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-100 pb-6">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl sm:text-3xl font-black font-serif text-[#130B24]">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#130B24]">
                 Shopping Cart
               </h1>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-400/15 text-amber-800 border border-amber-400/30 font-display">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-400/15 text-amber-800 border border-amber-400/30">
                 {cartCount} {cartCount === 1 ? 'Book' : 'Books'}
               </span>
             </div>
@@ -187,7 +187,7 @@ export function CartClient() {
               storedItems.map((st) => (
                 <div key={st.bookId} className="bg-white rounded-2xl border border-red-200/80 p-5 flex items-center justify-between gap-4">
                   <div className="space-y-1">
-                    <p className="text-sm font-bold text-slate-800 font-display">Book ID: {st.bookId}</p>
+                    <p className="text-sm font-semibold text-slate-800">Book ID: {st.bookId}</p>
                     <p className="text-xs text-slate-500">Plan: {st.plan === 'read_download' ? 'Read + Download (PDF)' : 'Read Online'}</p>
                     <p className="text-xs text-red-600 font-medium">Server price unverified — click Revalidate Prices to refresh</p>
                   </div>
@@ -219,7 +219,7 @@ export function CartClient() {
           {/* RIGHT: Order Summary Card (4 Cols) */}
           <div className="lg:col-span-4 sticky top-24">
             <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 space-y-5">
-              <h2 className="text-base font-bold text-[#0B1D3A] font-display border-b border-slate-100 pb-3">
+              <h2 className="text-base font-bold text-[#0B1D3A] border-b border-slate-100 pb-3">
                 Order Summary
               </h2>
 
@@ -242,7 +242,7 @@ export function CartClient() {
                 <div className="border-t border-slate-100 pt-3 flex justify-between items-baseline">
                   <span className="text-sm font-bold text-[#0B1D3A]">Total Amount</span>
                   <div className="text-right">
-                    <span className="text-2xl font-black text-[#0B1D3A] font-display">
+                    <span className="text-2xl font-bold text-[#0B1D3A]">
                       {isReadyForCheckout ? formattedTotal : (isValidationFailed ? '—' : 'Verifying...')}
                     </span>
                     <p className="text-[10px] text-slate-400">
@@ -373,7 +373,7 @@ export function CartClient() {
 
           {/* Selected Line Items Overview */}
           <div className="space-y-2 border border-slate-200 rounded-xl p-3.5 bg-slate-50/50">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-display">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               Selected Titles & Access Plans
             </p>
             <div className="space-y-1 text-xs">
@@ -388,7 +388,7 @@ export function CartClient() {
               ))}
               <div className="flex justify-between items-center pt-2 font-bold text-sm text-[#0B1D3A] border-t border-slate-200">
                 <span>Total Amount:</span>
-                <span className="text-base font-black text-[#0B1D3A] font-display">{formattedTotal}</span>
+                <span className="text-base font-bold text-[#0B1D3A]">{formattedTotal}</span>
               </div>
             </div>
           </div>
@@ -450,7 +450,7 @@ function CartItemCard({
       <div className="flex-1 min-w-0 space-y-3 w-full">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <h3 className="text-base font-bold text-[#0B1D3A] font-display hover:text-[#2563EB] transition-colors truncate">
+            <h3 className="text-base font-bold text-[#0B1D3A] hover:text-[#2563EB] transition-colors truncate">
               <Link href={`/e-books/${item.slug || item.book_id}`}>
                 {item.title}
               </Link>
@@ -472,7 +472,7 @@ function CartItemCard({
 
         {/* Plan Selector Buttons (1 item per book constraint) */}
         <div className="pt-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-display block mb-1.5">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
             Selected Access Tier
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -490,7 +490,7 @@ function CartItemCard({
                 <Laptop className={`w-4 h-4 ${item.plan === 'read_online' ? 'text-purple-600' : 'text-slate-400'}`} />
                 <span className="text-xs">Read Online</span>
               </div>
-              <span className="text-xs font-bold font-display">
+              <span className="text-xs font-bold">
                 {item.plan === 'read_online' ? item.formatted_price : 'Online'}
               </span>
             </button>
@@ -509,7 +509,7 @@ function CartItemCard({
                 <Download className={`w-4 h-4 ${item.plan === 'read_download' ? 'text-purple-600' : 'text-slate-400'}`} />
                 <span className="text-xs">Read + PDF</span>
               </div>
-              <span className="text-xs font-bold font-display">
+              <span className="text-xs font-bold">
                 {item.plan === 'read_download' ? item.formatted_price : 'Online + PDF'}
               </span>
             </button>

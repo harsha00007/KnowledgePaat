@@ -380,7 +380,7 @@ export function CheckoutClient() {
         onError={() => setScriptLoadError(true)}
       />
 
-      <div className="min-h-screen bg-[#FAF9FD] text-[#130B24] py-8 sm:py-12 px-4 sm:px-6">
+      <div className="min-h-screen bg-[#FAF9FD] text-[#130B24] py-8 sm:py-12 px-4 sm:px-6 font-ebook">
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Navigation & Header */}
           <div className="space-y-2">
@@ -393,7 +393,7 @@ export function CheckoutClient() {
             </Link>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-purple-100 pb-4">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-black font-serif text-[#130B24] tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-bold text-[#130B24] tracking-tight">
                   Secure Checkout
                 </h1>
                 <p className="text-xs text-purple-900/60 mt-0.5">
@@ -457,7 +457,7 @@ export function CheckoutClient() {
             <div className="lg:col-span-7 space-y-6">
               {/* Buyer Identity Section */}
               <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-3">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-400 font-display flex items-center gap-1.5">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5 text-[#2563EB]" />
                   Customer Account Information
                 </p>
@@ -484,7 +484,7 @@ export function CheckoutClient() {
               {/* Selected Items Breakdown */}
               <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 font-display flex items-center gap-1.5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                     <BookOpen className="w-3.5 h-3.5 text-[#2563EB]" />
                     Items in Order ({validatedItems.length})
                   </p>
@@ -556,7 +556,7 @@ export function CheckoutClient() {
             {/* RIGHT COLUMN: Order Summary & Payment Button (5 cols) */}
             <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-24">
               <div className="bg-white rounded-2xl border border-purple-100 p-5 sm:p-6 shadow-sm space-y-5">
-                <h2 className="text-base font-bold text-[#130B24] font-serif border-b border-purple-100 pb-3">
+                <h2 className="text-base font-bold text-[#130B24] border-b border-purple-100 pb-3">
                   Order Summary
                 </h2>
 
@@ -581,7 +581,7 @@ export function CheckoutClient() {
                         Authoritative integer paise ({totalPaise} paise)
                       </span>
                     </div>
-                    <span className="text-2xl font-black text-[#130B24] font-display">
+                    <span className="text-2xl font-bold text-[#130B24]">
                       {formattedTotal}
                     </span>
                   </div>

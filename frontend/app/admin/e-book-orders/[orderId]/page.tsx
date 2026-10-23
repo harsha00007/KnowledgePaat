@@ -258,7 +258,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ ord
 
   return (
     <AdminLayout>
-      <div className="h-full overflow-y-auto p-6 space-y-6">
+      <div className="h-full overflow-y-auto p-6 space-y-6 font-ebook">
         {/* Back and Title */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">

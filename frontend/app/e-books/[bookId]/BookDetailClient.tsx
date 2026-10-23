@@ -132,11 +132,11 @@ export function BookDetailClient({
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF9FD] text-[#130B24] pb-24">
+    <div className="min-h-screen bg-[#FAF9FD] text-[#130B24] pb-24 font-ebook">
       {/* ── BREADCRUMB ────────────────────────────────────────────── */}
       <nav aria-label="Breadcrumb" className="bg-white border-b border-purple-100 py-3">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <ol className="flex items-center space-x-2 text-xs font-semibold text-purple-900/60 font-display">
+          <ol className="flex items-center space-x-2 text-xs font-semibold text-purple-900/60">
             <li>
               <Link href="/" className="hover:text-purple-900 transition-colors">Home</Link>
             </li>
@@ -170,10 +170,10 @@ export function BookDetailClient({
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-[#0B1D3A] via-[#163668] to-[#2563EB] text-white p-6 flex flex-col justify-between select-none">
                       <div className="space-y-2">
-                        <span className="text-[11px] font-bold tracking-widest text-[#00C2CB] uppercase font-display">
+                        <span className="text-[11px] font-bold tracking-widest text-[#00C2CB] uppercase">
                           {book.category}
                         </span>
-                        <h2 className="text-xl font-bold leading-snug font-display">
+                        <h2 className="text-xl font-bold leading-snug">
                           {book.title}
                         </h2>
                       </div>
@@ -204,7 +204,7 @@ export function BookDetailClient({
             <div className="lg:col-span-8 space-y-6">
               {/* Badges */}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-[#2563EB] border border-blue-200 uppercase tracking-wider font-display">
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-[#2563EB] border border-blue-200 uppercase tracking-wider">
                   {book.category}
                 </span>
                 <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
@@ -222,11 +222,11 @@ export function BookDetailClient({
 
               {/* Title & Author */}
               <div className="space-y-1">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black font-serif text-[#130B24] tracking-tight leading-tight">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#130B24] tracking-tight leading-tight">
                   {book.title}
                 </h1>
                 {book.subtitle && (
-                  <p className="text-base sm:text-lg text-purple-900/70 font-medium font-sans">
+                  <p className="text-base sm:text-lg text-purple-900/70 font-medium">
                     {book.subtitle}
                   </p>
                 )}
@@ -247,14 +247,14 @@ export function BookDetailClient({
               )}
 
               {/* Short summary */}
-              <p className="text-sm sm:text-base text-purple-950/80 leading-relaxed font-sans">
+              <p className="text-sm sm:text-base text-purple-950/80 leading-relaxed">
                 {book.description}
               </p>
 
               {/* ── ACCESS PLAN SELECTION BOX ──────────────────────── */}
               <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-purple-50/50 via-white to-amber-50/30 border border-purple-200/80 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm sm:text-base font-bold text-[#130B24] font-display flex items-center gap-2">
+                  <h3 className="text-sm sm:text-base font-bold text-[#130B24] flex items-center gap-2">
                     <ShieldCheck className="w-4.5 h-4.5 text-purple-600" />
                     Choose Your Access Plan
                   </h3>
@@ -282,7 +282,7 @@ export function BookDetailClient({
                     />
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-purple-600 font-display">
+                        <span className="text-xs font-bold uppercase tracking-wider text-purple-600">
                           Online Reader
                         </span>
                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
@@ -297,7 +297,7 @@ export function BookDetailClient({
                             {onlineOriginalRupees}
                           </span>
                         )}
-                        <span className="text-2xl font-black text-[#130B24] font-display">{priceOnline}</span>
+                        <span className="text-2xl font-bold text-[#130B24]">{priceOnline}</span>
                         {hasOnlineDiscount && (
                           <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
                             {onlinePricing?.online_discount_type === 'percentage' 
@@ -330,12 +330,12 @@ export function BookDetailClient({
                       className="sr-only"
                     />
                     {/* Value Badge */}
-                    <span className="absolute -top-2.5 right-4 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-400 to-amber-500 text-[#130B24] shadow-xs font-display uppercase tracking-wider">
+                    <span className="absolute -top-2.5 right-4 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-400 to-amber-500 text-[#130B24] shadow-xs uppercase tracking-wider">
                       Most Popular
                     </span>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-amber-800 font-display">
+                        <span className="text-xs font-bold uppercase tracking-wider text-amber-800">
                           Read + Download
                         </span>
                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
@@ -350,7 +350,7 @@ export function BookDetailClient({
                             {downloadOriginalRupees}
                           </span>
                         )}
-                        <span className="text-2xl font-black text-amber-950 font-display">{priceDownload}</span>
+                        <span className="text-2xl font-bold text-amber-950">{priceDownload}</span>
                         {hasDownloadDiscount && (
                           <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
                             {onlinePricing?.download_discount_type === 'percentage'
@@ -425,7 +425,7 @@ export function BookDetailClient({
         <div className="max-w-4xl space-y-6">
           <div className="flex items-center justify-between border-b border-slate-200 pb-4">
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-[#0B1D3A] font-display">
+              <h2 className="text-xl sm:text-2xl font-bold text-[#0B1D3A]">
                 Table of Contents
               </h2>
               <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
@@ -441,11 +441,11 @@ export function BookDetailClient({
                 className="flex items-center justify-between p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-colors"
               >
                 <div className="flex items-center gap-3.5 min-w-0">
-                  <span className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs flex items-center justify-center shrink-0 font-display">
+                  <span className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs flex items-center justify-center shrink-0">
                     {ch.chapter_index}
                   </span>
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-[#0B1D3A] truncate font-display">
+                    <p className="text-sm font-semibold text-[#0B1D3A] truncate">
                       {ch.title}
                     </p>
                     <div className="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
