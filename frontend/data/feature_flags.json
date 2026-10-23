@@ -14,9 +14,13 @@
     "student_purchases": true,
     "student_subscription": true,
     "student_login": true,
-    "student_registration": false,
-    "blur_homepage_pricing": true
+    "student_registration": true,
+    "blur_homepage_pricing": true,
+    "ebook_checkout": true,
+    "ebook_my_books": true,
+    "ebook_reader": true,
+    "ebook_pdf_download": true
   },
-  "updated_at": "2026-08-30T15:47:14.727Z",
-  "updated_by": "harshal.782002@gmail.com"
+  "updated_at": "2026-10-23T20:01:26.398Z",
+  "updated_by": "admin@knowledgepaat.test"
 }

@@ -275,7 +275,7 @@ export default function AdminEBookOrdersPage() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search by Order #, customer email/name, or gateway ID..."
-                    className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-800 placeholder:text-slate-400"
+                    className="w-full pl-9 pr-3 py-2.5 text-base sm:text-base md:text-sm min-h-[44px] bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-800 placeholder:text-slate-400"
                   />
                 </div>
 
@@ -286,7 +286,7 @@ export default function AdminEBookOrdersPage() {
                       setPaymentStatus(e.target.value);
                       setPage(1);
                     }}
-                    className="w-full py-2 px-3 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-800"
+                    className="w-full py-2.5 px-3 text-base sm:text-base md:text-sm min-h-[44px] bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-800"
                   >
                     <option value="all">Payment: All</option>
                     <option value="paid">Paid</option>
@@ -304,7 +304,7 @@ export default function AdminEBookOrdersPage() {
                       setOrderType(e.target.value);
                       setPage(1);
                     }}
-                    className="w-full py-2 px-3 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-800"
+                    className="w-full py-2.5 px-3 text-base sm:text-base md:text-sm min-h-[44px] bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-800"
                   >
                     <option value="all">Type: All</option>
                     <option value="purchase">Standard Purchase</option>
@@ -319,7 +319,7 @@ export default function AdminEBookOrdersPage() {
                       setRefundStatus(e.target.value);
                       setPage(1);
                     }}
-                    className="w-full py-2 px-3 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-800"
+                    className="w-full py-2.5 px-3 text-base sm:text-base md:text-sm min-h-[44px] bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-800"
                   >
                     <option value="all">Refund: All</option>
                     <option value="none">No Refunds</option>
@@ -332,7 +332,7 @@ export default function AdminEBookOrdersPage() {
                 <div className="md:col-span-2 flex items-center gap-2">
                   <button
                     type="submit"
-                    className="flex-1 bg-[#2563EB] hover:bg-blue-700 text-white font-medium text-sm py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                    className="flex-1 min-h-[44px] bg-[#2563EB] hover:bg-blue-700 text-white font-semibold text-sm py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-1.5 touch-manipulation cursor-pointer"
                   >
                     Filter
                   </button>
@@ -365,7 +365,91 @@ export default function AdminEBookOrdersPage() {
 
             {/* Table Card */}
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
+              {/* MOBILE ORDERS LIST (Phones & Narrow Tablets) */}
+              {!isLoading && orders.length > 0 && (
+                <div className="md:hidden divide-y divide-slate-100">
+                  {orders.map((order) => {
+                    const isUpgrade = order.order_type === 'upgrade';
+                    return (
+                      <div key={`m-${order.id}`} className="p-4 space-y-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <Link
+                              href={`/admin/e-book-orders/${order.id}`}
+                              className="font-bold text-navy text-sm font-mono hover:text-[#2563EB] flex items-center gap-1"
+                            >
+                              {order.order_number}
+                            </Link>
+                            <span className="text-[11px] text-slate-400 block mt-0.5">
+                              {formatDate(order.created_at)}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm font-bold text-slate-900 block">
+                              {formatPrice(order.total_amount_paise)}
+                            </span>
+                            {isUpgrade ? (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">
+                                PDF Upgrade
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
+                                Purchase
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-500 font-medium truncate max-w-[180px]">
+                              {order.customer_name || 'Customer'}
+                            </span>
+                            <span className="text-slate-400 font-mono text-[11px] truncate max-w-[150px]">
+                              {order.customer_email}
+                            </span>
+                          </div>
+                          {order.items && order.items.length > 0 && (
+                            <p className="text-xs text-slate-700 truncate font-medium">
+                              {order.items.map((it) => it.title).join(', ')}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1">
+                          <div className="flex items-center gap-1.5">
+                            {order.payment_status === 'paid' && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800">
+                                <CheckCircle2 className="w-2.5 h-2.5" /> Paid
+                              </span>
+                            )}
+                            {order.payment_status === 'partially_refunded' && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800">
+                                Partial Refund
+                              </span>
+                            )}
+                            {order.payment_status === 'refunded' && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-800">
+                                Refunded
+                              </span>
+                            )}
+                          </div>
+
+                          <Link
+                            href={`/admin/e-book-orders/${order.id}`}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 min-h-[44px] text-xs font-semibold text-[#2563EB] bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors touch-manipulation"
+                          >
+                            Details <ArrowRight className="w-4 h-4" />
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* DESKTOP TABLE */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs font-semibold uppercase tracking-wider">
@@ -507,7 +591,7 @@ export default function AdminEBookOrdersPage() {
 
               {/* Pagination */}
               {!isLoading && totalPages > 1 && (
-                <div className="p-4 border-t border-slate-200 flex items-center justify-between text-sm text-slate-500 bg-slate-50">
+                <div className="p-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-slate-500 bg-slate-50">
                   <div>
                     Showing page <span className="font-semibold text-slate-800">{page}</span> of{' '}
                     <span className="font-semibold text-slate-800">{totalPages}</span> ({totalCount} total orders)

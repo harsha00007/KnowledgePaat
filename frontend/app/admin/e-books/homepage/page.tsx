@@ -311,8 +311,8 @@ export default function AdminEBooksHomepagePage() {
           type: 'image',
           media_url: '',
           poster_url: null,
-          heading: 'New Promotional Title',
-          description: 'Highlight an architectural topic, new release, or publication milestone.',
+          heading: 'Featured Engineering Guide',
+          description: 'Explore practical system design architectures, hands-on production patterns, and career preparation publications.',
           cta_label: 'Explore Technical Guides',
           cta_url: '#catalogue',
           is_active: true,
@@ -637,7 +637,7 @@ export default function AdminEBooksHomepagePage() {
 
                 <div className="p-4 sm:p-6 bg-[#F8F7FF] rounded-2xl border border-[#E8E5F5] overflow-hidden">
                   <div className={previewDevice === 'mobile' ? 'max-w-sm mx-auto transition-all' : 'w-full transition-all'}>
-                    <MediaCard config={mediaCard} isAdminPreview={true} />
+                    <MediaCard config={mediaCard} isAdminPreview={true} books={catalogBooks as any} />
                   </div>
                 </div>
               </div>
@@ -858,6 +858,53 @@ export default function AdminEBooksHomepagePage() {
                               placeholder="e.g. Production-ready architectures, system design principles, and career insights."
                               className="w-full p-2.5 border border-slate-200 rounded-lg text-xs text-slate-800 bg-white"
                             />
+                          </div>
+
+                          {/* Linked Catalog Book Selector */}
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                              Linked Catalog Book (Optional)
+                            </label>
+                            <select
+                              value={slide.book_id || ''}
+                              onChange={(e) => {
+                                const selectedId = e.target.value;
+                                const linked = catalogBooks.find((b) => b.id === selectedId);
+                                handleUpdateSlide(index, {
+                                  book_id: selectedId || null,
+                                  ...(linked && !slide.cta_url ? { cta_url: `/e-books/${linked.slug}` } : {}),
+                                  ...(linked && !slide.cta_label ? { cta_label: 'Explore Guide' } : {}),
+                                });
+                              }}
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-medium text-navy bg-white"
+                            >
+                              <option value="">— None (Custom Promotional Media) —</option>
+                              {catalogBooks.map((b) => (
+                                <option key={b.id} value={b.id}>
+                                  {b.title} ({b.category})
+                                </option>
+                              ))}
+                            </select>
+                            <p className="text-[10px] text-slate-400 mt-1">
+                              Enables dynamic category badge and &ldquo;Read free sample&rdquo; action when sample is available.
+                            </p>
+                          </div>
+
+                          {/* Spotlight Badge Label */}
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                              Spotlight Badge Label (Optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={slide.badge_label || ''}
+                              onChange={(e) => handleUpdateSlide(index, { badge_label: e.target.value })}
+                              placeholder="e.g. Technical Spotlight, Architecture Deep-Dive"
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-800 bg-white"
+                            />
+                            <p className="text-[10px] text-slate-400 mt-1">
+                              Overrides default &ldquo;Technical Spotlight&rdquo; pill badge text.
+                            </p>
                           </div>
 
                           {/* CTA Label */}

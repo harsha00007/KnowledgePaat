@@ -9,7 +9,10 @@ export const dynamic = 'force-dynamic';
 function isSafeUrl(url: string): boolean {
   if (!url || typeof url !== 'string') return false;
   const trimmed = url.trim();
+  // Safe relative paths (e.g. /e-books, /e-books#catalogue)
   if (trimmed.startsWith('/') && !trimmed.startsWith('//')) return true;
+  // Safe in-page anchor links (e.g. #catalogue, #featured)
+  if (/^#[a-zA-Z0-9_\-]+$/.test(trimmed)) return true;
   try {
     const parsed = new URL(trimmed);
     return parsed.protocol === 'http:' || parsed.protocol === 'https:';
@@ -243,6 +246,8 @@ export async function PUT(req: NextRequest) {
           cta_url,
           is_active: typeof s.is_active === 'boolean' ? s.is_active : true,
           order: typeof s.order === 'number' ? s.order : idx,
+          book_id: s.book_id ? String(s.book_id).trim() : null,
+          badge_label: s.badge_label ? String(s.badge_label).trim() : null,
         };
       });
 
@@ -421,6 +426,10 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ success: false, error: 'Invalid action.' }, { status: 400 });
   } catch (err: any) {
     logger.error('Error updating admin homepage content', err);
-    return NextResponse.json({ success: false, error: 'Internal server error saving homepage content.' }, { status: 500 });
+    const isValidationErr = typeof err?.message === 'string' && (err.message.includes('URL is invalid') || err.message.includes('required'));
+    return NextResponse.json({
+      success: false,
+      error: isValidationErr ? err.message : 'Internal server error saving homepage content.'
+    }, { status: isValidationErr ? 400 : 500 });
   }
 }

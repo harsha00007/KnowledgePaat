@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -15,16 +15,10 @@ import {
   LogOut,
   LayoutDashboard,
   Filter,
-  Check,
   ChevronRight,
-  Mail,
   Home,
-  Briefcase,
-  FileText,
-  CreditCard,
-  Sparkles
+  FileText
 } from 'lucide-react';
-import { Button } from '@/components/Button';
 import { Logo } from '@/components/Logo';
 import { createClient } from '@/utils/supabase/client';
 import { useEBookCart } from '@/lib/ebook/cartContext';
@@ -35,6 +29,7 @@ import {
   DEFAULT_SOCIAL_LINKS,
   SOCIAL_PLATFORMS,
 } from '@/lib/socialLinks';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 export const EBOOK_CATEGORIES = [
   { name: 'All Categories', slug: '' },
@@ -59,8 +54,17 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // Close menus on route change via state adjustment during render (official React pattern)
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    setIsMobileMenuOpen(false);
+    setIsCategoryDropdownOpen(false);
+    setIsSearchOpen(false);
+  }
+
   // User & Social states
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [userRole, setUserRole] = useState<string>('student');
   const [socialLinks, setSocialLinks] = useState<SocialLinksSettings>(DEFAULT_SOCIAL_LINKS);
 
@@ -69,13 +73,6 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const categoryMenuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  // Close menus on route change
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-    setIsCategoryDropdownOpen(false);
-    setIsSearchOpen(false);
-  }, [pathname]);
 
   // Click outside to close category dropdown
   useEffect(() => {
@@ -190,6 +187,11 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
   const loginReturnHref = `/login?redirectTo=${encodeURIComponent(pathname || '/e-books')}`;
   const registerReturnHref = `/register?redirectTo=${encodeURIComponent(pathname || '/e-books')}`;
   const dashboardHref = userRole === 'admin' ? '/admin/dashboard' : '/student/dashboard';
+  // Exclude shopping bottom navigation from checkout, admin, and reader screens
+  const isShoppingExcluded = 
+    pathname.startsWith('/checkout') || 
+    pathname.startsWith('/admin') || 
+    pathname.includes('/read/');
 
   // Filter enabled social platforms
   const enabledSocialPlatforms = SOCIAL_PLATFORMS.filter((platform) => {
@@ -206,29 +208,29 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
           isScrolled ? 'border-indigo-950/70 shadow-lg shadow-black/25' : 'border-indigo-900/40'
         }`}
       >
-        <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
-          <div className="flex h-16 sm:h-18 items-center justify-between gap-2 sm:gap-4 relative">
+        <div className="mx-auto max-w-7xl px-2.5 xs:px-3 sm:px-6 lg:px-8">
+          <div className="flex h-14 sm:h-18 items-center justify-between gap-1.5 sm:gap-4 relative">
 
             {/* ── LEFT: Logo (links to /) + eBooks Store Badge ── */}
-            <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0">
+            <div className="flex items-center gap-1.5 xs:gap-2.5 sm:gap-3.5 shrink-0">
               <SectionTransitionLink
                 href="/"
                 direction="to-main"
                 id="ebook-header-logo-link"
-                className="flex items-center bg-white hover:bg-white/95 px-2.5 py-1.5 rounded-xl transition-all shadow-xs border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#FFCB35]"
+                className="flex items-center bg-white hover:bg-white/95 px-2 py-1 xs:px-2.5 xs:py-1.5 rounded-xl transition-all shadow-xs border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#FFCB35]"
                 aria-label="KnowledgePaat — Return to main home"
               >
-                <Logo size="sm" />
+                <Logo size="xs" />
               </SectionTransitionLink>
 
               {/* Dedicated eBook Portal Badge */}
               <Link
                 href="/e-books"
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#6F42DD]/25 text-[#FFCB35] border border-[#6F42DD]/40 hover:bg-[#6F42DD]/35 transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-0.5 xs:px-2.5 xs:py-1 rounded-lg bg-[#6F42DD]/25 text-[#FFCB35] border border-[#6F42DD]/40 hover:bg-[#6F42DD]/35 transition-colors"
                 aria-label="eBooks Bookstore Home"
               >
-                <BookOpen className="w-3.5 h-3.5 text-[#FFCB35]" />
-                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider font-ebook">
+                <BookOpen className="w-3 h-3 xs:w-3.5 xs:h-3.5 text-[#FFCB35]" />
+                <span className="text-[10px] xs:text-[11px] sm:text-xs font-bold uppercase tracking-wider font-ebook">
                   eBooks
                 </span>
               </Link>
@@ -239,9 +241,15 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
               {/* eBook Home */}
               <Link
                 href="/e-books"
-                className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold font-ebook transition-colors focus:outline-none focus:ring-2 focus:ring-[#FFCB35] ${
+                onClick={() => {
+                  if (pathname === '/e-books' && typeof window !== 'undefined' && window.scrollY > 0) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                aria-current={pathname === '/e-books' ? 'page' : undefined}
+                className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold font-ebook transition-all focus:outline-none focus:ring-2 focus:ring-[#FFCB35] ${
                   pathname === '/e-books'
-                    ? 'text-[#FFCB35] bg-[#6F42DD]/30 border border-[#6F42DD]/50 shadow-xs'
+                    ? 'text-white bg-[#6F42DD] shadow-xs'
                     : 'text-indigo-100/90 hover:text-white hover:bg-white/10'
                 }`}
               >
@@ -251,7 +259,13 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
               {/* Browse E-Books / Catalogue Anchor */}
               <Link
                 href="/e-books#catalogue"
-                className="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold font-ebook text-indigo-100/90 hover:text-white hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#FFCB35]"
+                onClick={() => {
+                  if (pathname === '/e-books') {
+                    const el = document.getElementById('catalogue');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold font-ebook text-indigo-100/90 hover:text-white hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#FFCB35]"
               >
                 Browse Books
               </Link>
@@ -314,9 +328,10 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
               {/* My Books (Visible to visitors; prompts login if unauthenticated) */}
               <Link
                 href="/my-books"
-                className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold font-ebook transition-colors focus:outline-none focus:ring-2 focus:ring-[#FFCB35] ${
+                aria-current={pathname === '/my-books' ? 'page' : undefined}
+                className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold font-ebook transition-all focus:outline-none focus:ring-2 focus:ring-[#FFCB35] ${
                   pathname === '/my-books'
-                    ? 'text-[#FFCB35] bg-[#6F42DD]/30 border border-[#6F42DD]/50 shadow-xs'
+                    ? 'text-white bg-[#6F42DD] shadow-xs'
                     : 'text-indigo-100/90 hover:text-white hover:bg-white/10'
                 }`}
               >
@@ -656,17 +671,17 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ── MAIN CONTENT OUTLET ──────────────────────────────────────── */}
-      <div className="flex-1">
+      <main className="flex-1 pb-16 md:pb-0" id="ebook-main-content">
         {children}
-      </div>
+      </main>
 
       {/* ── DEDICATED EBOOK FOOTER (Deep Indigo #1D1855 & Gold System) ───── */}
-      <footer className="border-t border-indigo-900/50 bg-[#1D1855] pt-12 sm:pt-16 pb-8 sm:pb-12 text-indigo-200/80 font-ebook">
+      <footer className="border-t border-indigo-900/50 bg-[#1D1855] pt-8 sm:pt-10 pb-20 sm:pb-24 md:pb-8 text-indigo-200/80 font-ebook">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-10 pb-12 border-b border-indigo-900/40">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 pb-8 border-b border-indigo-900/40">
 
             {/* Col 1 & 2: Brand & Bookstore Mission */}
-            <div className="lg:col-span-2 space-y-4">
+            <div className="lg:col-span-2 space-y-3">
               <div className="flex items-center gap-3">
                 <SectionTransitionLink
                   href="/"
@@ -682,11 +697,11 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
               <p className="text-xs sm:text-sm text-indigo-200/80 leading-relaxed max-w-sm font-ebook">
                 Authoritative technical publications and engineering guides from KnowledgePaat. Instant browser reading, offline PDF editions, and continuous curriculum updates.
               </p>
-              <div className="pt-2">
+              <div className="pt-1">
                 <SectionTransitionLink
                   href="/"
                   direction="to-main"
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FFCB35] hover:text-amber-300 font-ebook transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-200 hover:text-white underline-offset-4 hover:underline font-ebook transition-colors"
                 >
                   <span>← Return to KnowledgePaat Platform Home</span>
                 </SectionTransitionLink>
@@ -695,7 +710,7 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
 
             {/* Col 3: Bookstore Navigation */}
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-[#FFCB35] font-ebook mb-3">
+              <p className="text-xs font-bold tracking-wide text-[#FFCB35] font-ebook mb-2.5">
                 eBook Bookstore
               </p>
               <ul className="space-y-2 text-xs sm:text-sm font-medium">
@@ -720,47 +735,22 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/e-books?category=Engineering" className="hover:text-white transition-colors">
-                    Engineering Guides
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/e-books?category=System+Design" className="hover:text-white transition-colors">
-                    System Design Guides
+                  <Link href="/notes" className="hover:text-white transition-colors">
+                    Study Notes
                   </Link>
                 </li>
               </ul>
             </div>
 
-            {/* Col 4: Platform Resources */}
+            {/* Col 4: Help & Account (Prioritising My Books, support, legal, and auth-consistent links) */}
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-[#FFCB35] font-ebook mb-3">
-                Career Platform
+              <p className="text-xs font-bold tracking-wide text-[#FFCB35] font-ebook mb-2.5">
+                Help & Account
               </p>
               <ul className="space-y-2 text-xs sm:text-sm font-medium">
                 <li>
-                  <Link href="/jobs" className="hover:text-white transition-colors">
-                    Fresher Jobs
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/interview-preparation" className="hover:text-white transition-colors">
-                    Interview Preparation
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/notes" className="hover:text-white transition-colors">
-                    Study Notes
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/pricing" className="hover:text-white transition-colors">
-                    Platform Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/about" className="hover:text-white transition-colors">
-                    About KnowledgePaat
+                  <Link href="/my-books" className="hover:text-white transition-colors">
+                    My Books Library
                   </Link>
                 </li>
                 <li>
@@ -768,25 +758,37 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
                     Contact Support
                   </Link>
                 </li>
-              </ul>
-            </div>
-
-            {/* Col 5: Account & Governance */}
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-[#FFCB35] font-ebook mb-3">
-                Account & Governance
-              </p>
-              <ul className="space-y-2 text-xs sm:text-sm font-medium">
-                <li>
-                  <Link href={loginReturnHref} className="hover:text-white transition-colors">
-                    Student Sign In
-                  </Link>
-                </li>
-                <li>
-                  <Link href={registerReturnHref} className="hover:text-white transition-colors">
-                    Register Free Account
-                  </Link>
-                </li>
+                {user ? (
+                  <>
+                    <li>
+                      <Link href="/student/dashboard" className="hover:text-white transition-colors">
+                        Student Dashboard
+                      </Link>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="text-left hover:text-white transition-colors cursor-pointer"
+                      >
+                        Sign Out
+                      </button>
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li>
+                      <Link href={loginReturnHref} className="hover:text-white transition-colors">
+                        Student Sign In
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href={registerReturnHref} className="hover:text-white transition-colors">
+                        Register Free Account
+                      </Link>
+                    </li>
+                  </>
+                )}
                 <li>
                   <Link href="/privacy-policy" className="hover:text-white transition-colors">
                     Privacy Policy
@@ -802,19 +804,21 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
                     Refund & Cancellation
                   </Link>
                 </li>
-                <li>
-                  <Link href="/admin/login" className="text-indigo-300 hover:text-[#FFCB35] transition-colors">
-                    Admin Console →
-                  </Link>
-                </li>
+                {user && (userRole === 'admin' || userRole === 'super_admin') && (
+                  <li>
+                    <Link href="/admin/e-books" className="text-amber-300 hover:text-white transition-colors font-semibold">
+                      Admin Console
+                    </Link>
+                  </li>
+                )}
               </ul>
             </div>
 
           </div>
 
           {/* Bottom Bar: Copyright & Social Links */}
-          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-indigo-300">
-            <p>
+          <div className="pt-8 pb-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-indigo-300 border-t border-indigo-900/40 mt-8">
+            <p className="text-center sm:text-left leading-relaxed">
               © {new Date().getFullYear()} KnowledgePaat. All rights reserved. Authoritative commercial technical publications.
             </p>
 
@@ -838,6 +842,77 @@ export function EBookLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </footer>
+
+      {/* ── RESTRAINED MOBILE BOTTOM NAVIGATION (Requirement 4) ──────── */}
+      {!isShoppingExcluded && (
+        <nav
+          role="navigation"
+          aria-label="eBook Mobile Bottom Navigation"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#1D1855]/95 backdrop-blur-md border-t border-indigo-900/60 shadow-[0_-4px_16px_rgba(0,0,0,0.25)]"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        >
+          <div className="grid grid-cols-4 h-14 items-center">
+            {/* Browse / Store Home */}
+            <Link
+              href="/e-books"
+              className={`flex flex-col items-center justify-center gap-1 h-full min-h-[48px] font-ebook transition-colors focus:outline-none touch-manipulation ${
+                pathname === '/e-books'
+                  ? 'text-[#FFCB35] font-bold'
+                  : 'text-indigo-200/80 hover:text-white'
+              }`}
+            >
+              <BookOpen className="w-4.5 h-4.5" />
+              <span className="text-[10px] tracking-wide leading-none">Browse</span>
+            </Link>
+
+            {/* Categories */}
+            <Link
+              href="/e-books#catalogue"
+              onClick={() => {
+                const catEl = document.getElementById('catalogue');
+                if (catEl) catEl.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="flex flex-col items-center justify-center gap-1 h-full min-h-[48px] font-ebook text-indigo-200/80 hover:text-white transition-colors focus:outline-none touch-manipulation"
+            >
+              <Filter className="w-4.5 h-4.5" />
+              <span className="text-[10px] tracking-wide leading-none">Categories</span>
+            </Link>
+
+            {/* My Books */}
+            <Link
+              href="/my-books"
+              className={`flex flex-col items-center justify-center gap-1 h-full min-h-[48px] font-ebook transition-colors focus:outline-none touch-manipulation ${
+                pathname === '/my-books'
+                  ? 'text-[#FFCB35] font-bold'
+                  : 'text-indigo-200/80 hover:text-white'
+              }`}
+            >
+              <FileText className="w-4.5 h-4.5" />
+              <span className="text-[10px] tracking-wide leading-none">My Books</span>
+            </Link>
+
+            {/* Cart with count badge */}
+            <Link
+              href="/cart"
+              className={`relative flex flex-col items-center justify-center gap-1 h-full min-h-[48px] font-ebook transition-colors focus:outline-none touch-manipulation ${
+                pathname === '/cart'
+                  ? 'text-[#FFCB35] font-bold'
+                  : 'text-indigo-200/80 hover:text-white'
+              }`}
+            >
+              <div className="relative">
+                <ShoppingCart className="w-4.5 h-4.5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1.5 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-[#FFCB35] text-[9px] font-black text-[#1D1855] shadow-xs">
+                    {cartCount}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] tracking-wide leading-none">Cart</span>
+            </Link>
+          </div>
+        </nav>
+      )}
 
     </div>
   );

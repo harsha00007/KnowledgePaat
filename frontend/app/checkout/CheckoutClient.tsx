@@ -672,7 +672,7 @@ export function CheckoutClient() {
                       Boolean(validationError)
                     }
                     onClick={handleInitiatePayment}
-                    className="btn-gold w-full py-3.5 px-4 font-bold text-sm rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+                    className="btn-gold w-full min-h-[48px] py-3.5 px-4 font-bold text-sm rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50 touch-manipulation"
                   >
                     {isProcessingOrder ? (
                       <>

@@ -455,6 +455,8 @@ export interface MediaSlide {
   cta_url?: string | null;
   is_active: boolean;
   order: number;
+  book_id?: string | null;
+  badge_label?: string | null;
 }
 
 export interface MediaCardConfig {

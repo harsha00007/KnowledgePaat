@@ -324,7 +324,7 @@ export function MyBooksClient() {
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
               <button
                 onClick={() => setSelectedPlanFilter('all')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap touch-manipulation ${
                   selectedPlanFilter === 'all'
                     ? 'bg-[#130B24] text-[#FBBF24] shadow-2xs border border-amber-400/30'
                     : 'text-purple-900/70 hover:bg-purple-50 hover:text-purple-950'
@@ -334,7 +334,7 @@ export function MyBooksClient() {
               </button>
               <button
                 onClick={() => setSelectedPlanFilter('read_online')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap touch-manipulation ${
                   selectedPlanFilter === 'read_online'
                     ? 'bg-[#130B24] text-[#FBBF24] shadow-2xs border border-amber-400/30'
                     : 'text-purple-900/70 hover:bg-purple-50 hover:text-purple-950'
@@ -344,7 +344,7 @@ export function MyBooksClient() {
               </button>
               <button
                 onClick={() => setSelectedPlanFilter('read_download')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap touch-manipulation ${
                   selectedPlanFilter === 'read_download'
                     ? 'bg-[#130B24] text-[#FBBF24] shadow-2xs border border-amber-400/30'
                     : 'text-purple-900/70 hover:bg-purple-50 hover:text-purple-950'
@@ -362,7 +362,7 @@ export function MyBooksClient() {
                 placeholder="Search your library..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-purple-200 bg-purple-50/40 text-[#130B24] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/30 focus:border-[#FBBF24] transition-all"
+                className="w-full pl-9 pr-3 py-2 text-base sm:text-base md:text-sm min-h-[44px] rounded-xl border border-purple-200 bg-purple-50/40 text-[#130B24] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/30 focus:border-[#FBBF24] transition-all"
               />
             </div>
           </div>

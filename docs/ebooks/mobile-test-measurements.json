@@ -1,0 +1,302 @@
+{
+  "testResults": [
+    {
+      "name": "Carousel Arrows",
+      "passed": true,
+      "detail": "Single slide active; arrow bounds defined as 44x44px in classList"
+    },
+    {
+      "name": "MediaCard CTA Height",
+      "passed": true,
+      "detail": "195.671875x44px (Target: >= 44px height)"
+    },
+    {
+      "name": "Phone Search Input Font (>= 16px to prevent iOS auto-zoom)",
+      "passed": true,
+      "detail": "Font size: 16px, Height: 46px"
+    },
+    {
+      "name": "Filter Trigger Touch Bounds",
+      "passed": true,
+      "detail": "332x44px (Target: >= 44x44)"
+    },
+    {
+      "name": "BookCard Sample Button Touch Bounds",
+      "passed": true,
+      "detail": "46x44px (Target: >= 44x44)"
+    },
+    {
+      "name": "BookCard Details Button Touch Height",
+      "passed": true,
+      "detail": "87.234375x44px (Target: >= 44px height)"
+    },
+    {
+      "name": "Mobile Pagination Back Button",
+      "passed": true,
+      "detail": "80.234375x44px (Target: >= 44x44)"
+    },
+    {
+      "name": "Mobile Pagination Next Button",
+      "passed": true,
+      "detail": "78.890625x44px (Target: >= 44x44)"
+    },
+    {
+      "name": "Mobile Pagination Indicator Height",
+      "passed": true,
+      "detail": "Height: 44px"
+    },
+    {
+      "name": "Mobile Bottom Nav Item Count",
+      "passed": true,
+      "detail": "Items: 4"
+    },
+    {
+      "name": "Bottom Nav \"Browse\" Target",
+      "passed": true,
+      "detail": "97.5x56.0px (Target: >= 44x44)"
+    },
+    {
+      "name": "Bottom Nav \"Categories\" Target",
+      "passed": true,
+      "detail": "97.5x56.0px (Target: >= 44x44)"
+    },
+    {
+      "name": "Bottom Nav \"My Books\" Target",
+      "passed": true,
+      "detail": "97.5x56.0px (Target: >= 44x44)"
+    },
+    {
+      "name": "Bottom Nav \"Cart\" Target",
+      "passed": true,
+      "detail": "97.5x56.0px (Target: >= 44x44)"
+    },
+    {
+      "name": "Bottom Sheet Locks Body Scroll",
+      "passed": true,
+      "detail": "document.body.style.overflow = \"hidden\""
+    },
+    {
+      "name": "Sheet Close Button Touch Bounds",
+      "passed": true,
+      "detail": "44x44px (Target: >= 44x44)"
+    },
+    {
+      "name": "Sheet Category Button Height",
+      "passed": true,
+      "detail": "Height: 44px (Target: >= 44px)"
+    },
+    {
+      "name": "Sheet Sort Button Height",
+      "passed": true,
+      "detail": "Height: 44px (Target: >= 44px)"
+    },
+    {
+      "name": "Sheet Apply Button Height",
+      "passed": true,
+      "detail": "Height: 44px (Target: >= 44px)"
+    },
+    {
+      "name": "Escape Key Closes Sheet",
+      "passed": true,
+      "detail": "Dialog unmounted: true"
+    },
+    {
+      "name": "Closing Sheet Restores Scroll Unlocking",
+      "passed": true,
+      "detail": "document.body.style.overflow restored to \"\""
+    },
+    {
+      "name": "Focus Restored to Filter Trigger Button",
+      "passed": true,
+      "detail": "Active Element: Filter Trigger Button"
+    },
+    {
+      "name": "Tablet Search Input Readability (16px font)",
+      "passed": true,
+      "detail": "Input Font: 16px, Height: 46px"
+    },
+    {
+      "name": "Tablet Sort Select Height (>= 44px)",
+      "passed": true,
+      "detail": "Select Height: 44px, Font: 14px"
+    },
+    {
+      "name": "Tablet Numbered Page Buttons (44x44px bounds)",
+      "passed": true,
+      "detail": "Sample button: 44x44px across 2 buttons"
+    },
+    {
+      "name": "No Shopping Bottom Nav on /admin/e-books",
+      "passed": true,
+      "detail": "Bottom nav present: false"
+    },
+    {
+      "name": "Admin eBooks Search Font Readability (>= 16px)",
+      "passed": true,
+      "detail": "Font: 16px, Height: 46px"
+    },
+    {
+      "name": "Admin eBooks Edit Button Height (>= 44px)",
+      "passed": true,
+      "detail": "Height: 44px"
+    },
+    {
+      "name": "No Shopping Bottom Nav on /admin/e-book-customers",
+      "passed": true,
+      "detail": "Bottom nav present: false"
+    },
+    {
+      "name": "Admin Customers Search Font (>= 16px)",
+      "passed": true,
+      "detail": "Font: 16px, Height: 44px"
+    },
+    {
+      "name": "Admin Customers Inspect Button Height (>= 44px)",
+      "passed": true,
+      "detail": "Height: 44px"
+    },
+    {
+      "name": "No Shopping Bottom Nav on /admin/e-book-orders",
+      "passed": true,
+      "detail": "Bottom nav present: false"
+    },
+    {
+      "name": "Admin Orders Filter Button Height (>= 44px)",
+      "passed": true,
+      "detail": "Height: 44px"
+    },
+    {
+      "name": "Admin Orders Details Link Height (>= 44px)",
+      "passed": true,
+      "detail": "Height: 44px"
+    },
+    {
+      "name": "320px Portrait Zero Horizontal Overflow",
+      "passed": true,
+      "detail": "Has horizontal scroll: false"
+    },
+    {
+      "name": "320px Landscape Zero Horizontal Overflow",
+      "passed": true,
+      "detail": "Has horizontal scroll: false"
+    }
+  ],
+  "measurements": {
+    "carouselArrows": {
+      "skipped": true
+    },
+    "mediaCta": {
+      "width": 195.671875,
+      "height": 44
+    },
+    "phoneSearchInput": {
+      "fontSize": "16px",
+      "height": 46,
+      "minHeight": "44px"
+    },
+    "filterBtn": {
+      "width": 332,
+      "height": 44
+    },
+    "bookCardActions": {
+      "sample": {
+        "width": 46,
+        "height": 44
+      },
+      "details": {
+        "width": 87.234375,
+        "height": 44
+      }
+    },
+    "mobilePagination": {
+      "back": {
+        "width": 80.234375,
+        "height": 44
+      },
+      "next": {
+        "width": 78.890625,
+        "height": 44
+      },
+      "indicator": {
+        "width": 90.796875,
+        "height": 44
+      }
+    },
+    "bottomNavItems": [
+      {
+        "label": "Browse",
+        "width": 97.5,
+        "height": 56
+      },
+      {
+        "label": "Categories",
+        "width": 97.5,
+        "height": 56
+      },
+      {
+        "label": "My Books",
+        "width": 97.5,
+        "height": 56
+      },
+      {
+        "label": "Cart",
+        "width": 97.5,
+        "height": 56
+      }
+    ],
+    "sheetControls": {
+      "closeBtn": {
+        "width": 44,
+        "height": 44
+      },
+      "firstCat": {
+        "width": 171,
+        "height": 44
+      },
+      "firstSort": {
+        "width": 111.328125,
+        "height": 44
+      },
+      "applyBtn": {
+        "width": 350,
+        "height": 44
+      }
+    },
+    "tabletSearchAndSelect": {
+      "inputFontSize": "16px",
+      "inputHeight": 46,
+      "selectFontSize": "14px",
+      "selectHeight": 44
+    },
+    "tabletPageButtons": [
+      {
+        "text": "1",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "text": "2",
+        "width": 44,
+        "height": 44
+      }
+    ],
+    "adminEbooksCheck": {
+      "bottomNavPresent": false,
+      "searchFontSize": "16px",
+      "searchHeight": 46,
+      "selectHeight": 44,
+      "editBtnHeight": 44
+    },
+    "adminCustomersCheck": {
+      "bottomNavPresent": false,
+      "searchFontSize": "16px",
+      "searchHeight": 44,
+      "inspectBtnHeight": 44
+    },
+    "adminOrdersCheck": {
+      "bottomNavPresent": false,
+      "filterBtnHeight": 44,
+      "detailsLinkHeight": 44
+    }
+  }
+}

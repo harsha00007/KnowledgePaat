@@ -174,7 +174,7 @@ export default function AdminEBooksListPage() {
               placeholder="Search by title, author, or slug..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-base sm:text-base md:text-sm min-h-[44px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </form>
 
@@ -185,7 +185,7 @@ export default function AdminEBooksListPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-slate-200 rounded-lg px-3 py-2 text-base sm:text-base md:text-sm min-h-[44px] bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Statuses</option>
               <option value="draft">Draft</option>
@@ -197,7 +197,7 @@ export default function AdminEBooksListPage() {
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="border border-slate-200 rounded-lg px-3 py-2 text-base sm:text-base md:text-sm min-h-[44px] bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Categories</option>
                 {categories.map((c) => (
@@ -230,7 +230,88 @@ export default function AdminEBooksListPage() {
           </div>
         ) : (
           <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* MOBILE RECORD CARDS (Phones & Narrow Tablets) */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {books.map((book) => {
+                const currentEdition = book.current_edition || book.editions?.[0];
+                const chapterCount = currentEdition?.chapters?.[0]?.count || 0;
+                const onlinePrice = currentEdition ? (currentEdition.price_read_online_paise / 100) : 49;
+                const downloadPrice = currentEdition ? (currentEdition.price_read_download_paise / 100) : 99;
+
+                return (
+                  <div key={`m-${book.id}`} className="p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      {book.cover_image_url ? (
+                        <img
+                          src={book.cover_image_url}
+                          alt={book.title}
+                          className="w-12 h-16 object-cover rounded shadow-2xs border border-slate-200 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-12 h-16 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-slate-400 shrink-0">
+                          <BookOpen className="w-5 h-5" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 border border-slate-200 text-slate-600 truncate">
+                            {book.category}
+                          </span>
+                          {book.status === 'published' ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <CheckCircle2 className="w-2.5 h-2.5" /> Published
+                            </span>
+                          ) : book.status === 'archived' ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                              <Archive className="w-2.5 h-2.5" /> Archived
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                              <Clock className="w-2.5 h-2.5" /> Draft
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="font-bold text-navy text-sm mt-1 leading-snug line-clamp-2">
+                          {book.title}
+                        </h4>
+                        <p className="text-xs text-slate-500 mt-0.5">By {book.author}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                      <div>
+                        <span className="text-slate-400 text-[10px] uppercase block">Content</span>
+                        <span className="font-semibold">{chapterCount} chs • {book.editions?.length || 1} ed</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-slate-400 text-[10px] uppercase block">Pricing</span>
+                        <span className="font-semibold text-navy">₹{onlinePrice} / ₹{downloadPrice}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <Link href={`/admin/e-books/${book.id}/edit`} className="flex-1">
+                        <Button variant="outline" size="sm" className="w-full min-h-[44px] text-xs sm:text-sm justify-center font-bold touch-manipulation">
+                          <Edit3 className="w-4 h-4 mr-1.5" /> Edit & Chapters
+                        </Button>
+                      </Link>
+                      {book.status !== 'archived' && (
+                        <button
+                          onClick={() => handleArchiveBook(book.id, book.title)}
+                          title="Archive eBook"
+                          className="min-h-[44px] min-w-[44px] h-11 w-11 flex items-center justify-center text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 border border-slate-200 transition-colors touch-manipulation cursor-pointer"
+                        >
+                          <Archive className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* DESKTOP TABLE */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase text-slate-500">
                   <tr>
