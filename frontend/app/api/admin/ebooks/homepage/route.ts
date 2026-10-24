@@ -3,6 +3,7 @@ import { createClient, createAdminClient } from '@/utils/supabase/server';
 import { logger } from '@/lib/logger';
 import { checkRateLimit, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
 import { DEFAULT_MEDIA_CARD, MediaCardConfig } from '@/types/ebook';
+import { invalidateServerCache } from '@/lib/serverCache';
 
 export const dynamic = 'force-dynamic';
 
@@ -415,6 +416,8 @@ export async function PUT(req: NextRequest) {
           published_at: now,
         }
       });
+
+      invalidateServerCache('homepage');
 
       return NextResponse.json({
         success: true,

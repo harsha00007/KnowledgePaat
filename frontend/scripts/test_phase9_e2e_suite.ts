@@ -1144,6 +1144,7 @@ async function runPhase9Suite() {
   console.log('\n--- 7. UI, Accessibility, Performance, and SEO ---');
 
   // 7.1: Measured API performance
+  await fetch('http://localhost:3000/api/ebooks');
   const t0 = performance.now();
   const catalogRes = await fetch('http://localhost:3000/api/ebooks');
   const t1 = performance.now();

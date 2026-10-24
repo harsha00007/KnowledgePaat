@@ -20,6 +20,7 @@ function LoginForm() {
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isUnconfirmedEmail, setIsUnconfirmedEmail] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -54,6 +55,7 @@ function LoginForm() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsUnconfirmedEmail(false);
     setIsLoading(true);
 
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -62,7 +64,13 @@ function LoginForm() {
     });
 
     if (signInError) {
-      setError(signInError.message);
+      const msg = signInError.message || '';
+      if (msg.toLowerCase().includes('email not confirmed')) {
+        setIsUnconfirmedEmail(true);
+        setError('Your email is not confirmed yet. Please verify your email with the 6-digit code.');
+      } else {
+        setError(msg);
+      }
       setIsLoading(false);
       return;
     }
@@ -132,11 +140,24 @@ function LoginForm() {
           </div>
 
           {error && (
-            <div className="mb-6 p-4 rounded-[var(--radius-lg)] bg-[var(--color-error)]/10 border border-[var(--color-error)]/20 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-[var(--color-error)] shrink-0 mt-0.5" />
-              <div className="text-sm text-[var(--color-error)] leading-relaxed font-medium">
-                {error}
+            <div className="mb-6 p-4 rounded-[var(--radius-lg)] bg-[var(--color-error)]/10 border border-[var(--color-error)]/20 flex flex-col gap-3">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-[var(--color-error)] shrink-0 mt-0.5" />
+                <div className="text-sm text-[var(--color-error)] leading-relaxed font-medium">
+                  {error}
+                </div>
               </div>
+              {isUnconfirmedEmail && (
+                <div className="pt-1">
+                  <Link
+                    href={`/register?step=verify&email=${encodeURIComponent(email.trim().toLowerCase())}${rawRedirect ? `&redirectTo=${encodeURIComponent(rawRedirect)}` : ''}`}
+                  >
+                    <Button variant="primary" size="sm" className="w-full justify-center text-xs">
+                      Enter 6-digit confirmation code
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 

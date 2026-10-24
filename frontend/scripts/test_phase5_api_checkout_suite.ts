@@ -191,28 +191,20 @@ async function runSuite() {
   }
 
   // Fetch a published book
-  const { data: book } = await adminClient
+  const { data: bookWithEdition } = await adminClient
     .from('ebooks')
-    .select('id, title, status')
+    .select('id, title, status, editions:ebook_editions!inner(*)')
     .eq('status', 'published')
+    .eq('editions.status', 'published')
     .limit(1)
     .maybeSingle();
 
-  if (!book) {
-    throw new Error('No published book available in staging.');
+  if (!bookWithEdition) {
+    throw new Error('No published book with edition available in staging.');
   }
 
-  const { data: edition } = await adminClient
-    .from('ebook_editions')
-    .select('*')
-    .eq('ebook_id', book.id)
-    .eq('status', 'published')
-    .limit(1)
-    .maybeSingle();
-
-  if (!edition) {
-    throw new Error('No published edition available for book.');
-  }
+  const book = { id: bookWithEdition.id, title: bookWithEdition.title, status: bookWithEdition.status };
+  const edition = Array.isArray(bookWithEdition.editions) ? bookWithEdition.editions[0] : bookWithEdition.editions;
 
   // Clean any previous test orders for this test customer to keep clean state
   await adminClient.from('ebook_entitlements').delete().eq('customer_id', customerId);

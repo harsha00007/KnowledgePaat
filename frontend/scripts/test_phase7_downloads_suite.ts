@@ -129,36 +129,30 @@ async function runSuite() {
   const emailA = process.env.STAGING_TEST_CUSTOMER_EMAIL || 'phase5.api.test@knowledgepaat.test';
   const emailB = 'phase7.customer.b@knowledgepaat.test';
 
-  let customerAId = '';
-  let customerBId = '';
-
-  const { data: userList } = await adminClient.auth.admin.listUsers();
-  const existingA = userList?.users.find((u) => u.email === emailA);
-  const existingB = userList?.users.find((u) => u.email === emailB);
-
-  if (existingA) {
-    customerAId = existingA.id;
-  } else {
-    const { data: newA } = await adminClient.auth.admin.createUser({
-      email: emailA,
+  async function findOrCreateUser(email: string, fullName: string) {
+    let page = 1;
+    let found = null;
+    while (true) {
+      const { data } = await adminClient.auth.admin.listUsers({ page, perPage: 100 });
+      if (!data?.users || data.users.length === 0) break;
+      found = data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+      if (found) break;
+      if (data.users.length < 100) break;
+      page++;
+    }
+    if (found) return found.id;
+    const { data: created, error } = await adminClient.auth.admin.createUser({
+      email,
       password: 'Kp!Phase7TestCustomerA#2026',
       email_confirm: true,
-      user_metadata: { full_name: 'Customer A (Phase 7)', role: 'student' },
+      user_metadata: { full_name: fullName, role: 'student' },
     });
-    customerAId = newA.user!.id;
+    if (created?.user?.id) return created.user.id;
+    throw new Error(`Failed to create or find test user ${email}: ${error?.message}`);
   }
 
-  if (existingB) {
-    customerBId = existingB.id;
-  } else {
-    const { data: newB } = await adminClient.auth.admin.createUser({
-      email: emailB,
-      password: 'Kp!Phase7TestCustomerB#2026',
-      email_confirm: true,
-      user_metadata: { full_name: 'Customer B (Phase 7)', role: 'student' },
-    });
-    customerBId = newB.user!.id;
-  }
+  const customerAId = await findOrCreateUser(emailA, 'Customer A (Phase 7)');
+  const customerBId = await findOrCreateUser(emailB, 'Customer B (Phase 7)');
 
   // Ensure profiles
   await adminClient.from('profiles').upsert([

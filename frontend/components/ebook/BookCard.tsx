@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { BookOpen, ArrowRight, Check, FileText } from 'lucide-react';
 import { useEBookCart } from '@/lib/ebook/cartContext';
@@ -47,15 +47,6 @@ export interface BookCardProps {
   onQuickAdd?: (book: BookCardData) => void;
 }
 
-const CATEGORY_GRADIENTS: Record<string, string> = {
-  'Engineering': 'from-[#1D1855] via-[#2D2175] to-[#6F42DD]',
-  'System Design': 'from-[#0B1D3A] via-[#153463] to-[#0284C7]',
-  'Career Prep': 'from-[#281144] via-[#481E7B] to-[#B45309]',
-  'Quality Assurance': 'from-[#062822] via-[#0C4E43] to-[#059669]',
-  'DevOps & Cloud': 'from-[#111827] via-[#1E293B] to-[#4338CA]',
-  'Frontend & Mobile': 'from-[#1A1640] via-[#35256D] to-[#9333EA]',
-};
-
 export function cleanBookTitle(title: string): string {
   if (!title) return '';
   return title
@@ -67,7 +58,8 @@ export function cleanBookTitle(title: string): string {
     .trim();
 }
 
-export function BookCard({ book, isOwned = false, ownedPlan, onOpenSample, onQuickAdd: _onQuickAdd }: BookCardProps) {
+export function BookCard({ book, isOwned = false, ownedPlan, onOpenSample }: BookCardProps) {
+  const [imgError, setImgError] = useState(false);
   const { hasBook } = useEBookCart();
   const inCart = hasBook(book.id);
 
@@ -75,8 +67,6 @@ export function BookCard({ book, isOwned = false, ownedPlan, onOpenSample, onQui
   const formattedMinPrice = formatPaise(book.min_price_paise);
   const detailHref = `/e-books/${encodeURIComponent(book.slug || book.id)}`;
   const readHref = `/read/${encodeURIComponent(book.slug || book.id)}`;
-
-  const fallbackGradient = CATEGORY_GRADIENTS[book.category] || 'from-[#1D1855] via-[#241E66] to-[#392E8E]';
 
   // Determine authoritative price labeling
   const onlinePrice = book.current_edition?.price_read_online_paise;
@@ -94,102 +84,99 @@ export function BookCard({ book, isOwned = false, ownedPlan, onOpenSample, onQui
 
   return (
     <article
-      className="group relative flex flex-row items-stretch bg-white rounded-xl sm:rounded-2xl border border-[#E8E5F5] shadow-[0_4px_20px_-2px_rgba(29,24,85,0.05)] hover:shadow-md hover:border-[#6F42DD]/30 transition-all duration-200 overflow-hidden font-ebook"
+      className="group relative flex flex-col justify-between bg-white rounded-2xl border border-[#E8E5F5] shadow-xs hover:shadow-md hover:border-[#6F42DD]/30 transition-all duration-200 p-3.5 sm:p-4 font-ebook"
       aria-labelledby={`book-title-${book.id}`}
     >
-      {/* ── LEFT: Book Cover Presentation (Compact 72-96px on phone, scaling up on tablet/desktop) ── */}
-      <div className="w-20 xs:w-24 sm:w-32 md:w-36 lg:w-44 shrink-0 bg-gradient-to-br from-[#1D1855]/5 to-[#6F42DD]/5 relative flex items-center justify-center p-2 xs:p-2.5 sm:p-4 lg:p-5 border-r border-[#E8E5F5]">
-        <Link
-          href={isOwned ? readHref : detailHref}
-          className="block w-full transition-transform duration-200 group-hover:scale-[1.03]"
-          aria-label={`View ${displayTitle}`}
-        >
-          <div className="aspect-[3/4] relative rounded-lg sm:rounded-xl overflow-hidden shadow-xs border border-[#E8E5F5] bg-[#1D1855]">
-            {book.cover_image_url ? (
-              <img
-                src={book.cover_image_url}
-                alt={`Cover of ${displayTitle}`}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-            ) : (
-              // Styled category-themed typographic fallback cover
-              <div className={`w-full h-full bg-gradient-to-br ${fallbackGradient} text-white p-2 sm:p-3.5 flex flex-col justify-between select-none`}>
-                <div className="space-y-0.5 sm:space-y-1">
-                  <span className="text-[11px] font-bold tracking-wide text-[#FFCB35] font-ebook uppercase">
-                    {book.category}
-                  </span>
-                  <p className="text-xs sm:text-sm font-bold leading-tight sm:leading-snug font-ebook text-white break-words">
-                    {displayTitle}
-                  </p>
-                </div>
-                <div className="border-t border-white/20 pt-1.5 sm:pt-2">
-                  <p
-                    className="text-xs text-indigo-100 font-medium line-clamp-2 leading-tight break-words"
-                    title={book.author}
-                  >
-                    {book.author}
-                  </p>
-                  <p className="text-xs text-[#FFCB35] tracking-wide mt-0.5 font-ebook hidden xs:block">
-                    KnowledgePaat
-                  </p>
-                </div>
-              </div>
-            )}
-            {/* Spine lighting effect */}
-            <div className="absolute inset-y-0 left-0 w-2 sm:w-2.5 bg-gradient-to-r from-black/30 via-white/10 to-transparent pointer-events-none" />
-          </div>
-        </Link>
-      </div>
+      {/* ── UPPER ROW: Cover (left) + Metadata & Description (right) ── */}
+      <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+        {/* Book cover: 80–88px on phones (w-[84px]), 96–112px on desktop (sm:w-24 md:w-28), shrink-0 */}
+        <div className="w-[84px] sm:w-24 md:w-28 shrink-0">
+          <Link
+            href={isOwned ? readHref : detailHref}
+            className="block w-full transition-transform duration-200 group-hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6F42DD] rounded-xl"
+            aria-label={`View ${displayTitle}`}
+            tabIndex={-1}
+          >
+            <div className="aspect-[2/3] w-full relative rounded-xl overflow-hidden shadow-xs border border-[#E8E5F5] bg-[#1D1855]">
+              {book.cover_image_url && !imgError ? (
+                <img
+                  src={book.cover_image_url}
+                  alt={`Cover of ${displayTitle}`}
+                  className="w-full h-full object-cover object-top"
+                  loading="lazy"
+                  onError={() => setImgError(true)}
+                />
+              ) : (
+                /* Generated Fallback Cover: Simple Navy-and-Gold Design */
+                <div className="w-full h-full bg-gradient-to-br from-[#1D1855] via-[#241E66] to-[#141040] p-2 sm:p-2.5 flex flex-col justify-between select-none relative">
+                  {/* Subtle top gold accent bar */}
+                  <div className="w-full flex items-center justify-between pb-1 border-b border-[#FFCB35]/20">
+                    <BookOpen className="w-3.5 h-3.5 text-[#FFCB35]" aria-hidden="true" />
+                    <span className="text-[9px] font-bold tracking-widest text-[#FFCB35] uppercase font-ebook">
+                      KP
+                    </span>
+                  </div>
 
-      {/* ── RIGHT: Book Details & Actions ── */}
-      <div className="flex-1 p-3 sm:p-5 lg:p-6 min-w-0 flex flex-col justify-between">
-        <div>
-          {/* Metadata badges */}
-          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#F8F7FF] text-[#6F42DD] border border-[#E8E5F5] truncate max-w-[120px] sm:max-w-none">
+                  {/* Title with sensible word wrapping, no oversized category text, no baked-in ellipsis */}
+                  <div className="my-auto py-1">
+                    <p className="text-[11px] sm:text-xs font-bold leading-tight font-ebook text-white break-words">
+                      {displayTitle}
+                    </p>
+                  </div>
+
+                  {/* Footer: subtle author info */}
+                  <div className="pt-1 border-t border-white/10">
+                    <p className="text-[9px] sm:text-[10px] text-indigo-200 font-medium truncate">
+                      {book.author}
+                    </p>
+                  </div>
+
+                  {/* Spine shadow effect */}
+                  <div className="absolute inset-y-0 left-0 w-1.5 sm:w-2 bg-gradient-to-r from-black/40 to-transparent pointer-events-none" />
+                </div>
+              )}
+            </div>
+          </Link>
+        </div>
+
+        {/* Right column: Category, Title, Author & Chapter count */}
+        <div className="flex-1 min-w-0">
+          {/* Subtle Category Label (Edition badges removed from catalogue cards) */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] font-bold text-[#6F42DD] uppercase tracking-wider truncate max-w-full">
               {book.category}
             </span>
-
-            {book.current_edition && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-[#4D4775]">
-                Ed. {book.current_edition.edition_number}
-              </span>
-            )}
-
             {isOwned && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <Check className="w-3 h-3 text-emerald-600" /> Owned
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <Check className="w-2.5 h-2.5 text-emerald-600" /> Owned
               </span>
             )}
           </div>
 
-          {/* Title & Author */}
-          <div className="mt-1 sm:mt-1.5">
-            <h2
-              id={`book-title-${book.id}`}
-              className="text-sm sm:text-base lg:text-lg font-bold text-[#18143F] font-ebook leading-snug line-clamp-2 hover:text-[#6F42DD] transition-colors"
+          {/* Book Title: approx 16px semibold navy text, 2-3 lines wrapping */}
+          <h2
+            id={`book-title-${book.id}`}
+            className="text-sm sm:text-base font-semibold text-[#18143F] font-ebook leading-snug line-clamp-2 sm:line-clamp-3 mt-1 hover:text-[#6F42DD] transition-colors break-words"
+          >
+            <Link
+              href={isOwned ? readHref : detailHref}
+              className="focus:outline-none focus-visible:underline"
             >
-              <Link href={isOwned ? readHref : detailHref}>
-                {displayTitle}
-              </Link>
-            </h2>
-            <p className="text-xs sm:text-sm text-[#4D4775] font-medium truncate mt-0.5">
-              by <span className="text-[#18143F] font-semibold">{book.author}</span>
-            </p>
-          </div>
+              {displayTitle}
+            </Link>
+          </h2>
 
-          {/* Short description - condensed on mobile */}
-          <p className="text-xs sm:text-sm text-[#4D4775] line-clamp-2 leading-relaxed mt-1 hidden xs:line-clamp-2">
-            {book.description}
+          {/* Author: smaller, visually secondary */}
+          <p className="text-xs text-[#756F99] mt-1 truncate">
+            by <span className="text-[#4D4775] font-medium">{book.author}</span>
           </p>
 
-          {/* Supporting metadata: Chapters and page count (omit cleanly if unavailable, no placeholder text) */}
+          {/* Chapters / Page count (cleanly omitted when unavailable) */}
           {(Boolean(book.total_chapter_count && book.total_chapter_count > 0) || Boolean(book.current_edition?.page_count)) && (
-            <div className="flex items-center gap-2 text-xs text-[#756F99] mt-1 font-medium">
+            <div className="flex items-center gap-2 text-[11px] sm:text-xs text-[#756F99] mt-1.5 font-medium flex-wrap">
               {book.total_chapter_count !== undefined && book.total_chapter_count > 0 && (
                 <span className="flex items-center gap-1">
-                  <FileText className="w-3.5 h-3.5 text-[#6F42DD]" aria-hidden="true" />
+                  <FileText className="w-3 h-3 text-[#6F42DD]" aria-hidden="true" />
                   {book.total_chapter_count} {book.total_chapter_count === 1 ? 'chapter' : 'chapters'}
                 </span>
               )}
@@ -202,78 +189,79 @@ export function BookCard({ book, isOwned = false, ownedPlan, onOpenSample, onQui
             </div>
           )}
         </div>
+      </div>
 
-        {/* Pricing & Call to Actions */}
-        <div className="mt-3 pt-2 sm:mt-4 sm:pt-3 border-t border-[#E8E5F5] flex flex-wrap items-end justify-between gap-2 pb-0.5">
-          {/* Price pill */}
-          <div className="min-w-0">
-            {isOwned ? (
-              <div className="flex flex-col">
-                <span className="text-xs font-semibold text-emerald-700">
-                  Licensed
+      {/* ── BOTTOM ROW: Starting Price (left) + Primary Action (right) ── */}
+      {/* Spans the full card width beneath cover and description */}
+      <div className="mt-3.5 pt-3 border-t border-[#E8E5F5] flex items-center justify-between gap-3 min-w-0">
+        {/* Plan-specific starting price on the left */}
+        <div className="min-w-0">
+          {isOwned ? (
+            <div className="flex flex-col">
+              <span className="text-[11px] font-semibold text-emerald-700">
+                Licensed
+              </span>
+              <span className="text-xs font-medium text-[#4D4775] truncate">
+                {ownedPlan === 'full' ? 'Complete (PDF)' : 'Online Reader'}
+              </span>
+            </div>
+          ) : (
+            <div>
+              <span className="text-[11px] text-[#756F99] font-medium block leading-tight">
+                {priceLabel}
+              </span>
+              <div className="flex items-baseline gap-1.5 flex-wrap">
+                <span className="text-base sm:text-lg lg:text-xl font-bold text-[#18143F] font-ebook leading-tight">
+                  {formattedMinPrice}
                 </span>
-                <span className="text-xs sm:text-sm font-medium text-[#4D4775] truncate">
-                  {ownedPlan === 'full' ? 'Complete (PDF)' : 'Online Reader'}
-                </span>
-              </div>
-            ) : (
-              <div>
-                <span className="text-xs text-[#4D4775] font-medium block">
-                  {priceLabel}
-                </span>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-base sm:text-xl lg:text-2xl font-black text-[#18143F] font-ebook leading-none">
-                    {formattedMinPrice}
+                {hasDownloadPlan && (
+                  <span className="text-[10px] sm:text-[11px] font-semibold text-[#6F42DD] hidden xs:inline">
+                    • PDF included
                   </span>
-                  {hasDownloadPlan && (
-                    <span className="text-[11px] font-semibold text-[#6F42DD] hidden sm:inline">
-                      • PDF included
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {isOwned ? (
-              <Link href={readHref}>
-                <button
-                  type="button"
-                  className="btn-ebook-violet inline-flex items-center min-h-[44px] px-3.5 sm:px-4 py-2 text-xs font-bold rounded-xl cursor-pointer touch-manipulation"
-                >
-                  <BookOpen className="w-3.5 h-3.5 mr-1" />
-                  <span>Continue reading</span>
-                </button>
-              </Link>
-            ) : (
-              <>
-                {onOpenSample && book.has_free_sample && (
-                  <button
-                    type="button"
-                    onClick={() => onOpenSample(book)}
-                    className="inline-flex items-center justify-center min-h-[44px] px-3.5 py-2 rounded-xl border border-[#E8E5F5] bg-[#F8F7FF] text-xs font-semibold text-[#18143F] hover:bg-white hover:border-[#6F42DD]/40 hover:text-[#6F42DD] transition-all cursor-pointer shadow-2xs touch-manipulation"
-                    title="Read Free Sample"
-                    aria-label={`Read free sample of ${displayTitle}`}
-                  >
-                    <BookOpen className="w-4 h-4 text-[#6F42DD] mr-1.5" aria-hidden="true" />
-                    <span>Sample</span>
-                  </button>
                 )}
+              </div>
+            </div>
+          )}
+        </div>
 
-                <Link href={detailHref}>
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center min-h-[44px] px-3.5 sm:px-4 py-2 text-xs font-bold rounded-xl bg-[#6F42DD] hover:bg-[#5b33be] text-white transition-all cursor-pointer whitespace-nowrap shadow-xs active:scale-[0.98] touch-manipulation"
-                  >
-                    <span>{inCart ? 'In Cart' : 'View book'}</span>
-                    <ArrowRight className="w-3.5 h-3.5 ml-1" aria-hidden="true" />
-                  </button>
-                </Link>
-              </>
-            )}
-          </div>
+        {/* Primary action on the right */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Sample button if available */}
+          {!isOwned && onOpenSample && book.has_free_sample && (
+            <button
+              type="button"
+              onClick={() => onOpenSample(book)}
+              className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-3 py-2 rounded-xl border border-[#E8E5F5] bg-[#F8F7FF] text-xs font-semibold text-[#18143F] hover:bg-white hover:border-[#6F42DD]/40 hover:text-[#6F42DD] transition-all cursor-pointer shadow-2xs touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6F42DD]"
+              title="Read Free Sample"
+              aria-label={`Read free sample of ${displayTitle}`}
+            >
+              <BookOpen className="w-3.5 h-3.5 text-[#6F42DD] mr-1" aria-hidden="true" />
+              <span>Sample</span>
+            </button>
+          )}
+
+          {/* Main CTA */}
+          {isOwned ? (
+            <Link href={readHref} tabIndex={-1}>
+              <button
+                type="button"
+                className="inline-flex items-center justify-center min-h-[44px] px-3.5 sm:px-4 py-2 text-xs font-bold rounded-xl bg-[#6F42DD] hover:bg-[#5b33be] text-white transition-all cursor-pointer shadow-xs active:scale-[0.98] touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6F42DD]"
+              >
+                <BookOpen className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />
+                <span>Continue reading</span>
+              </button>
+            </Link>
+          ) : (
+            <Link href={detailHref} tabIndex={-1}>
+              <button
+                type="button"
+                className="inline-flex items-center justify-center min-h-[44px] px-3.5 sm:px-4 py-2 text-xs font-bold rounded-xl bg-[#6F42DD] hover:bg-[#5b33be] text-white transition-all cursor-pointer whitespace-nowrap shadow-xs active:scale-[0.98] touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6F42DD]"
+              >
+                <span>{inCart ? 'In Cart' : 'View book'}</span>
+                <ArrowRight className="w-3.5 h-3.5 ml-1" aria-hidden="true" />
+              </button>
+            </Link>
+          )}
         </div>
       </div>
     </article>

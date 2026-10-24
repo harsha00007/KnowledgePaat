@@ -890,9 +890,9 @@ async function runPhase8Suite() {
   const safeAt = sanitizeCsvField('@cmd|/C');
   const safeNormal = sanitizeCsvField('Standard Order #123');
 
-  const formulaSafe = safeEquals.startsWith("'=") &&
-    safePlus.startsWith("'+") &&
-    safeAt.startsWith("'@") &&
+  const formulaSafe = (safeEquals.startsWith("'=") || safeEquals.startsWith("\"'=")) &&
+    (safePlus.startsWith("'+") || safePlus.startsWith("\"'+")) &&
+    (safeAt.startsWith("'@") || safeAt.startsWith("\"'@")) &&
     safeNormal === '"Standard Order #123"';
 
   recordTest(

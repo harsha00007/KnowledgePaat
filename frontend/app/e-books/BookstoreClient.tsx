@@ -525,8 +525,8 @@ export function BookstoreClient() {
             </div>
           ) : (
             <div className="space-y-6 sm:space-y-8">
-              {/* TWO CARDS PER ROW DESKTOP, ONE COLUMN MOBILE */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
+              {/* TWO CARDS PER ROW TABLET/DESKTOP, ONE COLUMN PHONE */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
                 {books.map((book) => {
                   const ownership = ownedBooksMap.get(book.id);
                   return (

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { checkRateLimit, rateLimitResponse, getRealClientIp, RATE_LIMIT_POLICIES } from '@/lib/rateLimit';
+import { getServerCache, setServerCache, buildCatalogueCacheKey, syncSharedCacheEpoch } from '@/lib/serverCache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 60; // 60s cache revalidation
@@ -13,7 +14,6 @@ export async function GET(req: NextRequest) {
       return rateLimitResponse(rl);
     }
 
-    const supabase = await createClient();
     const { searchParams } = new URL(req.url);
 
     const search = searchParams.get('search')?.trim() || '';
@@ -25,6 +25,21 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '10', 10) || 10));
     const offset = (page - 1) * limit;
+
+    // Fast-path: Check server cache with cross-instance epoch synchronization
+    const cacheKey = buildCatalogueCacheKey({ page, limit, category, search, sort, readerRole });
+    await syncSharedCacheEpoch('catalogue');
+    const cachedResponse = getServerCache(cacheKey, ['catalogue']);
+    if (cachedResponse) {
+      return NextResponse.json(cachedResponse, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+          'X-Cache-Status': 'HIT',
+        }
+      });
+    }
+
+    const supabase = await createClient();
 
     // Deterministic query on published books only
     // Exposing deliberately public columns ONLY
@@ -217,7 +232,7 @@ export async function GET(req: NextRequest) {
     const total = count || 0;
     const totalPages = Math.ceil(total / limit) || 1;
 
-    return NextResponse.json({
+    const responsePayload = {
       success: true,
       books: sanitizedBooks,
       pagination: {
@@ -227,9 +242,14 @@ export async function GET(req: NextRequest) {
         totalPages,
         hasMore: page < totalPages
       }
-    }, {
+    };
+
+    setServerCache(cacheKey, responsePayload, 60, ['catalogue']);
+
+    return NextResponse.json(responsePayload, {
       headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120'
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+        'X-Cache-Status': 'MISS',
       }
     });
   } catch (err: any) {

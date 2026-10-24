@@ -26,7 +26,30 @@ export type CustomerAuthResult =
 export async function getVerifiedCustomer(): Promise<CustomerAuthResult> {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    let user = null;
+    let authError = null;
+
+    try {
+      const { headers } = await import('next/headers');
+      const headerList = await headers();
+      const authHeader = headerList.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7).trim();
+        if (token) {
+          const res = await supabase.auth.getUser(token);
+          user = res.data.user;
+          authError = res.error;
+        }
+      }
+    } catch {
+      // Outside request headers context
+    }
+
+    if (!user) {
+      const res = await supabase.auth.getUser();
+      user = res.data.user;
+      authError = res.error;
+    }
 
     if (authError || !user) {
       return {
@@ -38,9 +61,10 @@ export async function getVerifiedCustomer(): Promise<CustomerAuthResult> {
     }
 
     // Required email verification enforcement
+    const userWithConfirmed = user as unknown as { confirmed_at?: string };
     const isVerified = Boolean(
       user.email_confirmed_at ||
-      (user as any).confirmed_at ||
+      userWithConfirmed.confirmed_at ||
       user.user_metadata?.email_verified === true
     );
 
@@ -83,12 +107,12 @@ export async function getVerifiedCustomer(): Promise<CustomerAuthResult> {
         user,
       },
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       success: false,
       status: 401,
       code: 'AUTH_ERROR',
-      message: err?.message || 'Authentication error occurred.',
+      message: err instanceof Error ? err.message : 'Authentication error occurred.',
     };
   }
 }

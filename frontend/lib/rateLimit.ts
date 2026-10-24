@@ -81,41 +81,114 @@ function getSharedSupabaseClient(): SupabaseClient | null {
  * 4. CRITICAL: Account quotas for authenticated customers NEVER rely on client IP;
  *    they bind strictly to the server-verified user ID (from verified Supabase JWT).
  */
+import crypto from 'crypto';
+
+function safeCompareSecret(provided: string | null | undefined, expected: string | undefined): boolean {
+  if (!provided || !expected) return false;
+  const providedBuf = Buffer.from(provided);
+  const expectedBuf = Buffer.from(expected);
+  if (providedBuf.length !== expectedBuf.length) return false;
+  return crypto.timingSafeEqual(providedBuf, expectedBuf);
+}
+
 export function getRealClientIp(req: NextRequest): string {
-  // SECURITY: Proxy trust is ONLY enabled by the explicit TRUST_PROXY=true flag.
-  // Do NOT auto-enable based on NODE_ENV=production; without a verified proxy chain
-  // (e.g. Cloudflare, AWS ALB) any client can spoof x-forwarded-for and bypass rate limits.
-  // This must be set deliberately after confirming the production load-balancer path.
-  const trustProxy = process.env.TRUST_PROXY === 'true';
+  const isVercel = process.env.VERCEL === '1';
 
-  if (trustProxy) {
-    // 1. Cloudflare authoritative edge header
-    const cfIp = req.headers.get('cf-connecting-ip');
-    if (cfIp && isValidIp(cfIp.trim())) {
-      return cfIp.trim();
+  // 1. Explicit Isolated Test Harness (strictly isolated tests, never general production or deployed traffic)
+  const isIsolatedTest = process.env.ISOLATED_TEST_RUN === 'true';
+  if (isIsolatedTest && !isVercel) {
+    const simIp = req.headers.get('x-test-simulated-ip')?.trim();
+    if (simIp && isValidIp(simIp)) return simIp;
+  }
+
+  // 2. Deployment-Aware Platform: Vercel Edge Platform Ingress
+  // On Vercel, serverless function Request objects do not expose a raw TCP socket (req.socket is undefined).
+  // The Vercel edge router injects and sanitizes `x-vercel-forwarded-for`, `x-real-ip`, and NextRequest.ip.
+  // External clients cannot spoof `x-vercel-forwarded-for` because Vercel strips or overwrites it.
+  if (isVercel) {
+    // If an external reverse proxy (e.g. Cloudflare) is chained in front of Vercel,
+    // verify the edge secret before trusting Cloudflare's cf-connecting-ip.
+    const trustProxy = process.env.TRUST_PROXY === 'true';
+    const configuredEdgeSecret = process.env.EDGE_AUTH_SECRET;
+    if (trustProxy && configuredEdgeSecret) {
+      const incomingEdgeSecret = req.headers.get('x-edge-secret') || req.headers.get('x-origin-verify');
+      if (safeCompareSecret(incomingEdgeSecret, configuredEdgeSecret)) {
+        const cfIp = req.headers.get('cf-connecting-ip');
+        if (cfIp && isValidIp(cfIp.trim())) {
+          return cfIp.trim();
+        }
+      }
     }
 
-    // 2. Upstream trusted reverse proxy header
-    const realIp = req.headers.get('x-real-ip');
-    if (realIp && isValidIp(realIp.trim())) {
-      return realIp.trim();
-    }
-
-    // 3. Sanitized leftmost x-forwarded-for entry
-    const forwarded = req.headers.get('x-forwarded-for');
-    if (forwarded) {
-      const rawIp = forwarded.split(',')[0].trim();
+    // Authoritative Vercel platform-forwarded header (first entry is the client IP)
+    const vercelForwarded = req.headers.get('x-vercel-forwarded-for');
+    if (vercelForwarded) {
+      const rawIp = vercelForwarded.split(',')[0].trim();
       const cleanIp = rawIp.replace(/:\d+$/, '');
       if (isValidIp(cleanIp)) {
         return cleanIp;
       }
     }
+
+    // Vercel real IP header
+    const realIp = req.headers.get('x-real-ip');
+    if (realIp) {
+      const cleanIp = realIp.trim().replace(/:\d+$/, '');
+      if (isValidIp(cleanIp)) {
+        return cleanIp;
+      }
+    }
+
+    // NextRequest platform IP injected by Next.js on Vercel
+    const reqWithIp = req as unknown as { ip?: string };
+    if (reqWithIp.ip && isValidIp(reqWithIp.ip.trim())) {
+      return reqWithIp.ip.trim();
+    }
   }
 
-  // Fallback for unverified connections / direct sockets
-  const clientIp = (req as any).ip || req.headers.get('x-client-ip');
-  if (clientIp && isValidIp(clientIp.trim())) {
-    return clientIp.trim();
+  // 3. Verified Reverse Proxy Ingress (Cloudflare / Edge Load Balancer in non-Vercel deployments)
+  // CRITICAL SECURITY: Presence of CF-Ray or CF-Connecting-IP alone is NOT proof of trusted ingress,
+  // because direct-access clients can forge those headers. Ingress is verified ONLY if:
+  // a) TRUST_PROXY is enabled, AND
+  // b) An authentic Edge Secret is configured AND matches via timing-safe comparison.
+  const trustProxy = process.env.TRUST_PROXY === 'true';
+  const configuredEdgeSecret = process.env.EDGE_AUTH_SECRET;
+
+  if (trustProxy && configuredEdgeSecret) {
+    const incomingEdgeSecret = req.headers.get('x-edge-secret') || req.headers.get('x-origin-verify');
+    const isVerifiedIngress = safeCompareSecret(incomingEdgeSecret, configuredEdgeSecret);
+
+    if (isVerifiedIngress) {
+      // Authoritative Cloudflare edge header from verified proxy
+      const cfIp = req.headers.get('cf-connecting-ip');
+      if (cfIp && isValidIp(cfIp.trim())) {
+        return cfIp.trim();
+      }
+
+      // Upstream trusted reverse proxy header
+      const realIp = req.headers.get('x-real-ip');
+      if (realIp && isValidIp(realIp.trim())) {
+        return realIp.trim();
+      }
+
+      // Leftmost entry in verified forwarded chain
+      const forwarded = req.headers.get('x-forwarded-for');
+      if (forwarded) {
+        const rawIp = forwarded.split(',')[0].trim();
+        const cleanIp = rawIp.replace(/:\d+$/, '');
+        if (isValidIp(cleanIp)) {
+          return cleanIp;
+        }
+      }
+    }
+  }
+
+  // 4. Direct socket connection or unverified ingress:
+  // Strictly ignore client-supplied spoofable headers (CF-Ray, CF-Connecting-IP, X-Forwarded-For)
+  const reqWithSocket = req as unknown as { ip?: string; socket?: { remoteAddress?: string } };
+  const socketIp = reqWithSocket.ip || reqWithSocket.socket?.remoteAddress;
+  if (socketIp && isValidIp(socketIp.trim())) {
+    return socketIp.trim();
   }
 
   return '127.0.0.1';
@@ -230,10 +303,10 @@ export async function checkRateLimit(
   }
 
   // ── 2. Shared Multi-Instance Database Engine (PostgreSQL via Supabase) ──
-  // Dedicated rate-limit storage: Uses public.ebook_webhook_events with gateway='rate_limit'
-  // Preserves business audit logs (ebook_audit_logs is NEVER contaminated or purged)
-  // Cross-instance atomicity: Enforced via PostgreSQL UNIQUE constraint on event_id.
-  const supabase = getSharedSupabaseClient();
+  // Dedicated rate-limit storage for sensitive operations (financial, auth, mutations).
+  // High-frequency public read traffic (isSensitive: false) routes to in-memory sliding window
+  // to avoid redundant database roundtrips and connection pool exhaustion under load.
+  const supabase = isSensitive ? getSharedSupabaseClient() : null;
 
   if (supabase) {
     try {
@@ -468,9 +541,15 @@ export function addRateLimitHeaders(
  * Centralized Predefined Rate Limiting Policies for all 18 actions
  */
 export const RATE_LIMIT_POLICIES = {
+  // Authentication & Verification Flows (Sensitive Security Operations, fail-closed)
+  AUTH_REGISTER: { limit: 10, windowSeconds: 300, isSensitive: true },
+  AUTH_VERIFY_OTP: { limit: 10, windowSeconds: 300, isSensitive: true },
+  AUTH_RESEND_OTP: { limit: 5, windowSeconds: 300, isSensitive: true },
+  AUTH_LOGIN: { limit: 15, windowSeconds: 300, isSensitive: true },
+
   // Public Search & Catalogue (Non-sensitive, fail-open)
-  CATALOGUE_SEARCH: { limit: 60, windowSeconds: 60, isSensitive: false },
-  CART_VALIDATE: { limit: 30, windowSeconds: 60, isSensitive: false },
+  CATALOGUE_SEARCH: { limit: 240, windowSeconds: 60, isSensitive: false },
+  CART_VALIDATE: { limit: 60, windowSeconds: 60, isSensitive: false },
 
   // Orders, Upgrades & Payments (Sensitive Financial Operations, fail-closed)
   ORDER_CREATE: { limit: 10, windowSeconds: 300, isSensitive: true },

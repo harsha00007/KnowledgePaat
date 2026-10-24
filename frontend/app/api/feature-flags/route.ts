@@ -5,7 +5,7 @@ import { checkRateLimit, rateLimitResponse, RATE_LIMIT_POLICIES } from '@/lib/ra
 import fs from 'fs';
 import path from 'path';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+const DATA_DIR = process.env.VERCEL === '1' ? path.join('/tmp', 'data') : path.join(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'feature_flags.json');
 
 interface StoredFlagsPayload {
@@ -160,8 +160,9 @@ export async function POST(req: NextRequest) {
       updated_at: payload.updated_at,
       updated_by: payload.updated_by,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error saving feature flags:', err);
-    return NextResponse.json({ success: false, error: err.message || 'Internal server error.' }, { status: 500 });
+    const message = err instanceof Error ? err.message : 'Internal server error.';
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

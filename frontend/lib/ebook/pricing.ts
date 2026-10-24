@@ -1,5 +1,6 @@
 import { createClient, createAdminClient } from '@/utils/supabase/server';
 import { logger } from '@/lib/logger';
+import { invalidateServerCache } from '@/lib/serverCache';
 
 import { AuthoritativePricing, PricingUpdatePayload, validatePricingRules } from './pricingShared';
 export * from './pricingShared';
@@ -76,6 +77,29 @@ export async function getAuthoritativeEditionPricing(
     .single();
 
   if (insertErr || !newPricing) {
+    // If another concurrent request inserted the baseline row first (PostgreSQL unique violation 23505)
+    if (insertErr?.code === '23505') {
+      const { data: existingPricing } = await supabase
+        .from('ebook_pricing')
+        .select(`
+          *,
+          updater:profiles!ebook_pricing_updated_by_fkey (
+            full_name,
+            email
+          )
+        `)
+        .eq('edition_id', editionId)
+        .maybeSingle();
+
+      if (existingPricing) {
+        return {
+          ...existingPricing,
+          updater_name: existingPricing.updater?.full_name || null,
+          updater_email: existingPricing.updater?.email || null,
+        };
+      }
+    }
+
     logger.error('Failed to create baseline ebook_pricing record', insertErr, { editionId });
     // Return virtual authoritative record from edition
     return {
@@ -254,6 +278,9 @@ export async function updateEditionPricing(payload: PricingUpdatePayload): Promi
   } catch (auditErr) {
     logger.error('Non-blocking audit log failure during pricing update', auditErr, { editionId: payload.editionId });
   }
+
+  // Invalidate catalogue cache so public prices update immediately
+  invalidateServerCache('catalogue');
 
   return {
     success: true,

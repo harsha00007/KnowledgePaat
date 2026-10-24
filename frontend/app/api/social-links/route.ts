@@ -5,7 +5,7 @@ import { checkRateLimit, rateLimitResponse, getRealClientIp, RATE_LIMIT_POLICIES
 import fs from 'fs';
 import path from 'path';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+const DATA_DIR = process.env.VERCEL === '1' ? path.join('/tmp', 'data') : path.join(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'social_links.json');
 
 function getFallbackData(): SocialLinksSettings {
@@ -121,9 +121,10 @@ export async function POST(req: NextRequest) {
       success: true,
       social_links: socialLinks,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to save social links';
     return NextResponse.json(
-      { success: false, error: err.message || 'Failed to save social links' },
+      { success: false, error: message },
       { status: 500 }
     );
   }

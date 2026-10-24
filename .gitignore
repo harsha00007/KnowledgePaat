@@ -69,3 +69,4 @@ Thumbs.db
 supabase/.branches/
 supabase/.temp/
 frontend/scripts/dist/
+frontend/scratch/

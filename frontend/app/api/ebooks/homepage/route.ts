@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/utils/supabase/server';
 import { getAuthoritativeEditionPricing } from '@/lib/ebook/pricing';
 import { DEFAULT_MEDIA_CARD } from '@/types/ebook';
+import { getServerCache, setServerCache, syncSharedCacheEpoch } from '@/lib/serverCache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 60;
@@ -11,8 +12,23 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const isPreview = searchParams.get('preview') === 'true';
 
+    // Fast-path for public published homepage with multi-instance invalidation sync
+    if (!isPreview) {
+      await syncSharedCacheEpoch('homepage');
+      const cached = getServerCache('homepage:published', ['homepage']);
+      if (cached) {
+        return NextResponse.json(cached, {
+          headers: {
+            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+            'X-Cache-Status': 'HIT',
+          }
+        });
+      }
+    }
+
     const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const dbClient = hasServiceKey ? createAdminClient() : supabase;
 
     // Draft isolation: only verified admins can view draft preview
     let targetStatus: 'draft' | 'published' = 'published';
@@ -26,27 +42,51 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 1. Fetch homepage configuration for target status
-    const { data: content, error: contentErr } = await adminClient
-      .from('ebook_homepage_content')
-      .select('*')
-      .eq('status', targetStatus)
-      .maybeSingle();
+    const DEFAULT_CONFIG = {
+      hero_eyebrow: 'Engineering & System Design eBooks',
+      hero_heading: 'Master Modern Software Engineering',
+      hero_highlighted_text: 'From First Principles',
+      hero_description: 'Comprehensive, in-depth architectural guides written for engineers who want to build resilient distributed systems.',
+      hero_artwork_url: null,
+      hero_artwork_alt: 'KnowledgePaat eBook Library',
+      primary_button_label: 'Explore Library',
+      primary_button_url: '/e-books',
+      secondary_button_label: 'Free Sample Chapters',
+      secondary_button_url: '/e-books?filter=sample',
+      featured_book_ids: [],
+      highlighted_book_id: null,
+      category_order: ["Engineering", "System Design", "Career Prep", "DevOps & Cloud", "Quality Assurance", "Frontend & Mobile"],
+      promotional_banner: { is_active: false, text: '', link: '' },
+      section_visibility: { hero: true, featured: true, categories: true, banner: false, testimonials: true },
+      testimonials: [],
+      media_card: DEFAULT_MEDIA_CARD,
+      version: 1,
+      published_at: null,
+    };
 
-    if (contentErr || !content) {
-      // Fallback to published if draft was requested but missing
-      const { data: fallbackPublished } = await adminClient
+    // 1. Fetch homepage configuration for target status
+    let content: any = null;
+    try {
+      const { data } = await dbClient
         .from('ebook_homepage_content')
         .select('*')
-        .eq('status', 'published')
+        .eq('status', targetStatus)
         .maybeSingle();
+      content = data;
 
-      if (!fallbackPublished) {
-        return NextResponse.json({ success: false, error: 'Homepage content is currently unavailable.' }, { status: 404 });
+      if (!content && targetStatus === 'draft') {
+        const { data: fallbackPublished } = await dbClient
+          .from('ebook_homepage_content')
+          .select('*')
+          .eq('status', 'published')
+          .maybeSingle();
+        content = fallbackPublished;
       }
+    } catch {
+      content = null;
     }
 
-    const activeConfig = content || {};
+    const activeConfig = content || DEFAULT_CONFIG;
     const featuredBookIds = Array.isArray(activeConfig.featured_book_ids) ? activeConfig.featured_book_ids : [];
     const highlightedBookId = activeConfig.highlighted_book_id || null;
 
@@ -58,7 +98,7 @@ export async function GET(req: NextRequest) {
 
     if (targetBookIds.length > 0) {
       // 2. Fetch published books from catalog ONLY (filtering out draft/archived books)
-      const { data: booksData } = await adminClient
+      const { data: booksData } = await dbClient
         .from('ebooks')
         .select(`
           id,
@@ -100,7 +140,7 @@ export async function GET(req: NextRequest) {
 
       // 3. Resolve authoritative pricing dynamically (never duplicating or hardcoding prices)
       if (editionIds.length > 0) {
-        const { data: pricingRows } = await adminClient
+        const { data: pricingRows } = await dbClient
           .from('ebook_pricing')
           .select('*')
           .in('edition_id', editionIds);
@@ -180,7 +220,7 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    return NextResponse.json({
+    const responsePayload = {
       success: true,
       status: targetStatus,
       is_preview: targetStatus === 'draft',
@@ -209,9 +249,16 @@ export async function GET(req: NextRequest) {
       section_visibility: activeConfig.section_visibility,
       media_card: activeConfig.media_card || DEFAULT_MEDIA_CARD,
       testimonials: activeConfig.testimonials,
-    }, {
+    };
+
+    if (targetStatus === 'published') {
+      setServerCache('homepage:published', responsePayload, 60, ['homepage']);
+    }
+
+    return NextResponse.json(responsePayload, {
       headers: {
-        'Cache-Control': targetStatus === 'draft' ? 'no-store' : 'public, s-maxage=60, stale-while-revalidate=120'
+        'Cache-Control': targetStatus === 'draft' ? 'no-store' : 'public, s-maxage=60, stale-while-revalidate=120',
+        'X-Cache-Status': 'MISS',
       }
     });
   } catch (err: any) {
